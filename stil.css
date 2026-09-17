@@ -1,0 +1,229 @@
+/* Datei: stil.css
+   Projekt: Textbausteine — Teil: App (Browser)
+   Zweck: Das gesamte Aussehen der App. Farben stehen oben als benannte
+   Werte (Blaupause G.9a) — ein späteres Dunkel-Schema ändert nur sie.
+   Seit Etappe 2 zusätzlich: die schmale Abgleich-Leiste am unteren
+   Rand und die Gegenüberstellung zweier Fassungen bei einer doppelten
+   Änderung. */
+
+:root {
+  --grund: #eef1f4;          /* Seitenhintergrund */
+  --karte: #ffffff;          /* Kartengrund */
+  --schrift: #1c2430;        /* Textfarbe */
+  --gedaempft: #5b6673;      /* Nebentext */
+  --linie: #d8dee6;          /* Trennlinien */
+  --akzent: #0f4c5c;         /* Knöpfe, Hervorhebung */
+  --akzent-hell: #e3edf0;
+  --gut-schrift: #14632f;  --gut-grund: #e3f3e8;
+  --warn-schrift: #a3261d; --warn-grund: #fbeae8;
+  --dev: #c22e2e;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--grund); color: var(--schrift);
+  font: 15px/1.5 -apple-system, "Segoe UI", system-ui, Roboto, Arial, sans-serif;
+}
+body.dev-welt { border: 4px solid var(--dev); min-height: 100vh; }
+
+header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; background: var(--karte);
+  border-bottom: 1px solid var(--linie);
+  position: sticky; top: 0; z-index: 5;
+}
+header h1 { font-size: 1.1rem; margin: 0; }
+.dev-marke {
+  background: var(--dev); color: #fff; border-radius: 6px;
+  padding: 1px 8px; font-size: .8rem; font-weight: 700;
+}
+nav { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+nav button {
+  background: none; border: 1px solid transparent; border-radius: 8px;
+  padding: 6px 10px; font: inherit; cursor: pointer; color: var(--schrift);
+}
+nav button.aktiv { background: var(--akzent-hell); border-color: var(--akzent); color: var(--akzent); }
+
+main { max-width: 860px; margin: 0 auto; padding: 14px 14px 56px; }
+main.breit { max-width: 1100px; }
+
+/* Die Abgleich-Leiste: immer sichtbar, nie im Weg. */
+#abgleich-leiste {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 8;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 6px 14px calc(6px + env(safe-area-inset-bottom));
+  background: var(--karte); border-top: 1px solid var(--linie);
+  font-size: .85rem; color: var(--gedaempft);
+}
+#abgleich-leiste.warn { background: var(--warn-grund); color: var(--warn-schrift); }
+#abgleich-leiste .leiste-text { flex: 1; min-width: 120px; }
+#abgleich-leiste .leiste-offen {
+  background: var(--akzent-hell); color: var(--akzent);
+  border-radius: 6px; padding: 1px 8px; white-space: nowrap;
+}
+
+/* Zwei Fassungen nebeneinander, wenn beide Orte geändert haben. */
+.fassung {
+  border: 1px solid var(--linie); border-radius: 9px;
+  padding: 10px; margin-bottom: 10px;
+}
+.fassung-kopf { font-weight: 700; font-size: .9rem; }
+.fassung-titel { margin-top: 4px; }
+
+.werkzeugleiste { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.werkzeugleiste input[type=search] {
+  flex: 1; min-width: 200px; font: inherit;
+  padding: 9px 12px; border: 1px solid var(--linie); border-radius: 9px;
+}
+.werkzeugleiste select {
+  font: inherit; padding: 8px 10px; border: 1px solid var(--linie);
+  border-radius: 9px; background: var(--karte); max-width: 220px;
+}
+button.haupt {
+  background: var(--akzent); color: #fff; border: 0; border-radius: 9px;
+  padding: 9px 14px; font: inherit; cursor: pointer;
+}
+button.neben {
+  background: var(--karte); color: var(--akzent);
+  border: 1px solid var(--akzent); border-radius: 9px;
+  padding: 8px 13px; font: inherit; cursor: pointer;
+}
+button.leise {
+  background: none; border: 0; color: var(--gedaempft);
+  font: inherit; cursor: pointer; padding: 4px 6px; border-radius: 6px;
+}
+button.leise:hover { background: var(--akzent-hell); color: var(--akzent); }
+button:focus-visible, input:focus-visible, select:focus-visible,
+textarea:focus-visible { outline: 3px solid #7fb2c0; outline-offset: 1px; }
+
+.gruppe { margin: 14px 0 6px; color: var(--gedaempft); font-size: .85rem;
+          text-transform: uppercase; letter-spacing: .04em; }
+ul.liste { list-style: none; margin: 0; padding: 0; }
+ul.liste li {
+  background: var(--karte); border: 1px solid var(--linie);
+  border-radius: 10px; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  cursor: pointer;
+}
+ul.liste li:hover { border-color: var(--akzent); }
+.zeile-text { flex: 1; min-width: 0; }
+.zeile-titel { font-weight: 600; }
+.zeile-neben { color: var(--gedaempft); font-size: .85rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.marke {
+  background: var(--akzent-hell); color: var(--akzent);
+  border-radius: 6px; padding: 1px 7px; font-size: .8rem; white-space: nowrap;
+}
+.leer, .laden { color: var(--gedaempft); background: var(--karte);
+  border: 1px dashed var(--linie); border-radius: 10px; padding: 18px;
+  text-align: center; }
+
+dialog {
+  border: 1px solid var(--linie); border-radius: 12px; padding: 18px;
+  width: min(560px, 92vw); color: var(--schrift);
+}
+dialog::backdrop { background: rgba(20, 30, 40, .35); }
+dialog h2 { margin: 0 0 10px; font-size: 1.05rem; }
+.feldzeile { margin-bottom: 10px; }
+.feldzeile label { display: block; font-size: .85rem; color: var(--gedaempft);
+  margin-bottom: 3px; }
+.feldzeile input[type=text], .feldzeile textarea, .feldzeile select {
+  width: 100%; font: inherit; padding: 8px 10px;
+  border: 1px solid var(--linie); border-radius: 8px;
+}
+.feldzeile textarea { min-height: 130px; font-family: ui-monospace, "SF Mono",
+  Consolas, Menlo, monospace; font-size: .9rem; }
+.dialog-knoepfe { display: flex; gap: 8px; justify-content: flex-end;
+  margin-top: 14px; flex-wrap: wrap; }
+.hinweis-gut { color: var(--gut-schrift); font-size: .85rem; }
+ul.fehlerliste { margin: 2px 0 0; padding-left: 20px; }
+ul.fehlerliste li { font-size: .85rem; margin-bottom: 2px; }
+ul.fehlerliste.warn li { color: var(--warn-schrift); }
+.knopfleiste { display: flex; flex-wrap: wrap; gap: 4px; }
+button.klein { font-size: .8rem; padding: 3px 8px;
+  border: 1px solid var(--linie); border-radius: 7px; background: var(--karte); }
+button.klein:hover { background: var(--akzent-hell); border-color: var(--akzent); }
+.zaehler { color: var(--akzent); font-weight: 700; min-width: 46px; }
+h3.unterkapitel { font-size: .92rem; margin: 12px 0 2px; }
+h3.unterkapitel:first-of-type { margin-top: 4px; }
+.hinweis-warn { color: var(--warn-schrift); font-size: .85rem; white-space: pre-line; }
+.vorschau-kasten {
+  background: var(--grund); border: 1px solid var(--linie); border-radius: 8px;
+  padding: 10px; white-space: pre-wrap; font-size: .9rem; margin-top: 8px;
+}
+
+.karte {
+  background: var(--karte); border: 1px solid var(--linie);
+  border-radius: 10px; padding: 14px; margin-bottom: 12px;
+}
+.karte h2 { margin: 0 0 8px; font-size: 1rem; }
+.karte p.erklaerung { color: var(--gedaempft); font-size: .9rem; margin: 4px 0 10px; }
+table.konstanten { width: 100%; border-collapse: collapse; }
+table.konstanten td { padding: 4px 6px 4px 0; }
+table.konstanten input { width: 100%; font: inherit; padding: 6px 8px;
+  border: 1px solid var(--linie); border-radius: 7px; }
+table.konstanten button { font-size: .8rem; padding: 4px 10px;
+  border: 1px solid var(--linie); border-radius: 7px; background: var(--karte);
+  color: var(--warn-schrift); cursor: pointer; white-space: nowrap; }
+table.konstanten button:hover { background: var(--warn-grund);
+  border-color: var(--warn-schrift); }
+
+.test-zeile { display: flex; gap: 8px; padding: 5px 0;
+  border-bottom: 1px dashed var(--linie); align-items: baseline; }
+.test-zeile:last-child { border-bottom: 0; }
+.punkt-gut { color: var(--gut-schrift); font-weight: 700; }
+.punkt-warn { color: var(--warn-schrift); font-weight: 700; }
+.test-detail { color: var(--gedaempft); font-size: .85rem; }
+
+#meldung {
+  position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+  background: var(--schrift); color: #fff; border-radius: 999px;
+  padding: 9px 18px; font-size: .9rem; opacity: 0; pointer-events: none;
+  transition: opacity .2s; max-width: 90vw; text-align: center; z-index: 50;
+}
+#meldung.sichtbar { opacity: 1; }
+#meldung.warn { background: var(--warn-schrift); }
+
+@media (max-width: 600px) {
+  nav button { padding: 6px 7px; font-size: .85rem; }
+  main { padding: 10px; }
+}
+
+/* Schreibfeld mit Formatierung (formatleiste.js) */
+.schreibfeld-rahmen { border: 1px solid var(--linie); border-radius: 9px;
+  overflow: hidden; background: var(--karte); }
+.formatleiste { display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+  padding: 6px 8px; background: var(--grund); border-bottom: 1px solid var(--linie); }
+.formatleiste button.klein { min-width: 30px; }
+.formatleiste select.klein { font-size: .82rem; padding: 3px 6px;
+  border: 1px solid var(--linie); border-radius: 6px; background: var(--karte); }
+.knopf-fett { font-weight: 800; }
+.knopf-kursiv { font-style: italic; }
+.knopf-unter { text-decoration: underline; }
+.knopf-durch { text-decoration: line-through; }
+.klein-hinweis { padding: 4px 8px; margin: 0; font-size: .78rem;
+  border-bottom: 1px solid var(--linie); }
+/* Arial 10 Punkt — dieselbe Schrift und Grösse wie KISIMs Textfelder,
+   damit im Schreibfeld steht, was nachher auch dort steht. */
+.schreibfeld { min-height: 140px; max-height: 42vh; overflow: auto;
+  padding: 10px 12px; outline: none; line-height: 1.45;
+  font-family: Arial, Helvetica, sans-serif; font-size: 13.3px; }
+.schreibfeld:focus { box-shadow: inset 0 0 0 2px var(--akzent-hell); }
+.schreibfeld ul, .schreibfeld ol { margin: 4px 0 4px 20px; padding-left: 10px; }
+.marke-diktat { background: var(--warn-grund); color: var(--warn-schrift); }
+
+/* Zwischenablage untersuchen */
+.untersuch-feld { border: 2px solid var(--akzent); border-radius: 8px;
+  min-height: 70px; max-height: 200px; }
+.rohtext { background: var(--grund); border: 1px solid var(--linie);
+  border-radius: 8px; padding: 8px; font-size: .74rem; white-space: pre-wrap;
+  word-break: break-all; max-height: 260px; overflow: auto; margin-top: 10px; }
+
+/* Entwürfe und Sammel-Erfassung */
+.sammelfeld { border: 2px solid var(--akzent); border-radius: 9px;
+  min-height: 110px; }
+.sammelfeld:empty::before { content: attr(data-leer); color: var(--gedaempft); }
+.sammel-knoepfe { justify-content: flex-start; margin-top: 10px; }
+.sammel-zaehler { margin-top: 8px; }
+.idee-feld { width: 100%; min-height: 130px; font: inherit; padding: 10px;
+  border: 1px solid var(--linie); border-radius: 9px; box-sizing: border-box; }
