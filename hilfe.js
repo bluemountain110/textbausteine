@@ -43,6 +43,44 @@ TB.hilfe = (function () {
         ["Die Prüfung beim Schreiben",
          "Unter dem Textfeld prüft die App laufend mit. Grün heisst in Ordnung und nennt die Zahl der Lücken. Rot listet jeden Fehler einzeln auf — etwa einen Platzhalter, den es nicht gibt, oder eine Auswahl mit nur einer Möglichkeit."]
       ]],
+      ["Formatierung", [
+        ["Die Leiste über dem Schreibfeld",
+         "Beim Bearbeiten steht über dem Textfeld eine Leiste: fett, kursiv, unterstrichen, durchgestrichen, Aufzählung, nummerierte Liste und ganz rechts ⌫, das alle Auszeichnungen von der Markierung entfernt. Dazu vier Auswahlfelder für Schriftfarbe, Markierung, Schriftart und Schriftgrösse."],
+        ["Mit der Tastatur",
+         "Strg+B fett, Strg+I kursiv, Strg+U unterstrichen, Strg+Umschalt+X durchgestrichen, Strg+Umschalt+L Aufzählung, Strg+Umschalt+O nummerierte Liste, Strg+Leertaste entfernt Auszeichnungen. Am Mac zählt die Befehlstaste wie Strg. Jedes Kürzel lässt sich in den Einstellungen umbelegen; die Belegung wandert mit auf alle Geräte."],
+        ["Was am Ziel ankommt",
+         "Nicht jedes Programm kann alles. KISIM nimmt über die Brücke alles an, auch Schriftgrösse und Markierung. Axenita kennt fett, kursiv, unterstrichen, Schriftfarbe und Listen — Grösse und Markierung verwirft es. Word kann alles. Ein Hinweis unter der Leiste erinnert daran."],
+        ["Platzhalter nie halb formatieren",
+         "Ein Platzhalter muss GANZ ausgezeichnet sein oder gar nicht. Machst Du nur die Hälfte von {{Datum}} fett, wirkt er nicht mehr und stünde als roher Text im Befund. Die Prüfung unter der Leiste warnt Dich davor."],
+        ["Text von aussen hereinholen",
+         "Fügst Du etwas aus KISIM, Word oder Axenita ein, kommen die Auszeichnungen mit — der Rest (Formatvorlagen, Tabellen, Seitenaufbau) wird verworfen. KISIM kopiert in einem eigenen Format, das die App liest; daraus werden auch Aufzählungen und Nummerierungen wieder echte Listen."],
+        ["Zwei Wege, die Lücken zu füllen",
+         "Beim Bearbeiten wählst Du unten die Ausgabeart. „Vorher fragen“ ist die Vorgabe: Die Lücken werden abgefragt, der Text kommt fertig ins Zielprogramm. „Als Marken mitliefern“ ist fürs Diktieren: Der Text wird sofort eingefügt, die Lücken bleiben als [Beschriftung] stehen und lassen sich mit Dragon oder dem Speech Mike anspringen. Vorsicht: Eine übersprungene Marke bleibt im Befund stehen. Solche Bausteine tragen in der Liste die Kennzeichnung „Marken“."]
+      ]],
+      ["Entwürfe und Sammel-Erfassung", [
+        ["Was ein Entwurf ist",
+         "Ein Baustein, der noch nicht fertig ist. Er braucht keinen Titel, erscheint nicht in der Arbeitsliste und zählt nicht in der Statistik. Wird er fertig, behält er dieselbe Kennung — er wird nicht kopiert, sondern wächst auf."],
+        ["Die schnelle Idee",
+         "In der Bausteinliste neben „+ Neu“ steht „+ Idee“: ein einziges Textfeld, sonst nichts. Hineintippen, Strg+Enter (⌘+Enter), fertig. Für den Gedanken zwischen zwei Patienten."],
+        ["Bestehende Bausteine übernehmen",
+         "Im Reiter „Entwürfe“ steht oben ein grosses Feld. Im Quellprogramm kopieren, hier einfügen, Eingabetaste — und der nächste. Jeder Eintrag wird ein Entwurf, die Formatierung kommt mit. Umschalt+Eingabetaste macht einen Absatz INNERHALB des Entwurfs. „Letzten rückgängig“ nimmt den zuletzt erfassten wieder zurück."],
+        ["Fertigstellen",
+         "In der Entwurfsliste auf „Als fertig markieren“: Titel, Kürzel und Kategorie eintragen, fertig. Der Titel ist mit der ersten Zeile vorbelegt."]
+      ]],
+      ["Abgleich über die Geräte", [
+        ["Wie es funktioniert",
+         "Die App arbeitet immer zuerst aus dem Speicher des Geräts — sie wartet nie auf das Netz. Der Abgleich läuft im Hintergrund: beim Start, beim Zurückkommen ins Fenster, nach jeder Änderung und zusätzlich jede Minute von selbst. Unten am Fensterrand steht, wann zuletzt abgeglichen wurde."],
+        ["Anmelden",
+         "Einmal je Gerät, mit Mailadresse und Passwort. Danach bleibt das Gerät angemeldet, bis Du in den Einstellungen abmeldest. Beim Abmelden warnt die App, falls noch etwas nicht hochgeladen ist."],
+        ["Ohne Netz",
+         "Alles funktioniert weiter. Die Leiste wird rötlich und sagt, dass nicht abgeglichen wird; die Änderungen warten und gehen hoch, sobald die Verbindung zurück ist. Es geht nichts verloren."],
+        ["Wenn zwei Geräte dasselbe ändern",
+         "Dann wird NICHTS still überschrieben. Ein Fenster zeigt beide Fassungen mit Gerätenamen und Zeitpunkt, und Du wählst: diese, jene oder beide behalten."],
+        ["Verbindung prüfen",
+         "In den Einstellungen. Neun Zeilen, jede beantwortet eine eigene Frage — bis hin zu der, ob die Datenablage alle Felder der App kennt. Diese Prüfung gehört an jedem neuen Ort einmal gemacht."],
+        ["Die Sicherung bleibt wichtig",
+         "Der Abgleich verteilt Deine Bausteine, er bewahrt sie nicht auf. Zieh ab und zu eine Export-Datei, besonders vor grösseren Änderungen."]
+      ]],
       ["Einstellungen", [
         ["Name der App",
          "Der Name oben und im Fenstertitel — änderbar, wann immer Du willst."],
@@ -65,13 +103,17 @@ TB.hilfe = (function () {
         ["Tastenkürzel in der App",
          "Strg+F (⌘F) springt ins Suchfeld, Strg+N (⌘N) öffnet „Neu“, Esc schliesst jedes Fenster ohne zu speichern, die Eingabetaste übernimmt. Wichtig: Diese Kürzel wirken nur, solange das App-Fenster vorne ist — die Kürzel, die überall wirken, kommen in der Kürzel-Etappe."],
         ["Zwei getrennte Welten",
-         "Hängst Du an die Adresse ?welt=dev an, arbeitest Du in der Testwelt: roter Rahmen, Marke „DEV“, eigener Datenbestand. Zum Ausprobieren gedacht — Deine echten Bausteine bleiben unberührt. Die beiden Welten teilen nichts."],
+         "Hängst Du an die Adresse ?welt=dev an, arbeitest Du in der Testwelt: roter Rahmen, Marke „DEV“, eigener Datenbestand, eigene Datenablage. Zum Ausprobieren gedacht — Deine echten Bausteine bleiben unberührt. Die beiden Welten teilen nichts."],
+        ["Wo die App liegt",
+         "Sie ist im Netz veröffentlicht und läuft an jedem Ort unter derselben Adresse — am Mac, an beiden Arbeitsorten und auf dem iPhone. Es muss nichts installiert und kein Ordner mehr herumgetragen werden. Welche Fassung gerade läuft, steht unter Einstellungen → Über die App."],
         ["Hinweis zur Tastatur am Arbeitsplatz",
          "Auf der MX Keys for Mac heisst die Alt-Taste „option“ — unter Windows sendet sie Alt."]
       ]],
       ["Was noch kommt", [
         ["Die nächsten Etappen",
-         "Abgleich über die Cloud (dann sind dieselben Bausteine an beiden Arbeitsorten und am Mac). Danach die Kürzel-Schicht: ein Zeichen wie ;; direkt im Zielprogramm getippt öffnet die Bausteinübersicht oder fügt gleich ein, plus ein schmales Fenster statt Vollbild. Danach Ausgabe-Profile (Spital, Praxis, Outlook) mit Schriftart und Formatierung."]
+         "Als Nächstes die Kürzel-Schicht für Webseiten: eine Browser-Erweiterung, mit der ;;kürzel direkt im Feld von Axenita, Outlook im Browser oder jedem Web-Formular den Baustein einsetzt — ohne Fensterwechsel. Danach dasselbe für Windows-Programme wie KISIM über ein kleines Hilfsprogramm, das auch die Formatierung überträgt. Später: das iPhone-Symbol, Masken für ganze Befunde und ein Werkzeug für EMG-Berichte."],
+        ["Was noch nicht bewiesen ist",
+         "Ob das Diktat die Marken anspringt, und wie sich die Formatierung in Axenita im Alltag anfühlt. Beides zeigt sich erst am Arbeitsplatz."]
       ]]
     ];
   }

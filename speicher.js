@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "6 · Etappe 2 · 17.09.2026";
+TB.FASSUNG = "7 · Etappe 2 abgeschlossen · 17.09.2026";
 
 TB.speicher = (function () {
 
