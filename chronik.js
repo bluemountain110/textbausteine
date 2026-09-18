@@ -12,6 +12,9 @@ TB.chronik = (function () {
   // Neueste zuoberst. [Zeitraum, Titel, Was, Besonderer Moment]
   function eintraege() {
     return [
+      ["17.–18.9.2026", "Etappe 3: Kürzel im Browser",
+       "Eine Chrome-Erweiterung, die auf freigeschalteten Seiten ;;kürzel erkennt und den Baustein formatiert an der Schreibmarke einsetzt — Lücken-Fenster und Suche als Einblendung in der Seite, Übungsfeld zum gefahrlosen Ausprobieren, zwei Fassungen wie die App. Fünf App-Dateien reisen byteweise identisch mit, damit die Kürzel dieselbe Platzhalter-Sprache sprechen. In der Praxis in Axenita bewiesen, in einem Zug gebaut, ohne Nachbesserung an der Erweiterung.",
+       "Der erste Praxis-Test scheiterte an nichts Technischem: Die Seite war nach dem Einschalten nicht neu geladen. Das Diagnose-Kürzel ;;qqq — bewusst unbekannt — zeigte in einer Sekunde, ob die Erweiterung mitliest. Und der Duplex-Befund aus KISIM bewies, dass Tabellen ihre eigene Etappe brauchen."],
       ["19.8.–13.9.2026", "Vorarbeit: die Machbarkeit",
        "Bevor eine Zeile der App entstand, wurde am Arbeitsrechner ohne Administratorrechte geprüft, was dort überhaupt möglich ist: Zwischenablage, Einfügen in KISIM, Dateizugriff, freies Internet — und mit einem eigenen Testpaket, ob systemweite Kürzel laufen.",
        "Alle Tests bestanden, auch der kritischste: AutoHotkey tippt aus einem einfachen Ordner heraus direkt in KISIM. Damit war klar, dass die App nichts einbüssen muss."],

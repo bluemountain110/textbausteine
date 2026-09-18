@@ -19,13 +19,15 @@ TB.hilfe = (function () {
         ["Der schnellste Weg",
          "App öffnen, zwei, drei Buchstaben tippen, Eingabetaste. Die Eingabetaste nimmt immer den ersten Treffer der Liste. Hat der Baustein Lücken, geht das Ausfüll-Fenster auf: mit Tab von Feld zu Feld, Eingabetaste kopiert, Esc bricht ab."],
         ["Wo Deine Bausteine liegen",
-         "Zurzeit im Browser dieses Rechners — sonst nirgends. Der Abgleich über die Cloud kommt in der nächsten Etappe. Bis dahin gilt: in den Einstellungen regelmässig „Alle Bausteine exportieren“ drücken. Die Datei ist Deine Sicherung und zugleich der Weg, Bausteine an den zweiten Arbeitsort mitzunehmen."]
+         "In der Datenablage im Netz, abgeglichen auf jedes Gerät, auf dem Du angemeldet bist — und zusätzlich im Browser jedes Geräts, damit alles auch ohne Netz weitergeht. Die Sicherung bleibt trotzdem wichtig: in den Einstellungen ab und zu „Alle Bausteine exportieren“ drücken."],
+        ["Drei Wege zum Baustein",
+         "Erstens das App-Fenster: Baustein anklicken, im Zielprogramm Strg+V — geht überall, auch in Outlook und Word. Zweitens die Chrome-Erweiterung: ;;kürzel direkt im Feld einer Webseite tippen, Leertaste — der Baustein steht da, ohne Fensterwechsel (Kapitel „Kürzel im Browser“). Drittens, geplant: dasselbe für Windows-Programme wie KISIM über ein kleines Hilfsprogramm."]
       ]],
       ["Bausteine verwalten", [
         ["Anlegen",
          "Oben rechts „+ Neu“, oder Strg+N (⌘N). Pflicht ist nur der Titel. Die Kategorie ist frei — tippe ein Wort, die App schlägt Dir bestehende Kategorien vor, sobald Du welche hast."],
         ["Das Kürzel",
-         "Das kurze Wort (z. B. vk), mit dem Du den Baustein später direkt im Zielprogramm abrufen wirst. Es muss eindeutig sein; die App meldet ein bereits vergebenes Kürzel und nennt den Baustein, der es hat. Das vorangestellte Zeichen (heute ;) tippst Du nicht mit — es wird in der Kürzel-Etappe automatisch vorangestellt und ist dann umstellbar."],
+         "Das kurze Wort (z. B. vk), mit dem Du den Baustein direkt im Zielprogramm abrufst: ;;vk tippen, Leertaste — fertig. Ein Kürzel gibt es nur EINMAL: Die App meldet ein bereits vergebenes und nennt den Baustein, der es hat; auch „Beispiele einfügen“ legt kein Doppel an. Die beiden Strichpunkte tippst Du nur im Zielprogramm, nie ins Kürzel-Feld."],
         ["Ändern und löschen",
          "„Bearbeiten“ an der Zeile öffnet denselben Dialog. „In den Papierkorb“ legt den Baustein für 30 Tage beiseite; im Bereich Papierkorb holst Du ihn mit einem Klick zurück oder löschst ihn endgültig — dann fragt die App mit Anzahl nach."],
         ["Suchen und finden",
@@ -53,7 +55,7 @@ TB.hilfe = (function () {
         ["Platzhalter nie halb formatieren",
          "Ein Platzhalter muss GANZ ausgezeichnet sein oder gar nicht. Machst Du nur die Hälfte von {{Datum}} fett, wirkt er nicht mehr und stünde als roher Text im Befund. Die Prüfung unter der Leiste warnt Dich davor."],
         ["Text von aussen hereinholen",
-         "Fügst Du etwas aus KISIM, Word oder Axenita ein, kommen die Auszeichnungen mit — der Rest (Formatvorlagen, Tabellen, Seitenaufbau) wird verworfen. KISIM kopiert in einem eigenen Format, das die App liest; daraus werden auch Aufzählungen und Nummerierungen wieder echte Listen."],
+         "Fügst Du etwas aus KISIM, Word oder Axenita ein, kommen die Auszeichnungen mit — der Rest (Formatvorlagen, Seitenaufbau, Tabellen) wird verworfen. KISIM kopiert in einem eigenen Format, das die App liest; daraus werden auch Aufzählungen und Nummerierungen wieder echte Listen. Tabellen-Vorlagen wie die Duplex-Vorlage bleiben deshalb vorerst in KISIM — die Tabellen bekommen eine eigene Etappe."],
         ["Zwei Wege, die Lücken zu füllen",
          "Beim Bearbeiten wählst Du unten die Ausgabeart. „Vorher fragen“ ist die Vorgabe: Die Lücken werden abgefragt, der Text kommt fertig ins Zielprogramm. „Als Marken mitliefern“ ist fürs Diktieren: Der Text wird sofort eingefügt, die Lücken bleiben als [Beschriftung] stehen und lassen sich mit Dragon oder dem Speech Mike anspringen. Vorsicht: Eine übersprungene Marke bleibt im Befund stehen. Solche Bausteine tragen in der Liste die Kennzeichnung „Marken“."]
       ]],
@@ -81,6 +83,22 @@ TB.hilfe = (function () {
         ["Die Sicherung bleibt wichtig",
          "Der Abgleich verteilt Deine Bausteine, er bewahrt sie nicht auf. Zieh ab und zu eine Export-Datei, besonders vor grösseren Änderungen."]
       ]],
+      ["Kürzel im Browser — die Chrome-Erweiterung", [
+        ["Was sie ist",
+         "Ein kleines Zusatzprogramm, das im Chrome wohnt. Auf Seiten, die Du freischaltest (z. B. Axenita), tippst Du ;;kürzel und die Leertaste oder Tab — und der Baustein steht formatiert an der Schreibmarke, ohne Fensterwechsel. Die Eingabetaste löst absichtlich nie aus, weil sie in Web-Formularen abschicken kann. Sie holt Deine fertigen Bausteine selbst aus der Datenablage, jede Minute; Entwürfe kennt sie nicht."],
+        ["Installieren",
+         "Einmal je Rechner (die Erweiterung wandert nicht mit dem Chrome-Profil): Zip von der App-Adresse herunterladen, „Alle extrahieren“ in einen festen Ordner, dann chrome://extensions → Entwicklermodus → „Entpackte Erweiterung laden“ → den Ordner wählen → Symbol anpinnen. Ein Hinweis beim Chrome-Start wegen Entwicklermodus ist der Preis dafür — wegklicken."],
+        ["Anmelden und Stand",
+         "Klick auf das B-Symbol: anmelden mit denselben Zugangsdaten wie in der App. Das Fenster zeigt, wie viele Bausteine an Bord sind, wann zuletzt geholt wurde, und „Jetzt holen“ für sofort. Ein rotes «!» am Symbol heisst: nicht angemeldet oder keine Verbindung."],
+        ["Seiten einschalten",
+         "Die Erweiterung liest Tastendrücke NUR auf Seiten mit, die Du eingeschaltet hast. Auf der Seite das Symbol anklicken → „Auf dieser Seite einschalten“ → Chrome fragt um Erlaubnis → Seite einmal neu laden. Mit dem × in der Liste schaltest Du sie wieder aus. Das Übungsfeld (Knopf im Symbol-Fenster) geht immer, ohne Freischaltung."],
+        ["Lücken und Suche",
+         "Hat der Baustein Lücken, erscheint das Ausfüll-Fenster über der Seite, mit Vorschau: Tab wandert, Eingabetaste fügt ein, Esc bricht ab und stellt das getippte ;;kürzel wieder her. ;;? öffnet die Suche: tippen, Pfeiltasten, Eingabetaste. Ein unbekanntes Kürzel bleibt stehen, unten erscheint kurz eine Meldung — dieselbe Meldung sagt Dir auch, ob die Erweiterung auf einer Seite überhaupt aktiv ist."],
+        ["Wo sie nicht wirkt",
+         "Nur in Chrome: Im Outlook-Programm, in Word oder KISIM kann sie nicht tippen — dort gilt das App-Fenster mit Strg+V (an Arbeitsort 1 später Etappe 4). Kommt ein Baustein in einem exotischen Feld nicht an, legt sie ihn in die Zwischenablage und sagt es: dann Strg+V. Bearbeitet werden Bausteine nur in der App; die Erweiterung schreibt nie in Deine Bausteine, sie zählt nur die Statistik."],
+        ["Zwei Fassungen",
+         "Wie die App: die DEV-Fassung (rotes Symbol, Testwelt) gehört nur auf den Mac, die normale (blaugrünes Symbol) in die Praxis. Sind beide auf derselben Seite aktiv, schweigt die DEV-Fassung."]
+      ]],
       ["Einstellungen", [
         ["Name der App",
          "Der Name oben und im Fenstertitel — änderbar, wann immer Du willst."],
@@ -101,7 +119,7 @@ TB.hilfe = (function () {
       ]],
       ["Tastatur und Bedienung", [
         ["Tastenkürzel in der App",
-         "Strg+F (⌘F) springt ins Suchfeld, Strg+N (⌘N) öffnet „Neu“, Esc schliesst jedes Fenster ohne zu speichern, die Eingabetaste übernimmt. Wichtig: Diese Kürzel wirken nur, solange das App-Fenster vorne ist — die Kürzel, die überall wirken, kommen in der Kürzel-Etappe."],
+         "Strg+F (⌘F) springt ins Suchfeld, Strg+N (⌘N) öffnet „Neu“, Esc schliesst jedes Fenster ohne zu speichern, die Eingabetaste übernimmt. Wichtig: Diese Kürzel wirken nur, solange das App-Fenster vorne ist — die ;;kürzel auf Webseiten kommen von der Chrome-Erweiterung, die windowsweiten von Etappe 4."],
         ["Zwei getrennte Welten",
          "Hängst Du an die Adresse ?welt=dev an, arbeitest Du in der Testwelt: roter Rahmen, Marke „DEV“, eigener Datenbestand, eigene Datenablage. Zum Ausprobieren gedacht — Deine echten Bausteine bleiben unberührt. Die beiden Welten teilen nichts."],
         ["Wo die App liegt",
@@ -111,9 +129,9 @@ TB.hilfe = (function () {
       ]],
       ["Was noch kommt", [
         ["Die nächsten Etappen",
-         "Als Nächstes die Kürzel-Schicht für Webseiten: eine Browser-Erweiterung, mit der ;;kürzel direkt im Feld von Axenita, Outlook im Browser oder jedem Web-Formular den Baustein einsetzt — ohne Fensterwechsel. Danach dasselbe für Windows-Programme wie KISIM über ein kleines Hilfsprogramm, das auch die Formatierung überträgt. Später: das iPhone-Symbol, Masken für ganze Befunde und ein Werkzeug für EMG-Berichte."],
+         "Als Nächstes ;;kürzel für Windows-Programme an Arbeitsort 1 (KISIM, Word, Outlook) über ein kleines Hilfsprogramm, das auch die Formatierung überträgt. Danach die Tabellen (Duplex- und andere Tabellen-Vorlagen), die Kürzel auf dem Mac, das iPhone-Symbol, Masken für ganze Befunde und Werkzeuge wie der EMG-Bericht."],
         ["Was noch nicht bewiesen ist",
-         "Ob das Diktat die Marken anspringt, und wie sich die Formatierung in Axenita im Alltag anfühlt. Beides zeigt sich erst am Arbeitsplatz."]
+         "Ob das Diktat die Marken anspringt, und ob die Zählung der Erweiterung in der Statistik der App als eigenes Gerät auftaucht. Beides zeigt sich erst im Alltag."]
       ]]
     ];
   }

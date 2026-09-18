@@ -1,0 +1,60 @@
+/* Datei: einblendung.css
+   Projekt: Textbausteine — Teil: Chrome-Erweiterung
+   Zweck: Das Aussehen der Einblendungen (Lücken-Fenster, Suche,
+   Meldung). Alle Klassen tragen die Vorsilbe tbx-, damit sie keiner
+   fremden Seite in die Quere kommen. Farben wie in der App. */
+
+.tbx-decke {
+  position: fixed; inset: 0; z-index: 2147483000;
+  background: rgba(15, 40, 44, 0.35);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding-top: 12vh;
+}
+.tbx-karte {
+  background: #ffffff; color: #12333a;
+  font: 14px/1.45 Arial, sans-serif;
+  border-radius: 10px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  padding: 16px 18px; width: 420px; max-width: 92vw;
+  max-height: 72vh; overflow: auto; box-sizing: border-box;
+}
+.tbx-titel { font-weight: bold; font-size: 15px; margin-bottom: 10px; }
+.tbx-zeile { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+.tbx-beschriftung { flex: 0 0 38%; }
+.tbx-feld {
+  flex: 1; width: 100%; box-sizing: border-box;
+  font: 14px Arial, sans-serif; color: #12333a;
+  padding: 6px 8px; border: 1px solid #b7c7ca; border-radius: 6px;
+  background: #fff;
+}
+.tbx-feld:focus { outline: 2px solid #14595f; border-color: #14595f; }
+.tbx-klein { color: #5a7075; font-size: 12px; margin-top: 8px; }
+.tbx-vorschau {
+  margin-top: 4px; padding: 8px; border-radius: 6px;
+  background: #f2f6f6; border: 1px solid #dbe6e7;
+  white-space: pre-wrap; font-size: 13px; max-height: 130px; overflow: auto;
+}
+.tbx-leiste { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.tbx-knopf {
+  font: 14px Arial, sans-serif; padding: 7px 14px; border-radius: 7px;
+  border: 1px solid #b7c7ca; background: #fff; color: #12333a; cursor: pointer;
+}
+.tbx-knopf.tbx-haupt { background: #14595f; border-color: #14595f; color: #fff; }
+.tbx-liste { margin-top: 8px; }
+.tbx-eintrag {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 6px 8px; border-radius: 6px; cursor: pointer;
+}
+.tbx-eintrag.tbx-aktiv { background: #e3eeef; outline: 1px solid #14595f; }
+.tbx-marke {
+  font-family: Consolas, Menlo, monospace; font-size: 12px;
+  background: #eef3f4; border: 1px solid #dbe6e7; border-radius: 5px;
+  padding: 1px 5px; color: #14595f;
+}
+.tbx-toast {
+  position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
+  z-index: 2147483001; background: #14595f; color: #fff;
+  font: 13px/1.4 Arial, sans-serif; padding: 9px 14px;
+  border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  max-width: 80vw;
+}
+.tbx-toast.tbx-rot { background: #b3261e; }

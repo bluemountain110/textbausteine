@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Bausteine – Kürzel",
+  "version": "0.3.1",
+  "description": "Der Kürzel-Weg der Textbausteine-App: ;;kürzel direkt im Browser-Feld tippen. Wirkt nur auf eingeschalteten Seiten.",
+  "icons": {
+    "16": "symbol16.png",
+    "48": "symbol48.png",
+    "128": "symbol128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Bausteine – Kürzel"
+  },
+  "background": {
+    "service_worker": "hintergrund.js"
+  },
+  "permissions": [
+    "storage",
+    "alarms",
+    "scripting",
+    "tabs"
+  ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
+  "host_permissions": [
+    "https://ybzgzdyjsdtszqechkup.supabase.co/*",
+    "https://qotxsasbnoqokvzhimtw.supabase.co/*"
+  ]
+}

@@ -24,6 +24,13 @@ TB.ui = (function () {
   }
   function melde(text, warnung) {
     var m = document.getElementById("meldung");
+    // Ist gerade ein Fenster (dialog) offen, liegt es in Chromes
+    // oberster Ebene und würde die Meldung verdecken. Darum wandert
+    // die Meldung dann IN das offene Fenster — sie erscheint an
+    // derselben Stelle, aber davor. Ist kein Fenster offen, gehört
+    // sie zurück in die Seite. (Näd 18.9.: Warnung war unlesbar.)
+    var offenes = document.querySelector("dialog[open]");
+    (offenes || document.body).appendChild(m);
     m.textContent = text;
     m.className = "sichtbar" + (warnung ? " warn" : "");
     clearTimeout(melde._t);

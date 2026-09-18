@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<!-- Datei: uebungsfeld.html
+     Projekt: Textbausteine — Teil: Chrome-Erweiterung
+     Zweck: Das eingebaute Übungsfeld. Hier lassen sich die Kürzel,
+     die Suche (;;?) und das Lücken-Fenster gefahrlos ausprobieren,
+     ohne irgendeine Seite freizuschalten: ein einfaches Feld (wie ein
+     Suchfeld) und ein formatiertes Feld (wie der Axenita-Editor).
+     Nichts, was hier steht, wird gespeichert. -->
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Bausteine — Übungsfeld</title>
+  <link rel="stylesheet" href="einblendung.css">
+  <style>
+    body { font: 15px/1.5 Arial, sans-serif; color: #12333a;
+           max-width: 720px; margin: 30px auto; padding: 0 16px; }
+    h1 { font-size: 20px; }
+    p  { color: #5a7075; font-size: 13px; }
+    textarea { width: 100%; box-sizing: border-box; height: 110px;
+           font: 15px Arial, sans-serif; padding: 10px;
+           border: 1px solid #b7c7ca; border-radius: 8px; }
+    #reich { min-height: 160px; border: 1px solid #b7c7ca;
+           border-radius: 8px; padding: 10px; background: #fff; }
+    textarea:focus, #reich:focus { outline: 2px solid #14595f; }
+    h2 { font-size: 15px; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Übungsfeld</h1>
+  <p>Ein Kürzel tippen (z.&nbsp;B. <b>;;mfg</b>) und die Leertaste oder
+     Tab drücken. <b>;;?</b> öffnet die Suche. Nichts wird gespeichert.</p>
+
+  <h2>Einfaches Feld (wie ein Suchfeld — reiner Text)</h2>
+  <textarea id="einfach"></textarea>
+
+  <h2>Formatiertes Feld (wie der Axenita-Editor)</h2>
+  <div id="reich" contenteditable="true"></div>
+
+  <script src="welt.js"></script>
+  <script src="texte.js"></script>
+  <script src="erweiterung-texte.js"></script>
+  <script src="makros.js"></script>
+  <script src="auszeichnung.js"></script>
+  <script src="reichtext.js"></script>
+  <script src="einblendung.js"></script>
+  <script src="seite.js"></script>
+</body>
+</html>

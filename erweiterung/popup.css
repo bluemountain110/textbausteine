@@ -1,0 +1,48 @@
+/* Datei: popup.css
+   Projekt: Textbausteine — Teil: Chrome-Erweiterung
+   Zweck: Aussehen des Symbol-Fensters. Farben wie in der App;
+   die Testwelt trägt ihr rotes DEV-Zeichen. */
+
+body {
+  font: 14px/1.45 Arial, sans-serif; color: #12333a;
+  width: 280px; margin: 0; padding: 12px 14px; box-sizing: border-box;
+}
+.kopf { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.name { font-weight: bold; font-size: 16px; }
+.welt {
+  font-size: 11px; font-weight: bold; border-radius: 5px; padding: 2px 6px;
+  background: #e3eeef; color: #14595f;
+}
+.welt.dev { background: #b3261e; color: #fff; }
+label { display: block; margin: 6px 0; font-size: 13px; }
+input {
+  display: block; width: 100%; box-sizing: border-box; margin-top: 3px;
+  font: 14px Arial, sans-serif; padding: 6px 8px;
+  border: 1px solid #b7c7ca; border-radius: 6px;
+}
+input:focus { outline: 2px solid #14595f; border-color: #14595f; }
+button {
+  font: 13px Arial, sans-serif; padding: 6px 10px; border-radius: 7px;
+  border: 1px solid #b7c7ca; background: #fff; color: #12333a;
+  cursor: pointer; width: 100%; margin-top: 6px;
+}
+button.haupt { background: #14595f; border-color: #14595f; color: #fff; }
+button.leise { border: none; background: none; color: #5a7075; width: auto; }
+.knoepfe { display: flex; gap: 6px; }
+.klein { color: #5a7075; font-size: 12px; }
+.abschnitt { margin-top: 10px; font-weight: bold; }
+.fehler {
+  background: #fdecea; color: #8a1c15; border: 1px solid #f2b8b3;
+  border-radius: 6px; padding: 6px 8px; font-size: 12px; margin-bottom: 8px;
+}
+.verborgen { display: none; }
+#anzahl { font-size: 15px; margin-top: 4px; }
+.seite {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 6px; font-size: 12px; padding: 3px 0; word-break: break-all;
+}
+.seite button { width: auto; margin: 0; padding: 2px 7px; font-size: 12px; }
+.fuss {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 12px;
+}

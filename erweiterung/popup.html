@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<!-- Datei: popup.html
+     Projekt: Textbausteine — Teil: Chrome-Erweiterung
+     Zweck: Das kleine Fenster hinter dem Erweiterungs-Symbol:
+     Anmeldung, Stand (Welt, Anzahl, zuletzt geholt, Fassung), die
+     Knöpfe und die Liste der eingeschalteten Seiten. -->
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="kopf">
+    <span class="name">Bausteine</span>
+    <span id="welt" class="welt"></span>
+  </div>
+
+  <div id="fehler" class="fehler verborgen"></div>
+
+  <div id="anmeldung" class="verborgen">
+    <label>E-Mail<input id="mail" type="email" autocomplete="username"></label>
+    <label>Passwort<input id="passwort" type="password" autocomplete="current-password"></label>
+    <button id="anmelden" class="haupt"></button>
+  </div>
+
+  <div id="stand" class="verborgen">
+    <div id="wer" class="klein"></div>
+    <div id="anzahl"></div>
+    <div id="geholt" class="klein"></div>
+    <div class="knoepfe">
+      <button id="holen"></button>
+      <button id="uebungsfeld"></button>
+    </div>
+    <div class="knoepfe">
+      <button id="seite" class="haupt"></button>
+    </div>
+    <div id="seitenTitel" class="klein abschnitt"></div>
+    <div id="seiten"></div>
+    <div class="fuss">
+      <span id="fassung" class="klein"></span>
+      <button id="abmelden" class="leise"></button>
+    </div>
+  </div>
+
+  <script src="welt.js"></script>
+  <script src="erweiterung-texte.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
