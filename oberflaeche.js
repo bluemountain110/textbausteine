@@ -346,10 +346,30 @@ TB.oberflaeche = (function () {
     var schreibZeile = el("div", "feldzeile");
     schreibZeile.appendChild(el("label", "", T.feldText));
     d.appendChild(schreibZeile);
+    // Etappe 4: Ein Entwurf aus dem Windows-Skript (;;neu) bringt die
+    // KISIM-Formatierung als Huckepack mit — ein RTF, versteckt in
+    // einem Kommentar am Textanfang. Beim ersten Öffnen wird es hier
+    // mit dem bewiesenen RTF-Leser in echten Reichtext gewandelt; mit
+    // dem Speichern ist der Huckepack Geschichte.
+    function huckepackAusgepackt(text) {
+      var t = String(text || "");
+      var m = t.match(/^<!--TBRTFROH:([A-Za-z0-9+\/=]+)-->/);
+      if (!m || typeof TB.rtfLesen === "undefined") return null;
+      try {
+        var gewandelt = TB.rtfLesen.lies(atob(m[1]));
+        if (gewandelt && gewandelt.html) return gewandelt.html;
+        if (typeof gewandelt === "string" && gewandelt) return gewandelt;
+        return t.slice(m[0].length);
+      } catch (e) { return t.slice(m[0].length); }
+    }
+    var startText = b ? (b.text || "") : "";
+    var huckepack = huckepackAusgepackt(startText);
+    if (huckepack !== null) startText = huckepack;
     var schreiber = TB.formatleiste.erzeuge(schreibZeile, {
-      wert: b ? (b.text || "") : "",
+      wert: startText,
       beiAenderung: function () { pruefeMakros(); }
     });
+    if (huckepack !== null) melde(T.huckepackGewandelt);
 
     // Knopfleiste für die Platzhalter. Sie setzt IMMER unformatiert ein,
     // damit kein Platzhalter halb ausgezeichnet ist und stumm ausfällt.
@@ -510,6 +530,13 @@ TB.oberflaeche = (function () {
                 " — Fassung " + TB.FASSUNG);
     var geraeumt = S.raeumePapierkorbAuf();
     if (geraeumt) console.log("Papierkorb: " + geraeumt + " alte Einträge entfernt.");
+    // Etappe 4: Bausteine aus der Zeit vor dem RTF-Vorrat bekommen ihn
+    // hier still — ohne neuen Zeitstempel, damit kein Konflikt entsteht.
+    var nachgeruestet = S.rtfNachruesten ? S.rtfNachruesten() : 0;
+    if (nachgeruestet) {
+      console.log("RTF-Vorrat: " + nachgeruestet + " Baustein(e) nachgerüstet.");
+      TB.abgleich.anstossen();
+    }
     setzeKopf();
     document.addEventListener("keydown", function (ev) {
       // Steht der Cursor in einem Feld, mischt sich die App nicht ein —

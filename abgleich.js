@@ -44,7 +44,8 @@ TB.abgleich = (function () {
   // Links die Schreibweise der App, rechts die der Datenbank.
   var PAARE = [
     ["id", "id"], ["titel", "titel"], ["kuerzel", "kuerzel"],
-    ["kategorie", "kategorie"], ["text", "text"], ["notiz", "notiz"],
+    ["kategorie", "kategorie"], ["text", "text"], ["textRtf", "text_rtf"],
+    ["notiz", "notiz"],
     ["varianten", "varianten"], ["sortierung", "sortierung"],
     ["art", "art"], ["entwurf", "entwurf"], ["ausgabeart", "ausgabeart"],
     ["zuletztBenutztAm", "zuletzt_benutzt_am"],

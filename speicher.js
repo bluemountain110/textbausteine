@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "8 · Etappe 3 abgeschlossen · 18.09.2026";
+TB.FASSUNG = "9 · Etappe 4 in Arbeit · 18.09.2026";
 
 TB.speicher = (function () {
 
@@ -157,7 +157,8 @@ TB.speicher = (function () {
 
   // ---- Bausteine ----------------------------------------------------
   var FELDER = ["titel", "kuerzel", "kategorie", "text", "notiz", "varianten",
-                "sortierung", "art", "entwurf", "ausgabeart", "zuletztBenutztAm"];
+                "sortierung", "art", "entwurf", "ausgabeart", "zuletztBenutztAm",
+                "textRtf"];
 
   function alle() { return laden().bausteine; }
   function alleAktiven() {
@@ -175,6 +176,78 @@ TB.speicher = (function () {
       return !b.entwurf && (b.kuerzel || "").toLowerCase() === k; }) || null;
   }
 
+  // ---- RTF-Vorrat (Etappe 4) ----------------------------------------
+  // Die App ist der EINZIGE RTF-Erzeuger (Lehre K2): beim Speichern
+  // entsteht das fertige RTF mit aufgelösten {{Baustein:…}} und wandert
+  // als textRtf mit in die Datenablage. Das Windows-Skript setzt es nur
+  // noch ein. Entwürfe bekommen kein RTF.
+  function rtfFuer(b) {
+    if (b.entwurf) return null;
+    if (typeof TB.reichtext === "undefined" ||
+        typeof TB.auszeichnung === "undefined") return b.textRtf || null;
+    try {
+      var eingesetzt = TB.reichtext.bausteineEinsetzen(b.text || "", holenPerKuerzel);
+      return TB.auszeichnung.ausHtml(eingesetzt.html);
+    } catch (e) { return b.textRtf || null; }
+  }
+
+  function regexSicher(s) {
+    return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  // Ändert sich ein Baustein, stimmen die fertigen RTF aller Bausteine
+  // nicht mehr, die ihn per {{Baustein:kürzel}} einbetten — auch über
+  // mehrere Stufen. Diese Runde rechnet sie nach und stösst den
+  // Abgleich mit neuem Zeitstempel an (höchstens 5 Stufen tief).
+  function rtfAbhaengigeNachrechnen(kuerzel) {
+    if (!kuerzel) return 0;
+    var offen = {}; offen[String(kuerzel).toLowerCase()] = true;
+    var gezaehlt = 0, runde = 0;
+    while (runde < 5) {
+      runde += 1;
+      var neue = {};
+      daten.bausteine.forEach(function (x) {
+        if (x.geloeschtAm || x.entwurf) return;
+        var text = String(x.text || "");
+        var trifft = Object.keys(offen).some(function (k) {
+          return new RegExp("\\{\\{\\s*Baustein\\s*:\\s*" + regexSicher(k) +
+                            "\\s*\\}\\}", "i").test(text);
+        });
+        if (!trifft) return;
+        var frisch = rtfFuer(x);
+        if (frisch === x.textRtf) return;
+        merkeOffen(x.id, x.aktualisiertAm);
+        x.textRtf = frisch;
+        x.aktualisiertAm = jetztISO();
+        gezaehlt += 1;
+        if (x.kuerzel) neue[String(x.kuerzel).toLowerCase()] = true;
+      });
+      var dazu = Object.keys(neue).filter(function (k) { return !offen[k]; });
+      if (!dazu.length) break;
+      dazu.forEach(function (k) { offen[k] = true; });
+    }
+    if (gezaehlt) sichern();
+    return gezaehlt;
+  }
+
+  // Bestehende Bausteine still mit RTF versorgen (beim App-Start).
+  // BEWUSST ohne neuen Zeitstempel: zwei Geräte errechnen dasselbe RTF,
+  // und ohne Zeitsprung entsteht daraus nie ein Konflikt-Fenster.
+  function rtfNachruesten() {
+    laden();
+    var gezaehlt = 0;
+    daten.bausteine.forEach(function (b) {
+      if (b.geloeschtAm || b.entwurf || b.textRtf) return;
+      var frisch = rtfFuer(b);
+      if (!frisch) return;
+      merkeOffen(b.id, b.aktualisiertAm);
+      b.textRtf = frisch;
+      gezaehlt += 1;
+    });
+    if (gezaehlt) sichern();
+    return gezaehlt;
+  }
+
   // Die EINE Erzeugungs-/Speicher-Funktion: setzt Kennung und Zeiten
   // und legt den Baustein in die Warteschlange fürs Hochladen.
   function speichern(eintrag) {
@@ -185,12 +258,17 @@ TB.speicher = (function () {
             entwurf: false, ausgabeart: "fenster" };
       daten.bausteine.push(b);
     }
+    var altesKuerzel = b.kuerzel;
     merkeOffen(b.id, b.aktualisiertAm);
     FELDER.forEach(function (f) {
       if (eintrag[f] !== undefined) b[f] = eintrag[f];
     });
+    b.textRtf = rtfFuer(b);
     b.aktualisiertAm = jetztISO();
     sichern();
+    rtfAbhaengigeNachrechnen(b.kuerzel);
+    if (altesKuerzel && altesKuerzel !== b.kuerzel)
+      rtfAbhaengigeNachrechnen(altesKuerzel);
     return b;
   }
 
@@ -371,6 +449,7 @@ TB.speicher = (function () {
     alle: alle, alleAktiven: alleAktiven, allePapierkorb: allePapierkorb,
     holen: holen, holenPerKuerzel: holenPerKuerzel,
     speichern: speichern, merkeBenutzt: merkeBenutzt,
+    rtfNachruesten: rtfNachruesten,
     inPapierkorb: inPapierkorb, zurueckholen: zurueckholen,
     endgueltigLoeschen: endgueltigLoeschen,
     raeumePapierkorbAuf: raeumePapierkorbAuf,

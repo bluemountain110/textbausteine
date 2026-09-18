@@ -97,6 +97,17 @@ TB.selbsttest = (function () {
                typeof st.funktionen === "object" && !!st.seit;
     faelle.push({ name: "Statistik-Zählung vorhanden und lesbar", ok: stOk,
                   detail: stOk ? "" : "Aufbau unerwartet" });
+
+    // Etappe 4: Jeder fertige Baustein trägt seinen RTF-Vorrat für das
+    // Windows-Skript — und der beginnt wie echtes RTF.
+    var ohneRtf = fertige.filter(function (b) {
+      return !(b.textRtf || "").length; }).length;
+    var falschesRtf = fertige.filter(function (b) {
+      return b.textRtf && b.textRtf.indexOf("{\\rtf1") !== 0; }).length;
+    faelle.push({ name: "RTF-Vorrat: fertige Bausteine tragen ihr Druckformat",
+                  ok: ohneRtf === 0 && falschesRtf === 0,
+                  detail: (ohneRtf ? ohneRtf + " ohne RTF " : "") +
+                          (falschesRtf ? falschesRtf + " unerwartet" : "") });
     return faelle;
   }
 
@@ -120,6 +131,7 @@ TB.selbsttest = (function () {
       id: "11111111-2222-4333-8444-555555555555",
       titel: "Muster", kuerzel: "mu", kategorie: "Test",
       text: "Ein Text mit {{Datum}}", notiz: "Notiz",
+      textRtf: "{\\rtf1\\ansi Probe}",
       varianten: { spital: "A" }, sortierung: 3, art: "text", entwurf: false,
       zuletztBenutztAm: "2026-09-13T10:00:00.000Z",
       erstelltAm: "2026-09-01T08:00:00.000Z",

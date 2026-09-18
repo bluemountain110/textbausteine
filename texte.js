@@ -43,6 +43,7 @@ TB.T = {
   abbrechen: "Abbrechen",
   vorschau: "Vorschau",
   gespeichert: "Gespeichert.",
+  huckepackGewandelt: "Die mitgebrachte KISIM-Formatierung wurde übernommen — mit dem Speichern gehört sie fest zum Baustein.",
   nichtGespeichert: "NICHT gespeichert: ",
   fehlerTitelFehlt: "Der Titel fehlt.",
   fehlerKuerzelDoppelt: "Dieses Kürzel hat schon der Baustein „%s“.",
