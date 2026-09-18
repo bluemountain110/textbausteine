@@ -7,6 +7,8 @@
 //        Entwürfe sind Bausteine wie alle anderen, nur eben noch nicht
 //        fertig: Sie tauchen in der Arbeitsliste NICHT auf und haben
 //        darum hier ihren eigenen Filter.
+//        REGEL: Ein Kürzel gibt es höchstens einmal — die Prüfung
+//        gilt für jeden Weg, auch fürs Einfügen der Beispiele.
 
 "use strict";
 window.TB = window.TB || {};
@@ -67,8 +69,17 @@ TB.bausteine = (function () {
       .slice(0, anzahl || 5);
   }
 
+  // Ein Kürzel darf es nur EINMAL geben — auch dieser Knopf hält sich
+  // daran: Ist das Kürzel schon vergeben (fertig ODER Entwurf), wird
+  // dieses Beispiel übersprungen statt doppelt angelegt (Näd 17.9.).
+  function kuerzelFrei(k) {
+    var kl = String(k).toLowerCase();
+    return !S().alleAktiven().some(function (b) {
+      return (b.kuerzel || "").toLowerCase() === kl; });
+  }
+
   function beispieleEinfuegen() {
-    S().speichern({
+    if (kuerzelFrei("vk")) S().speichern({
       titel: "Beispiel: Verlaufskontrolle",
       kuerzel: "vk",
       kategorie: "Beispiele",
@@ -78,7 +89,7 @@ TB.bausteine = (function () {
             "Untersucher: <i>{{Untersucher}}</i>.",
       notiz: "Zeigt Datum, Auswahl, Feld mit Vorgabe, eine Konstante und Auszeichnungen."
     });
-    S().speichern({
+    if (kuerzelFrei("mfg")) S().speichern({
       titel: "Beispiel: Kurzer Gruss",
       kuerzel: "mfg",
       kategorie: "Beispiele",
