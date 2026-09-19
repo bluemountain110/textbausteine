@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "9 · Etappe 4 in Arbeit · 18.09.2026";
+TB.FASSUNG = "9 · Etappe 4 in Arbeit · 19.09.2026";
 
 TB.speicher = (function () {
 
@@ -230,16 +230,18 @@ TB.speicher = (function () {
     return gezaehlt;
   }
 
-  // Bestehende Bausteine still mit RTF versorgen (beim App-Start).
+  // Bestehende Bausteine still mit RTF versorgen (beim App-Start) —
+  // und seit dem 19.9. selbstheilend: Wird der RTF-Erzeuger verbessert,
+  // erneuert dieser Lauf auch VERALTETE Druckformate von selbst.
   // BEWUSST ohne neuen Zeitstempel: zwei Geräte errechnen dasselbe RTF,
   // und ohne Zeitsprung entsteht daraus nie ein Konflikt-Fenster.
   function rtfNachruesten() {
     laden();
     var gezaehlt = 0;
     daten.bausteine.forEach(function (b) {
-      if (b.geloeschtAm || b.entwurf || b.textRtf) return;
+      if (b.geloeschtAm || b.entwurf) return;
       var frisch = rtfFuer(b);
-      if (!frisch) return;
+      if (!frisch || frisch === b.textRtf) return;
       merkeOffen(b.id, b.aktualisiertAm);
       b.textRtf = frisch;
       gezaehlt += 1;

@@ -550,9 +550,13 @@ TB.oberflaeche = (function () {
       if (ev.shiftKey || ev.altKey) return;
       var befehl = ev.ctrlKey || ev.metaKey;
       if (befehl && (ev.key === "f" || ev.key === "F")) {
-        if (ansicht !== "bausteine") { ansicht = "bausteine"; zeichne(); }
-        var s = document.getElementById("suchfeld");
-        if (s) { ev.preventDefault(); s.focus(); s.select(); }
+        // Nur auf der Bausteine-Seite ist Strg+F unsere Suche; auf
+        // allen anderen Seiten gehört Strg+F dem Browser (19.9.) —
+        // vorher riss es Näd aus den Einstellungen heraus.
+        if (ansicht === "bausteine") {
+          var s = document.getElementById("suchfeld");
+          if (s) { ev.preventDefault(); s.focus(); s.select(); }
+        }
       }
       if (befehl && (ev.key === "n" || ev.key === "N")) {
         ev.preventDefault();

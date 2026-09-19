@@ -207,24 +207,71 @@ TB.auszeichnung = (function () {
     return aus;
   }
 
+  // Kinderliste eines Absatzes ohne den unsichtbaren Schluss-Umbruch:
+  // Chrome hängt in Absätze oft ein <br> ans Ende, das nichts anzeigt.
+  function blockKinder(knoten) {
+    var kinder = Array.prototype.slice.call(knoten.childNodes);
+    while (kinder.length) {
+      var letzt = kinder[kinder.length - 1];
+      if (letzt.nodeType === 1 && letzt.tagName.toUpperCase() === "BR") {
+        kinder.pop(); continue;
+      }
+      if (letzt.nodeType === 3 &&
+          !String(letzt.nodeValue).replace(/[ \t\r\n]+/g, "")) {
+        kinder.pop(); continue;
+      }
+      break;
+    }
+    return kinder;
+  }
+
+  function kinderNachRtf(w, kinder, imListenpunkt) {
+    var aus = "";
+    Array.prototype.forEach.call(kinder, function (k) {
+      aus += knotenNachRtf(w, k, imListenpunkt); });
+    return aus;
+  }
+
+  // Das Zeilenmodell (19.9.): Jeder Absatz beginnt mit \par statt zu
+  // enden — so stimmt auch die nackte erste Zeile des Schreibfelds,
+  // und ein leerer Absatz (nur <br> darin) ist genau EIN Umbruch.
+  // ausHtml streicht das eine \par am Gesamtanfang wieder weg.
   function knotenNachRtf(w, knoten, imListenpunkt) {
     if (knoten.nodeType === 3) {
       return zeichen(String(knoten.nodeValue).replace(/[ \t\r\n]+/g, " "));
     }
     if (knoten.nodeType !== 1) return "";
     var name = knoten.tagName.toUpperCase();
-    var innen = "";
-    Array.prototype.forEach.call(knoten.childNodes, function (k) {
-      innen += knotenNachRtf(w, k, imListenpunkt || name === "LI"); });
 
     if (name === "BR") return "\\par ";
+    if (name === "UL" || name === "OL") {
+      var aus = "";
+      var n = 0;
+      Array.prototype.forEach.call(knoten.children, function (li) {
+        if (li.tagName.toUpperCase() !== "LI") return;
+        n += 1;
+        var marke = (name === "OL") ? zeichen(n + ".") : "\\u8226?";
+        aus += "\\par {\\pntext " + marke + "\\tab}" +
+               kinderNachRtf(w, blockKinder(li), true);
+      });
+      return aus;
+    }
+    if (name === "LI") {
+      return "\\par {\\pntext \\u8226?\\tab}" +
+             kinderNachRtf(w, blockKinder(knoten), true);
+    }
+    if (name === "P" || name === "DIV") {
+      var kinder = blockKinder(knoten);
+      if (imListenpunkt) return kinderNachRtf(w, kinder, imListenpunkt);
+      if (!kinder.length) return "\\par ";
+      return "\\par " + kinderNachRtf(w, kinder, imListenpunkt);
+    }
+
+    var innen = kinderNachRtf(w, knoten.childNodes, imListenpunkt);
     if (name === "B") return "{\\b " + innen + "}";
     if (name === "I") return "{\\i " + innen + "}";
     if (name === "U") return "{\\ul " + innen + "}";
     if (name === "S") return "{\\strike " + innen + "}";
-    if (name === "LI") return "{\\pntext\\u8226?\\tab}" + innen + "\\par ";
-    if (name === "UL" || name === "OL") return innen;
-    if (name === "P" || name === "DIV") return innen + "\\par ";
     if (name === "SPAN") {
       var vor = "", nach = "";
       var s = knoten.style || {};
@@ -251,6 +298,9 @@ TB.auszeichnung = (function () {
     var koerper = "";
     Array.prototype.forEach.call(baum.childNodes, function (k) {
       koerper += knotenNachRtf(w, k, false); });
+    // Beginnt der Inhalt mit einem Absatz, hat er ein \par vorweg —
+    // vor der ersten Zeile gehört aber keins.
+    koerper = koerper.replace(/^\\par /, "");
 
     var schrifttabelle = "{\\fonttbl";
     w.schriften.forEach(function (name, i) {
