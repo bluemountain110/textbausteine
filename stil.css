@@ -227,3 +227,6 @@ table.konstanten button:hover { background: var(--warn-grund);
 .sammel-zaehler { margin-top: 8px; }
 .idee-feld { width: 100%; min-height: 130px; font: inherit; padding: 10px;
   border: 1px solid var(--linie); border-radius: 9px; box-sizing: border-box; }
+
+/* Fassungsmarke oben auf jeder Seite (20.9.) */
+.fassung-marke { margin-left: 10px; font-size: 12px; color: #5a7075; font-weight: normal; white-space: nowrap; }

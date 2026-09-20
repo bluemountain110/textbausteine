@@ -135,6 +135,66 @@ TB.ansichtEinstellungen = (function () {
     kT.appendChild(kZurueck);
     wurzel.appendChild(kT);
 
+    // Zwischenspeicher-Kürzel des Windows-Skripts (Feinschliff 20.9.).
+    var kF = el("div", "karte");
+    kF.appendChild(el("h2", "", T().einstFaecherTitel));
+    kF.appendChild(el("p", "erklaerung", T().einstFaecherText));
+    var E = TB.einstellungen;
+    function fachZeile(beschriftung, holen, setzen) {
+      var zeile = el("div", "zeile");
+      zeile.appendChild(el("label", "", beschriftung));
+      var f = el("input"); f.type = "text"; f.value = holen();
+      f.style.maxWidth = "90px";
+      var b = el("span", "erklaerung", "");
+      function zeigeBeispiel() {
+        b.textContent = "  →  ;;" + holen() + "1 … ;;" + holen() + "9";
+      }
+      zeigeBeispiel();
+      f.addEventListener("change", function () {
+        setzen(f.value);
+        f.value = holen();
+        zeigeBeispiel();
+        var warnung = fachWarnung();
+        TB.abgleich.anstossen();
+        melde(warnung || T().gespeichert, !!warnung);
+      });
+      zeile.appendChild(f);
+      zeile.appendChild(b);
+      return zeile;
+    }
+    // Warnt, wenn beide Stämme gleich sind oder ein echtes Kürzel verdecken.
+    function fachWarnung() {
+      var m = E.fachStammMerken(), v = E.fachStammEinsetzen();
+      if (m === v) return T().fachGleich;
+      var verdeckt = [];
+      S().alleAktiven().forEach(function (b) {
+        var k = String(b.kuerzel || "").toLowerCase();
+        if (/^(.+)[1-9]$/.test(k)) {
+          var stamm = k.slice(0, -1);
+          if (stamm === m || stamm === v) verdeckt.push(";;" + k);
+        }
+      });
+      if (verdeckt.length) return T().fachVerdeckt + verdeckt.join(", ");
+      return "";
+    }
+    kF.appendChild(fachZeile(T().fachMerken, E.fachStammMerken, E.setzeFachStammMerken));
+    kF.appendChild(fachZeile(T().fachEinsetzen, E.fachStammEinsetzen, E.setzeFachStammEinsetzen));
+    var kTasten = el("select");
+    [["^!", T().fachTastenStrgAlt], ["^+", T().fachTastenStrgUmschalt],
+     ["", T().fachTastenAus]].forEach(function (w) {
+      var o = el("option", "", w[1]); o.value = w[0];
+      if (E.fachTasten() === w[0]) o.selected = true;
+      kTasten.appendChild(o);
+    });
+    kTasten.addEventListener("change", function () {
+      E.setzeFachTasten(kTasten.value); TB.abgleich.anstossen(); melde(T().gespeichert);
+    });
+    var zTasten = el("div", "zeile");
+    zTasten.appendChild(el("label", "", T().fachTastenTitel));
+    zTasten.appendChild(kTasten);
+    kF.appendChild(zTasten);
+    wurzel.appendChild(kF);
+
     // Gerätename — bleibt auf diesem Gerät.
     var kG = el("div", "karte");
     kG.appendChild(el("h2", "", T().einstGeraetTitel));

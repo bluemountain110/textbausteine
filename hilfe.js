@@ -99,6 +99,24 @@ TB.hilfe = (function () {
         ["Zwei Fassungen",
          "Wie die App: die DEV-Fassung (rotes Symbol, Testwelt) gehört nur auf den Mac, die normale (blaugrünes Symbol) in die Praxis. Sind beide auf derselben Seite aktiv, schweigt die DEV-Fassung."]
       ]],
+      ["Kürzel in Windows-Programmen — das kleine Hilfsprogramm", [
+        ["Was es ist",
+         "Ein Ordner mit einem kleinen Programm, das im Hintergrund läuft — es wird nichts installiert und es braucht keine Administratorrechte. Es holt Deine Bausteine selbst aus der Datenablage, jede Minute. Danach tippst Du in JEDEM Windows-Programm ;;kürzel und die Leertaste, und der Baustein steht formatiert da: in KISIM, in Word, in Outlook. Die App muss dafür nicht offen sein, nicht einmal der Browser."],
+        ["Einrichten",
+         "Den Ordner BausteineKuerzel aus dem Zip nach Dokumente legen und darin Start-Bausteine.cmd doppelklicken. Beim ersten Mal einmal anmelden, mit denselben Zugangsdaten wie in der App — gespeichert wird nur das Zugangszeichen, nie Dein Passwort. Damit es bei jeder Anmeldung von selbst startet: im Explorer in die Adresszeile shell:startup eintippen, Enter, und eine Verknüpfung von Start-Bausteine.cmd hineinziehen."],
+        ["Nur die Leertaste löst aus",
+         "Anders als im Browser wirkt Tab hier NIE als Auslöser — Tab wird in KISIM zum Wechseln zwischen Feldern gebraucht. Ein unbekanntes Kürzel löscht nichts und meldet sich nur unten; daran erkennst Du auch, ob das Programm überhaupt mitliest."],
+        ["Das Auswahl-Fenster",
+         "Sobald Du nach ;; den ersten Buchstaben tippst, erscheint neben der Schreibmarke eine Liste der passenden Bausteine: zuoberst die häufigsten, darunter die übrigen alphabetisch. Ein Klick fügt ein. Du kannst die Liste auch ignorieren und einfach fertig tippen. Esc schliesst sie. ;;? öffnet dieselbe Liste mit einem Suchfeld, das Titel, Kürzel, Kategorie UND den Text durchsucht."],
+        ["Lücken ausfüllen",
+         "Hat der Baustein Lücken, geht das Ausfüll-Fenster auf, mit Vorschau. Tab wandert von Feld zu Feld, Eingabetaste fügt ein, Esc bricht ab — das getippte Kürzel bleibt dabei stehen, bis wirklich eingefügt wird."],
+        ["Neue Bausteine aus KISIM holen",
+         "Text in KISIM markieren, Strg+C, dann irgendwo ;;neu tippen und Leertaste. Ein Fenster zeigt den Text zur Kontrolle (bitte auf Patientendaten achten!) und legt ihn als Entwurf in Deine App — samt Formatierung. Fertigstellen tust Du ihn später in Ruhe in der App."],
+        ["Neun Zwischenspeicher-Fächer",
+         "Wie Kopieren und Einfügen, nur neunfach: Mit Strg+C kopieren, dann ;;c1 tippen und Leertaste — der Inhalt liegt in Fach 1. Mit ;;v1 setzt Du ihn wieder ein. Tippst Du nur ;;v, zeigt das Fenster alle neun Fächer mit ihrem Inhalt. Die Fächer leben nur im Arbeitsspeicher und sind beim Beenden weg. Welche Buchstaben gelten, bestimmst Du in den Einstellungen."],
+        ["Beenden und loswerden",
+         "Rechtsklick auf das grüne Symbol unten rechts: dort stehen die Fassung, das Zwischenspeicher-Fenster, Jetzt holen, An- und Abmelden sowie Beenden. Loswerden heisst einfach: Ordner löschen. Es bleibt nichts im System zurück."]
+      ]],
       ["Einstellungen", [
         ["Name der App",
          "Der Name oben und im Fenstertitel — änderbar, wann immer Du willst."],

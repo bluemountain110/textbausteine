@@ -504,6 +504,19 @@ TB.oberflaeche = (function () {
     document.title = name + (S.WELT === "dev" ? " DEV" : "");
     document.getElementById("dev-marke").hidden = (S.WELT !== "dev");
     if (S.WELT === "dev") document.body.classList.add("dev-welt");
+    // Die Fassung steht seit dem 20.9. sichtbar oben auf jeder Seite —
+    // so sieht Näd sofort, ob die neuste Fassung geladen ist.
+    var marke = document.getElementById("fassung-marke");
+    if (!marke) {
+      marke = document.createElement("span");
+      marke.id = "fassung-marke";
+      marke.className = "fassung-marke";
+      var kopf = document.getElementById("app-name");
+      if (kopf && kopf.parentNode) kopf.parentNode.appendChild(marke);
+    }
+    marke.textContent = "Fassung " + TB.FASSUNG.split(" · ")[0] +
+      " · " + TB.FASSUNG.split(" · ").pop() +
+      (S.WELT === "dev" ? " · TESTWELT" : "");
   }
 
   function zeichne() {
