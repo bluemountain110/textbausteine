@@ -58,7 +58,10 @@ TB.einstellungen = (function () {
   // Die Tastenkombination als zweiter Weg zum Merken (ohne ;;c).
   // Gespeichert als Kürzel des Skripts: "^!" = Strg+Alt, "^+" = Strg+Umschalt,
   // "" = ausgeschaltet.
-  function fachTasten() { return S().einstellung("fachTasten", "^!"); }
+  // Vorgabe seit 11.2: Strg+Umschalt — NICHT Strg+Alt, denn Strg+Alt ist
+  // auf Schweizer und deutschen Tastaturen dasselbe wie AltGr und
+  // verschluckt sonst Zeichen wie @ (Befund Spitalrechner 21.9.).
+  function fachTasten() { return S().einstellung("fachTasten", "^+"); }
   function setzeFachTasten(w) { S().setzeEinstellung("fachTasten", w || ""); }
 
   // Die Umgebung, die der Makro-Auswerter überall bekommt.
