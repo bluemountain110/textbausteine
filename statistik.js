@@ -62,9 +62,14 @@ TB.statistik = (function () {
     return summe;
   }
 
+  // Seit 11.1: Die Gesamtzeile zaehlt ALLE Baustein-Einfuegungen (App,
+  // Skript und Erweiterung zaehlen je Baustein) — vorher nur den
+  // App-internen Funktionszaehler, was der Liste darunter widersprach.
   function gesamtEinfuegungen() {
-    var f = zusammengezaehlt("funktion")[F.eingefuegt];
-    return f ? f.anzahl : 0;
+    var summe = 0;
+    var je = zusammengezaehlt("baustein");
+    Object.keys(je).forEach(function (k) { summe += je[k].anzahl || 0; });
+    return summe;
   }
 
   // Liste der Bausteine nach Häufigkeit. Gelöschte bleiben gezählt,

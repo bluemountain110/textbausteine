@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "11.0 · Arbeitsplatz gleichziehen · 20.09.2026";
+TB.FASSUNG = "11.1 · Sammelrunde Etappe 5 · 21.09.2026";
 
 TB.speicher = (function () {
 
