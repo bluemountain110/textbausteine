@@ -115,7 +115,8 @@ TB.ansichtBearbeiten = (function () {
       varianteSchreiber = {};
       TB.einstellungen.standorte().forEach(function (ort) {
         if (varianteStart[ort] !== undefined) {
-          var kopfZeile = el("div", "feldzeile");
+          var block = el("div", "variante-block");
+          var kopfZeile = el("div", "feldzeile variante-kopf");
           kopfZeile.appendChild(el("label", "", T.varianteFeld.replace("%s", ort)));
           var weg = el("button", "leise klein", T.varianteLoeschen);
           weg.type = "button";
@@ -125,9 +126,10 @@ TB.ansichtBearbeiten = (function () {
             melde(T.varianteGeloescht);
           });
           kopfZeile.appendChild(weg);
-          variantenPlatz.appendChild(kopfZeile);
+          block.appendChild(kopfZeile);
           var feldZeile = el("div", "feldzeile");
-          variantenPlatz.appendChild(feldZeile);
+          block.appendChild(feldZeile);
+          variantenPlatz.appendChild(block);
           varianteSchreiber[ort] = TB.formatleiste.erzeuge(feldZeile, {
             wert: varianteStart[ort],
             beiAenderung: function () {
