@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "11.2 · Etappe 5 abgeschlossen · 21.09.2026";
+TB.FASSUNG = "12.0 · Etappe 6 Standort-Varianten · 22.09.2026";
 
 TB.speicher = (function () {
 
@@ -74,6 +74,17 @@ TB.speicher = (function () {
   function setzeGeraet(name) {
     var n = String(name || "").trim();
     if (n) lager.setItem(GERAETESCHLUESSEL, n);
+  }
+
+  // Der Standort dieses Geräts (Etappe 6): bleibt wie der Gerätename
+  // IMMER lokal — er beschreibt das Gerät, nicht die Daten. "" heisst:
+  // kein Standort, es gilt überall die Standardfassung.
+  var STANDORTSCHLUESSEL = "textbausteine." + WELT + ".standort";
+  function standort() { return lager.getItem(STANDORTSCHLUESSEL) || ""; }
+  function setzeStandort(name) {
+    var n = String(name || "").trim();
+    if (n) lager.setItem(STANDORTSCHLUESSEL, n);
+    else lager.removeItem(STANDORTSCHLUESSEL);
   }
 
   function laden() {
@@ -182,13 +193,45 @@ TB.speicher = (function () {
   // als textRtf mit in die Datenablage. Das Windows-Skript setzt es nur
   // noch ein. Entwürfe bekommen kein RTF.
   function rtfFuer(b) {
-    if (b.entwurf) return null;
+    if (b.entwurf || b.art === "idee") return null;
     if (typeof TB.reichtext === "undefined" ||
         typeof TB.auszeichnung === "undefined") return b.textRtf || null;
     try {
       var eingesetzt = TB.reichtext.bausteineEinsetzen(b.text || "", holenPerKuerzel);
       return TB.auszeichnung.ausHtml(eingesetzt.html);
     } catch (e) { return b.textRtf || null; }
+  }
+
+  // Etappe 6: Auch jede Standort-Fassung bekommt ihr fertiges RTF —
+  // dieselbe Regel wie beim Haupttext (die App ist der einzige
+  // RTF-Erzeuger, Lehre K2). Liefert wahr, wenn sich etwas geändert hat.
+  function rtfHtml(html) {
+    if (typeof TB.reichtext === "undefined" ||
+        typeof TB.auszeichnung === "undefined") return null;
+    try {
+      var e = TB.reichtext.bausteineEinsetzen(html || "", holenPerKuerzel);
+      return TB.auszeichnung.ausHtml(e.html);
+    } catch (e2) { return null; }
+  }
+  function variantenRtfErneuern(b) {
+    if (b.entwurf || b.art === "idee") return false;
+    if (!b.varianten || typeof b.varianten !== "object") return false;
+    var geaendert = false;
+    Object.keys(b.varianten).forEach(function (ort) {
+      var v = b.varianten[ort];
+      if (!v || typeof v !== "object" || !v.text) return;
+      var frisch = rtfHtml(v.text);
+      if (frisch && frisch !== v.textRtf) { v.textRtf = frisch; geaendert = true; }
+    });
+    return geaendert;
+  }
+  // Enthält irgendeine Fassung (Standard oder Standort) diesen Text?
+  function inIrgendeinerFassung(b, pruefer) {
+    if (pruefer(String(b.text || ""))) return true;
+    var v = b.varianten;
+    if (!v || typeof v !== "object") return false;
+    return Object.keys(v).some(function (ort) {
+      return v[ort] && pruefer(String(v[ort].text || "")); });
   }
 
   function regexSicher(s) {
@@ -208,14 +251,15 @@ TB.speicher = (function () {
       var neue = {};
       daten.bausteine.forEach(function (x) {
         if (x.geloeschtAm || x.entwurf) return;
-        var text = String(x.text || "");
         var trifft = Object.keys(offen).some(function (k) {
-          return new RegExp("\\{\\{\\s*Baustein\\s*:\\s*" + regexSicher(k) +
-                            "\\s*\\}\\}", "i").test(text);
+          var muster = new RegExp("\\{\\{\\s*Baustein\\s*:\\s*" + regexSicher(k) +
+                                  "\\s*\\}\\}", "i");
+          return inIrgendeinerFassung(x, function (t) { return muster.test(t); });
         });
         if (!trifft) return;
         var frisch = rtfFuer(x);
-        if (frisch === x.textRtf) return;
+        var variantenNeu = variantenRtfErneuern(x);
+        if (frisch === x.textRtf && !variantenNeu) return;
         merkeOffen(x.id, x.aktualisiertAm);
         x.textRtf = frisch;
         x.aktualisiertAm = jetztISO();
@@ -239,11 +283,12 @@ TB.speicher = (function () {
     laden();
     var gezaehlt = 0;
     daten.bausteine.forEach(function (b) {
-      if (b.geloeschtAm || b.entwurf) return;
+      if (b.geloeschtAm || b.entwurf || b.art === "idee") return;
       var frisch = rtfFuer(b);
-      if (!frisch || frisch === b.textRtf) return;
+      var variantenNeu = variantenRtfErneuern(b);
+      if ((!frisch || frisch === b.textRtf) && !variantenNeu) return;
       merkeOffen(b.id, b.aktualisiertAm);
-      b.textRtf = frisch;
+      if (frisch) b.textRtf = frisch;
       gezaehlt += 1;
     });
     if (gezaehlt) sichern();
@@ -266,6 +311,7 @@ TB.speicher = (function () {
       if (eintrag[f] !== undefined) b[f] = eintrag[f];
     });
     b.textRtf = rtfFuer(b);
+    variantenRtfErneuern(b);
     b.aktualisiertAm = jetztISO();
     sichern();
     rtfAbhaengigeNachrechnen(b.kuerzel);
@@ -448,6 +494,7 @@ TB.speicher = (function () {
     WELT: WELT,
     laden: laden, sichern: sichern, neueKennung: neueKennung,
     geraet: geraet, setzeGeraet: setzeGeraet,
+    standort: standort, setzeStandort: setzeStandort,
     alle: alle, alleAktiven: alleAktiven, allePapierkorb: allePapierkorb,
     holen: holen, holenPerKuerzel: holenPerKuerzel,
     speichern: speichern, merkeBenutzt: merkeBenutzt,

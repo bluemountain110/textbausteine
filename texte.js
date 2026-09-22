@@ -310,6 +310,40 @@ TB.T = {
   formVorgabe: "(Vorgabe)",
   formHinweisZiele: "Nicht jedes Ziel kann alles: Axenita kennt fett, kursiv, unterstrichen, Schriftfarbe und Listen — Schriftgrösse und Markierung verwirft es. KISIM und Word können alles.",
 
+  // Standort-Varianten (Etappe 6)
+  standortTitel: "Standort dieses Geräts",
+  standortText: "Diese Einstellung bleibt auf DIESEM Gerät — sie wird bewusst nicht abgeglichen, denn der Spitalrechner und der Praxisrechner sollen verschieden bleiben. Ein Baustein mit Standort-Fassungen liefert dann automatisch die passende Fassung; alle anderen Bausteine bleiben, wie sie sind.",
+  standortKeiner: "(kein Standort — immer die Standardfassung)",
+  standortGespeichert: "Standort gemerkt — gilt nur auf diesem Gerät.",
+  variantenTitel: "Standort-Fassungen",
+  variantenText: "Braucht dieser Baustein an einem Arbeitsort einen anderen Wortlaut (Briefkopf, Medikamentenliste), bekommt er hier eine eigene Fassung je Standort. Ohne eigene Fassung gilt überall die Standardfassung oben.",
+  varianteAnlegen: "Fassung für %s anlegen",
+  varianteLoeschen: "Fassung löschen",
+  varianteFeld: "Fassung: %s",
+  varianteGeloescht: "Standort-Fassung entfernt — es gilt wieder die Standardfassung.",
+  markeVarianten: "Standorte",
+  benutztVariante: " — Fassung %s",
+  fehlerVariante: "Fassung %s: %f",
+
+  // Ideen-Speicher (Etappe 6)
+  bereichIdeen: "Ideen",
+  ideenTitel: "Ideen-Speicher",
+  ideenText: "Wünsche und Ideen für die Weiterentwicklung dieser App — damit nichts verloren geht. Von hier wandern sie als Dokument in den Bau-Chat. (Für halbfertige BAUSTEINE gibt es weiterhin die Entwürfe.)",
+  ideenNeuTitel: "Kurzer Titel der Idee",
+  ideenNeuText: "Worum geht es? (so viel oder wenig Du willst)",
+  ideenFesthalten: "Idee festhalten",
+  ideenLeer: "Noch keine Ideen. Oben die erste festhalten.",
+  ideenGesichert: "Idee festgehalten — auf allen Geräten.",
+  ideenEinplanen: "eingeplant",
+  ideenWiederOffen: "wieder offen",
+  ideenVerwerfen: "Verwerfen",
+  ideenVerworfen: "Idee in den Papierkorb gelegt.",
+  ideenOffen: "Offene Ideen",
+  ideenEingeplant: "Eingeplant",
+  ideenExport: "Als Dokument für den Bau-Chat sichern (.md)",
+  ideenExportiert: "Dokument erzeugt — im Downloads-Ordner.",
+  ideenStandTitel: "Ideen-Bericht",
+
   // Allgemein
   schliessen: "Schliessen",
   ok: "OK"

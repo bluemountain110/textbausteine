@@ -38,6 +38,27 @@ TB.ansichtEinstellungen = (function () {
     z2.appendChild(fFormat); k1.appendChild(z2);
     wurzel.appendChild(k1);
 
+    // ---- Standort dieses Geräts (Etappe 6) ----------------------------
+    var kS = el("div", "karte");
+    kS.appendChild(el("h2", "", T().standortTitel));
+    kS.appendChild(el("p", "erklaerung", T().standortText));
+    var zS = el("div", "feldzeile");
+    zS.appendChild(el("label", "", T().standortTitel));
+    var wahlS = el("select");
+    var keiner = el("option", "", T().standortKeiner); keiner.value = "";
+    wahlS.appendChild(keiner);
+    E.standorte().forEach(function (ort) {
+      var o = el("option", "", ort); o.value = ort; wahlS.appendChild(o);
+    });
+    wahlS.value = E.standort();
+    wahlS.addEventListener("change", function () {
+      E.setzeStandort(wahlS.value);
+      TB.oberflaeche.setzeKopf();
+      melde(T().standortGespeichert);
+    });
+    zS.appendChild(wahlS); kS.appendChild(zS);
+    wurzel.appendChild(kS);
+
     // Anmeldung und Abgleich stehen in ansicht-wolke.js — sie bekommen
     // hier ihren Platz, damit alles Einstellbare an einem Ort ist.
     TB.ansichtWolke.zeichneKarten(wurzel);

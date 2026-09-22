@@ -18,10 +18,37 @@ TB.bausteine = (function () {
 
   // Die fertigen Bausteine — das, was die Arbeitsliste zeigt.
   function alleFertigen() {
-    return S().alleAktiven().filter(function (b) { return !b.entwurf; });
+    return S().alleAktiven().filter(function (b) {
+      return !b.entwurf && b.art !== "idee"; });
   }
   function alleEntwuerfe() {
-    return S().alleAktiven().filter(function (b) { return !!b.entwurf; });
+    return S().alleAktiven().filter(function (b) {
+      return !!b.entwurf && b.art !== "idee"; });
+  }
+  // Etappe 6: Ideen für die WEITERENTWICKLUNG der App — eigene Art,
+  // dieselbe Tabelle (darum synchron auf allen Geräten, mit Papierkorb).
+  function alleIdeen() {
+    return S().alleAktiven().filter(function (b) { return b.art === "idee"; });
+  }
+
+  // Etappe 6: Welche Fassung gilt auf DIESEM Gerät? Hat der Baustein
+  // für den eingestellten Standort eine eigene Fassung mit Text, kommt
+  // sie — sonst IMMER die Standardfassung. Nichts scheitert still.
+  function fassungFuer(b, standortName) {
+    var ort = (standortName !== undefined) ? standortName : S().standort();
+    var v = b && b.varianten;
+    if (ort && v && typeof v === "object" && v[ort] &&
+        typeof v[ort] === "object" && String(v[ort].text || "").trim()) {
+      return { text: v[ort].text, textRtf: v[ort].textRtf || null, variante: ort };
+    }
+    return { text: (b && b.text) || "", textRtf: (b && b.textRtf) || null,
+             variante: null };
+  }
+  function hatVarianten(b) {
+    var v = b && b.varianten;
+    if (!v || typeof v !== "object") return false;
+    return Object.keys(v).some(function (ort) {
+      return v[ort] && String(v[ort].text || "").trim(); });
   }
 
   // Prüfen VOR dem Speichern. Liefert eine Liste von Beanstandungen —
@@ -47,8 +74,16 @@ TB.bausteine = (function () {
     return alleFertigen().filter(function (x) {
       if (kategorie && (x.kategorie || "") !== kategorie) return false;
       if (!b) return true;
-      return [x.titel, x.kuerzel, x.kategorie, TB.auszeichnung.reinerText(x.text), x.notiz]
-        .some(function (f) { return (f || "").toLowerCase().indexOf(b) !== -1; });
+      var felder = [x.titel, x.kuerzel, x.kategorie,
+                    TB.auszeichnung.reinerText(x.text), x.notiz];
+      if (x.varianten && typeof x.varianten === "object") {
+        Object.keys(x.varianten).forEach(function (ort) {
+          var v = x.varianten[ort];
+          if (v && v.text) felder.push(TB.auszeichnung.reinerText(v.text));
+        });
+      }
+      return felder.some(function (f) {
+        return (f || "").toLowerCase().indexOf(b) !== -1; });
     }).sort(function (a2, b2) {
       return (a2.titel || "").localeCompare(b2.titel || "", "de");
     });
@@ -99,6 +134,8 @@ TB.bausteine = (function () {
   }
 
   return { alleFertigen: alleFertigen, alleEntwuerfe: alleEntwuerfe,
+           alleIdeen: alleIdeen, fassungFuer: fassungFuer,
+           hatVarianten: hatVarianten,
            pruefe: pruefe, suche: suche, kategorien: kategorien,
            zuletztBenutzt: zuletztBenutzt, beispieleEinfuegen: beispieleEinfuegen };
 })();

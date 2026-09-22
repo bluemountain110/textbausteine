@@ -1,15 +1,16 @@
 // Datei: seite.js
 // Projekt: Textbausteine — Teil: Chrome-Erweiterung
 // Zweck: Das Herzstück auf der Seite. Es liest auf EINGESCHALTETEN
-//        Seiten die letzten Tastendrücke mit, erkennt ;;kürzel + Leer-
-//        oder Tab-Taste und setzt den Baustein direkt an der
+//        Seiten die letzten Tastendrücke mit, erkennt ;;kürzel und
+//        NUR die Leertaste als Auslöser (Tab gehört dem Feldwechsel,
+//        Entscheid aus Etappe 4) und setzt den Baustein direkt an der
 //        Schreibmarke ein: in einfachen Feldern als reinen Text, in
 //        formatierten Editoren (auch dem Axenita-Editor im Rahmen) als
-//        formatiertes HTML. ;;? öffnet die Suche, Bausteine mit Lücken
-//        das Ausfüll-Fenster (einblendung.js). Es speichert und
-//        protokolliert NICHTS von dem, was auf der Seite steht — im
-//        Arbeitsspeicher liegt nur der Blick auf die Zeichen unmittelbar
-//        vor der Schreibmarke, und der verfällt mit jedem Tastendruck.
+//        formatiertes HTML. Ab ;; plus einem Zeichen zeigt es das
+//        Auswahl-Fenster neben dem Feld (einblendung.js), ;;? öffnet
+//        die Suche, ;;c1–;;c9 und ;;v1–;;v9 gehören den Fächern und
+//        ;;neu dem Entwurf (faecher.js). Es speichert und protokolliert
+//        NICHTS von dem, was auf der Seite steht.
 //        GRUNDSATZ: keine Patientendaten in Speicher, Ablage oder Netz.
 
 "use strict";
@@ -21,7 +22,7 @@ TB.kuerzelweg = (function () {
 
   // ";;kürzel" unmittelbar vor der Schreibmarke?
   function findeAusloeser(textVor) {
-    var m = /;;([^\s;]{1,64})$/.exec(String(textVor || ""));
+    var m = /;;([^\s;?]{1,64})$/.exec(String(textVor || ""));
     if (!m) return null;
     return { kuerzel: m[1], laenge: m[0].length, text: m[0] };
   }
@@ -44,8 +45,38 @@ TB.kuerzelweg = (function () {
     if (p === -1) return { text: t, position: -1 };
     return { text: t.split(SENTINEL).join(""), position: p };
   }
+  // Fach gemeint? NUR Stamm plus Ziffer (;;v1 bis ;;v9) zählt — das
+  // blosse ;;v zeigt die Bausteine (Vorrangregel vom 20.9.).
+  function fachNummer(wort, stamm) {
+    var m = /^(.+)([1-9])$/.exec(String(wort || "").toLowerCase());
+    if (!m) return 0;
+    if (m[1] !== String(stamm || "").toLowerCase()) return 0;
+    return Number(m[2]);
+  }
+  // Häufigste fünf zuoberst, danach alphabetisch — wie im Windows-Skript.
+  function ordne(passend, anzahlVon) {
+    var haeufig = [], uebrige = [];
+    (passend || []).forEach(function (b) {
+      if ((anzahlVon(b.id) || 0) > 0) haeufig.push(b); else uebrige.push(b);
+    });
+    haeufig.sort(function (a, b) { return (anzahlVon(b.id) || 0) - (anzahlVon(a.id) || 0); });
+    function titel(x) { return String(x.titel || "").toLowerCase(); }
+    uebrige.sort(function (a, b) { return titel(a) < titel(b) ? -1 : titel(a) > titel(b) ? 1 : 0; });
+    while (haeufig.length > 5) uebrige.push(haeufig.pop());
+    uebrige.sort(function (a, b) { return titel(a) < titel(b) ? -1 : titel(a) > titel(b) ? 1 : 0; });
+    return { haeufig: haeufig, uebrige: uebrige };
+  }
+  // Präfix-Filter wie im Skript: Kürzel ODER Titel beginnt damit.
+  function passtPraefix(b, praefix) {
+    var p = String(praefix || "").toLowerCase();
+    if (!p) return true;
+    var k = String(b.kuerzel || "").toLowerCase();
+    var t = String(b.titel || "").toLowerCase();
+    return k.indexOf(p) === 0 || t.indexOf(p) === 0;
+  }
   return { findeAusloeser: findeAusloeser, endetMitAufruf: endetMitAufruf,
            baueKarte: baueKarte, textMitCursor: textMitCursor,
+           fachNummer: fachNummer, ordne: ordne, passtPraefix: passtPraefix,
            SENTINEL: SENTINEL };
 })();
 
@@ -53,14 +84,32 @@ TB.kuerzelweg = (function () {
 if (typeof document !== "undefined") (function () {
 
   var KW = TB.kuerzelweg;
-  var zustand = { bausteine: [], karte: {}, einstellungen: {} };
+  var zustand = { bausteine: [], karte: {}, einstellungen: {}, statistik: {} };
+  TB.seite = { zustand: zustand };
 
+  // Etappe 6: Standort-Fassungen werden GLEICH BEIM LADEN aufgelöst —
+  // ein einziger Ort, und alles danach (Kürzel, Auswahl-Fenster,
+  // ;;?-Suche, {{Baustein:…}}) arbeitet automatisch mit der richtigen
+  // Fassung. Das gespeicherte Original bleibt unberührt (Kopie).
+  // Vorbelegung ohne Wahl: "Praxis Neuromed" (Entscheid W1, 22.9.).
+  function fassungAufloesen(b, ort) {
+    var v = b && b.varianten;
+    if (!ort || !v || typeof v !== "object" || !v[ort] ||
+        !String((v[ort] || {}).text || "").trim()) return b;
+    var kopie = {};
+    Object.keys(b).forEach(function (f) { kopie[f] = b[f]; });
+    kopie.text = v[ort].text;
+    return kopie;
+  }
   function ladeDaten() {
     if (typeof chrome === "undefined" || !chrome.storage) return;
-    chrome.storage.local.get(["bausteine", "einstellungen"]).then(function (o) {
-      zustand.bausteine = o.bausteine || [];
+    chrome.storage.local.get(["bausteine", "einstellungen", "statistik", "standort"]).then(function (o) {
+      var ort = (o.standort === undefined) ? "Praxis Neuromed" : o.standort;
+      zustand.bausteine = (o.bausteine || []).map(function (b) {
+        return fassungAufloesen(b, ort); });
       zustand.karte = KW.baueKarte(zustand.bausteine);
       zustand.einstellungen = o.einstellungen || {};
+      zustand.statistik = (o.statistik && o.statistik.bausteine) || {};
     });
   }
   if (typeof chrome !== "undefined" && chrome.storage) {
@@ -86,6 +135,22 @@ if (typeof document !== "undefined") (function () {
       }
     };
   }
+  TB.seite.umgebung = umgebung;
+
+  function anzahlVon(id) {
+    var e = zustand.statistik[id];
+    return e ? (e.anzahl || 0) : 0;
+  }
+
+  // Die Fächer-Buchstaben kommen aus den App-Einstellungen (auf allen
+  // Geräten gleich; Vorgabe c wie Kopieren und v wie Einsetzen).
+  function fachStamm(welcher) {
+    var s = zustand.einstellungen[welcher === "merken"
+      ? "fachStammMerken" : "fachStammEinsetzen"];
+    var vorgabe = welcher === "merken" ? "c" : "v";
+    return String(s || vorgabe).trim().toLowerCase() || vorgabe;
+  }
+  TB.seite.fachStamm = fachStamm;
 
   // Das Fenster fürs Einblenden: das oberste erreichbare — dort sieht
   // man es auch, wenn getippt im Editor-Rahmen wurde.
@@ -93,6 +158,7 @@ if (typeof document !== "undefined") (function () {
     try { void window.top.document.body; return window.top.document; }
     catch (e) { return document; }
   }
+  TB.seite.obersteTuer = obersteTuer;
 
   // Dev schweigt, wenn die normale Erweiterung auf derselben Seite ist —
   // sonst würde ein Kürzel doppelt ersetzt.
@@ -114,6 +180,7 @@ if (typeof document !== "undefined") (function () {
   function meldung(text, fehler) {
     TB.einblendung.toast(obersteTuer(), text, fehler);
   }
+  TB.seite.meldung = meldung;
 
   function zaehle(id) {
     if (typeof chrome === "undefined" || !chrome.storage) return;
@@ -152,6 +219,7 @@ if (typeof document !== "undefined") (function () {
     }
     return null;
   }
+  TB.seite.ortErmitteln = ortErmitteln;
 
   function entferneVorDerMarke(ort, laenge) {
     if (ort.art === "feld") {
@@ -163,13 +231,24 @@ if (typeof document !== "undefined") (function () {
       var r = ort.doc.createRange();
       r.setStart(ort.knoten, ort.offset - laenge);
       r.setEnd(ort.knoten, ort.offset);
-      r.deleteContents();
       var sel = ort.doc.getSelection();
-      sel.removeAllRanges(); r.collapse(true); sel.addRange(r);
+      sel.removeAllRanges(); sel.addRange(r);
+      // Loeschen ueber den Editor-Befehl, nicht ueber die rohe Struktur:
+      // Wird das getippte Kuerzel in einer frisch begonnenen Zeile
+      // entfernt, hielte die rohe Loeschung die Schreibmarke nicht in
+      // der Zeile — sie spraenge in die Zeile darueber und die
+      // Eingabetaste waere annulliert (Befund 21.9., Fach-Einsetzen).
+      var ok = false;
+      try { ok = ort.doc.execCommand("delete"); } catch (e) { ok = false; }
+      if (!ok) {
+        r.deleteContents();
+        sel.removeAllRanges(); r.collapse(true); sel.addRange(r);
+      }
       return true;
     }
     return false;
   }
+  TB.seite.entferneVorDerMarke = entferneVorDerMarke;
 
   function schreibeText(ort, roher) {
     var c = KW.textMitCursor(roher);
@@ -185,6 +264,7 @@ if (typeof document !== "undefined") (function () {
     }
     return schreibeHtml(ort, null, c.text);
   }
+  TB.seite.schreibeText = schreibeText;
 
   function schreibeHtml(ort, html, ersatzText) {
     var doc = ort.doc, ok = false;
@@ -215,6 +295,7 @@ if (typeof document !== "undefined") (function () {
     }
     return ok;
   }
+  TB.seite.schreibeHtml = schreibeHtml;
 
   // Rettungsweg: konnte nicht eingesetzt werden -> Zwischenablage.
   function inZwischenablage(erg) {
@@ -274,6 +355,7 @@ if (typeof document !== "undefined") (function () {
       return ort;
     };
   }
+  TB.seite.halteStelle = halteStelle;
 
   function starteBaustein(ort, baustein, urspruenglich) {
     var u = umgebung();
@@ -300,6 +382,7 @@ if (typeof document !== "undefined") (function () {
       }
     });
   }
+  TB.seite.starteBaustein = starteBaustein;
 
   function starteSuche(ort) {
     var zurueck = halteStelle(ort);
@@ -310,31 +393,103 @@ if (typeof document !== "undefined") (function () {
     });
   }
 
+  // ---- Auswahl-Fenster beim Tippen (neu in Etappe 5) --------------------
+  // Ab ;; plus einem Zeichen erscheint neben dem Feld die Liste:
+  // häufigste fünf zuoberst, dann alphabetisch. Klick fügt ein, Weiter-
+  // tippen verfeinert, Esc schliesst. Es stiehlt keinen Fokus. Bei
+  // Stamm plus Ziffer (;;v1, ;;c1) zeigt es die neun Fächer.
+  function panelNachziehen(doc, ziel) {
+    var ort = ortErmitteln(doc, ziel);
+    if (!ort) { TB.einblendung.zuVorschlag(); return; }
+    var m = KW.findeAusloeser(ort.textVor);
+    if (!m) { TB.einblendung.zuVorschlag(); return; }
+    var wort = m.kuerzel.toLowerCase();
+    var nE = KW.fachNummer(wort, fachStamm("einsetzen"));
+    var nM = KW.fachNummer(wort, fachStamm("merken"));
+    if (nE || nM) {
+      TB.faecher.panelFaecher(doc, ziel, m, nM > 0);
+      return;
+    }
+    var passend = zustand.bausteine.filter(function (b) {
+      return KW.passtPraefix(b, wort);
+    });
+    var geordnet = KW.ordne(passend, anzahlVon);
+    TB.einblendung.oeffneVorschlag(doc, ziel, {
+      haeufig: geordnet.haeufig, uebrige: geordnet.uebrige,
+      beiWahl: function (b) {
+        var frisch = ortErmitteln(doc, ziel);
+        if (!frisch) return;
+        var m2 = KW.findeAusloeser(frisch.textVor);
+        if (m2 && entferneVorDerMarke(frisch, m2.laenge)) {
+          starteBaustein(ortErmitteln(doc, ziel) || frisch, b, m2 ? m2.text : null);
+        }
+      }
+    });
+  }
+
   // ---- Tastendruck -------------------------------------------------------
   function beiTaste(e, doc) {
     if (e.defaultPrevented || e.isComposing) return;
     if (devMussSchweigen()) return;
-    if (e.key !== " " && e.key !== "Tab" && e.key !== "?") return;
+    if (e.key === "Escape" && TB.einblendung.vorschlagOffen()) {
+      e.preventDefault(); e.stopPropagation();
+      TB.einblendung.zuVorschlag();
+      return;
+    }
+    if (e.key !== " " && e.key !== "?") return;
     var ort = ortErmitteln(doc, e.target);
     if (!ort) return;
 
     if (e.key === "?" && KW.endetMitAufruf(ort.textVor)) {
       e.preventDefault(); e.stopPropagation();
+      TB.einblendung.zuVorschlag();
       if (entferneVorDerMarke(ort, 2)) starteSuche(ortErmitteln(doc, e.target) || ort);
       return;
     }
-    if (e.key !== " " && e.key !== "Tab") return;
+    if (e.key !== " ") return;
     var m = KW.findeAusloeser(ort.textVor);
     if (!m) return;
-    var b = zustand.karte[m.kuerzel.toLowerCase()];
+    var wort = m.kuerzel.toLowerCase();
+    var b = zustand.karte[wort];
+    // ;;neu und die Fächer greifen nur, wenn KEIN echter Baustein das
+    // Kürzel trägt — ein echtes Kürzel hat immer Vorrang (20.9.).
+    if (!b && wort === "neu") {
+      e.preventDefault(); e.stopPropagation();
+      TB.einblendung.zuVorschlag();
+      if (entferneVorDerMarke(ort, m.laenge)) TB.faecher.neuStarten(doc, e.target);
+      return;
+    }
+    if (!b) {
+      var nM = KW.fachNummer(wort, fachStamm("merken"));
+      if (nM) {
+        e.preventDefault(); e.stopPropagation();
+        TB.einblendung.zuVorschlag();
+        if (entferneVorDerMarke(ort, m.laenge)) TB.faecher.merken(doc, e.target, nM);
+        return;
+      }
+      var nE = KW.fachNummer(wort, fachStamm("einsetzen"));
+      if (nE) {
+        e.preventDefault(); e.stopPropagation();
+        TB.einblendung.zuVorschlag();
+        TB.faecher.einsetzen(doc, e.target, nE, m.laenge);
+        return;
+      }
+    }
     if (!b) {
       meldung(TB.TE.unbekanntesKuerzel.replace("%s", m.kuerzel), false);
       return; // die Leertaste läuft normal weiter
     }
     e.preventDefault(); e.stopPropagation();
+    TB.einblendung.zuVorschlag();
     if (!entferneVorDerMarke(ort, m.laenge)) return;
     var frisch = ortErmitteln(doc, e.target) || ort;
     starteBaustein(frisch, b, m.text);
+  }
+
+  // Nach jedem Tippen (auch Backspace) das Auswahl-Fenster nachziehen.
+  function beiEingabe(e, doc) {
+    if (devMussSchweigen()) return;
+    panelNachziehen(doc, e.target);
   }
 
   // ---- Anbinden: dieses Dokument und alle erreichbaren Rahmen ----------
@@ -344,6 +499,10 @@ if (typeof document !== "undefined") (function () {
     gebunden.add(doc);
     prodMarkeSetzen(doc);
     doc.addEventListener("keydown", function (e) { beiTaste(e, doc); }, true);
+    doc.addEventListener("input", function (e) { beiEingabe(e, doc); }, true);
+    doc.addEventListener("mousedown", function (e) {
+      if (!TB.einblendung.imVorschlag(e.target)) TB.einblendung.zuVorschlag();
+    }, true);
   }
   function rahmenSuchen(doc) {
     binde(doc);

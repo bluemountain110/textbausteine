@@ -170,12 +170,63 @@ TB.selbsttest = (function () {
     return faelle;
   }
 
+  // Etappe 6: Standort-Fassungen — mit einem WEGWERF-Baustein, der nach
+  // der Prüfung sofort endgültig entfernt wird (er verlässt das Gerät
+  // nie: erst nach dem Test würde der Abgleich angestossen).
+  function pruefeVarianten() {
+    var faelle = [];
+    var S = TB.speicher, B = TB.bausteine;
+    var kennung = S.neueKennung();
+    var b = S.speichern({ id: kennung, titel: "Selbsttest Variante",
+      kuerzel: "", kategorie: "Selbsttest",
+      text: "Standard {{Datum}}",
+      varianten: { "Spital Limmattal": { text: "Spitalfassung {{Datum}}" } } });
+    try {
+      var fS = B.fassungFuer(b, "Spital Limmattal");
+      faelle.push({ name: "Standort mit eigener Fassung bekommt sie",
+        ok: fS.variante === "Spital Limmattal" && /Spitalfassung/.test(fS.text),
+        detail: fS.variante || "Standard geliefert" });
+      var fP = B.fassungFuer(b, "Praxis Neuromed");
+      faelle.push({ name: "Standort OHNE eigene Fassung bekommt die Standardfassung",
+        ok: fP.variante === null && /Standard/.test(fP.text),
+        detail: fP.variante || "" });
+      var fO = B.fassungFuer(b, "");
+      faelle.push({ name: "Gerät ohne Standort bekommt die Standardfassung",
+        ok: fO.variante === null && /Standard/.test(fO.text), detail: "" });
+      var frisch = S.holen(kennung);
+      var v = frisch.varianten["Spital Limmattal"];
+      faelle.push({ name: "Standort-Fassung hat beim Speichern ihr RTF bekommen",
+        ok: !!(v && v.textRtf), detail: v && v.textRtf ? "" : "textRtf fehlt" });
+      var treffer = B.suche("Spitalfassung", "").some(function (x) {
+        return x.id === kennung; });
+      faelle.push({ name: "Suche findet Text in Standort-Fassungen",
+        ok: treffer, detail: treffer ? "" : "nicht gefunden" });
+      var ex = S.exportObjekt();
+      var mit = ex.bausteine.some(function (x) {
+        return x.id === kennung && x.varianten &&
+               x.varianten["Spital Limmattal"]; });
+      faelle.push({ name: "Export nimmt Standort-Fassungen mit",
+        ok: mit, detail: mit ? "" : "varianten fehlen im Export" });
+    } finally {
+      S.endgueltigLoeschen([kennung]);
+    }
+    var idee = S.speichern({ id: S.neueKennung(), art: "idee",
+      titel: "Selbsttest Idee", text: "nur ein Test" });
+    var unsichtbar = !TB.bausteine.alleFertigen().some(function (x) {
+      return x.id === idee.id; });
+    S.endgueltigLoeschen([idee.id]);
+    faelle.push({ name: "Ideen erscheinen nie in der Bausteinliste",
+      ok: unsichtbar, detail: unsichtbar ? "" : "Idee in der Liste!" });
+    return faelle;
+  }
+
   function alleTests() {
     return [].concat(
       pruefeRechnen().map(function (f) { f.gruppe = "Rechnen"; return f; }),
       pruefeBestand().map(function (f) { f.gruppe = "Datenbestand"; return f; }),
       pruefeRundreise().map(function (f) { f.gruppe = "Rundreise"; return f; }),
-      pruefeAbgleich().map(function (f) { f.gruppe = "Abgleich"; return f; })
+      pruefeAbgleich().map(function (f) { f.gruppe = "Abgleich"; return f; }),
+      pruefeVarianten().map(function (f) { f.gruppe = "Standort-Fassungen"; return f; })
     );
   }
 

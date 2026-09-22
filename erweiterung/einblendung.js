@@ -1,20 +1,22 @@
 // Datei: einblendung.js
 // Projekt: Textbausteine — Teil: Chrome-Erweiterung
-// Zweck: Die drei Einblendungen, die die Erweiterung in eine Seite
-//        legen kann: das Lücken-Fenster (Felder und Auswahlen eines
-//        Bausteins abfragen, mit Vorschau), das Such-Fenster (;;?)
-//        und die kleine Meldung am unteren Rand. Alles wird direkt in
-//        die Seite gezeichnet und mit dem Schliessen restlos entfernt —
-//        Eingaben aus den Lücken werden nirgends behalten.
-//        Bedienung ohne Maus: Tab wandert, Eingabetaste fügt ein,
-//        Esc bricht ab. GRUNDSATZ: nichts wird gespeichert.
+// Zweck: Alles, was die Erweiterung in eine Seite legen kann: das
+//        Lücken-Fenster (Felder und Auswahlen abfragen, mit Vorschau),
+//        das Such-Fenster (;;? — sucht seit Etappe 5 auch im TEXT der
+//        Bausteine), das Auswahl-Fenster beim Tippen (häufigste fünf
+//        zuoberst, dann alphabetisch, Klick fügt ein — es stiehlt nie
+//        den Fokus), das Entwurf-Fenster (;;neu) und die kleine
+//        Meldung am unteren Rand. Alles wird direkt in die Seite
+//        gezeichnet und mit dem Schliessen restlos entfernt.
+//        GRUNDSATZ: nichts wird gespeichert, keine Patientendaten.
 
 "use strict";
 window.TB = window.TB || {};
 
 TB.einblendung = (function () {
 
-  var AKTIV = null; // höchstens eine Einblendung gleichzeitig
+  var AKTIV = null;     // höchstens ein Fenster mit Decke gleichzeitig
+  var VORSCHLAG = null; // das Auswahl-Fenster beim Tippen (ohne Decke)
 
   function zu() {
     if (AKTIV && AKTIV.parentNode) AKTIV.parentNode.removeChild(AKTIV);
@@ -23,6 +25,7 @@ TB.einblendung = (function () {
 
   function baue(doc, klasse) {
     zu();
+    zuVorschlag();
     var decke = doc.createElement("div");
     decke.className = "tbx-decke";
     var karte = doc.createElement("div");
@@ -128,6 +131,9 @@ TB.einblendung = (function () {
 
   // ---- Such-Fenster (;;?) -------------------------------------------------
   // opt: { bausteine, beiWahl(baustein), beiAbbruch }
+  // Seit Etappe 5 sucht es auch im Text der Bausteine (wie das
+  // Windows-Skript). Der reine Text wird beim Öffnen einmal je
+  // Baustein gebildet, nicht bei jedem Tastendruck.
   function oeffneSuche(doc, opt) {
     var karte = baue(doc, "tbx-suche");
     karte.appendChild(el(doc, "div", "tbx-titel", TB.TE.sucheTitel));
@@ -139,11 +145,18 @@ TB.einblendung = (function () {
     karte.appendChild(liste);
 
     var treffer = [], aktiv = 0;
+    var textVon = {};
+    (opt.bausteine || []).forEach(function (b) {
+      try { textVon[b.id] = TB.auszeichnung.reinerText(b.text || "").toLowerCase(); }
+      catch (e) { textVon[b.id] = ""; }
+    });
 
     function passt(b, begriff) {
-      return [b.titel, b.kuerzel, b.kategorie].some(function (f) {
+      var kopf = [b.titel, b.kuerzel, b.kategorie].some(function (f) {
         return String(f || "").toLowerCase().indexOf(begriff) !== -1;
       });
+      if (kopf) return true;
+      return (textVon[b.id] || "").indexOf(begriff) !== -1;
     }
     function zeichne() {
       var begriff = feld.value.toLowerCase().trim();
@@ -183,6 +196,181 @@ TB.einblendung = (function () {
     feld.focus();
   }
 
+  // Wo genau steht die Schreibmarke? Liefert {x, oben, unten} in
+  // Fenster-Koordinaten des Tipp-Dokuments. Im formatierten Bereich
+  // fragt der Browser das direkt; in einfachen Feldern (input,
+  // textarea) kennt er es nicht — darum wird der Feldtext bis zur
+  // Marke in eine unsichtbare Spiegel-Kopie mit denselben Schrift-
+  // und Umbruch-Eigenschaften gelegt und dort gemessen.
+  function caretStelle(doc, ziel) {
+    try {
+      if (ziel && (ziel.tagName === "INPUT" || ziel.tagName === "TEXTAREA")) {
+        return caretImFeld(doc, ziel);
+      }
+      var sel = doc.getSelection();
+      if (sel && sel.rangeCount) {
+        var rr = sel.getRangeAt(0).getBoundingClientRect();
+        if (rr && (rr.left || rr.top || rr.bottom)) {
+          return { x: rr.left, oben: rr.top, unten: rr.bottom };
+        }
+      }
+    } catch (e) { }
+    if (ziel && ziel.getBoundingClientRect) {
+      var r = ziel.getBoundingClientRect();
+      return { x: r.left, oben: r.top, unten: r.bottom + 2 };
+    }
+    return { x: 20, oben: 14, unten: 20 };
+  }
+
+  function caretImFeld(doc, feld) {
+    var r = feld.getBoundingClientRect();
+    var pos = feld.selectionStart || 0;
+    var spiegel = doc.createElement("div");
+    var stil = doc.defaultView.getComputedStyle(feld);
+    ["fontFamily", "fontSize", "fontWeight", "fontStyle", "letterSpacing",
+     "lineHeight", "textTransform", "wordSpacing", "textIndent",
+     "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
+     "borderTopWidth", "borderRightWidth", "borderBottomWidth",
+     "borderLeftWidth", "boxSizing"].forEach(function (e) {
+      spiegel.style[e] = stil[e];
+    });
+    spiegel.style.position = "absolute";
+    spiegel.style.visibility = "hidden";
+    spiegel.style.top = "0"; spiegel.style.left = "-9999px";
+    spiegel.style.width = r.width + "px";
+    if (feld.tagName === "TEXTAREA") {
+      spiegel.style.whiteSpace = "pre-wrap";
+      spiegel.style.wordWrap = "break-word";
+    } else {
+      spiegel.style.whiteSpace = "pre";
+    }
+    spiegel.textContent = feld.value.slice(0, pos);
+    var punkt = doc.createElement("span");
+    punkt.textContent = "\u200b";
+    spiegel.appendChild(punkt);
+    (doc.body || doc.documentElement).appendChild(spiegel);
+    var zeilenHoehe = punkt.offsetHeight || 18;
+    var x = r.left + (punkt.offsetLeft - feld.scrollLeft);
+    var oben = r.top + (punkt.offsetTop - feld.scrollTop);
+    spiegel.parentNode.removeChild(spiegel);
+    x = Math.min(Math.max(x, r.left), r.right);
+    oben = Math.min(Math.max(oben, r.top), r.bottom);
+    return { x: x, oben: oben, unten: oben + zeilenHoehe };
+  }
+
+  // ---- Auswahl-Fenster beim Tippen (neu in Etappe 5) ----------------------
+  // Ohne Decke, ohne Fokus: Es liegt neben dem Feld, in dem getippt
+  // wird. Klick (mousedown) fügt ein, bevor das Feld den Fokus
+  // verliert. Zeilen sind Bausteine, Fächer oder Kopfzeilen (ohne
+  // Wirkung). opt: { haeufig, uebrige, beiWahl } ODER
+  // { faecherZeilen: [{nummer, wort}], kopf, beiFach(nummer) }.
+  function oeffneVorschlag(doc, ziel, opt) {
+    zuVorschlag();
+    if (AKTIV) return; // ein offenes Fenster mit Decke hat Vorrang
+    var kasten = el(doc, "div", "tbx-vorschlag");
+    var liste = el(doc, "div", "tbx-liste");
+    kasten.appendChild(liste);
+
+    function zeile(text, marke, tuWas) {
+      var z = el(doc, "div", tuWas ? "tbx-eintrag" : "tbx-kopfzeile");
+      z.appendChild(el(doc, "span", "", text));
+      if (marke) z.appendChild(el(doc, "span", "tbx-marke", marke));
+      if (tuWas) z.addEventListener("mousedown", function (ev) {
+        ev.preventDefault(); ev.stopPropagation();
+        zuVorschlag(); tuWas();
+      });
+      liste.appendChild(z);
+    }
+
+    var leer = true;
+    if (opt.faecherZeilen) {
+      zeile(opt.kopf, null, null);
+      opt.faecherZeilen.forEach(function (f) {
+        leer = false;
+        zeile(f.wort, ";;" + f.marke, function () { opt.beiFach(f.nummer); });
+      });
+    } else {
+      if (opt.haeufig.length) zeile(TB.TE.wahlHaeufigste, null, null);
+      opt.haeufig.forEach(function (b) {
+        leer = false;
+        zeile(b.titel || "(ohne Titel)", b.kuerzel ? ";;" + b.kuerzel : "",
+          function () { opt.beiWahl(b); });
+      });
+      if (opt.uebrige.length) zeile(TB.TE.wahlAlphabetisch, null, null);
+      opt.uebrige.slice(0, 9).forEach(function (b) {
+        leer = false;
+        zeile(b.titel || "(ohne Titel)", b.kuerzel ? ";;" + b.kuerzel : "",
+          function () { opt.beiWahl(b); });
+      });
+    }
+    if (leer) {
+      liste.appendChild(el(doc, "div", "tbx-klein", TB.TE.sucheLeer));
+    }
+    kasten.appendChild(el(doc, "div", "tbx-klein tbx-rand", TB.TE.wahlHinweis));
+
+    // Position (Regel seit 11.1): direkt an der Schreibmarke, und die
+    // Zeile, in der getippt wird, bleibt IMMER lesbar — das Fenster
+    // erscheint unterhalb der Marke, und nur wenn dort kein Platz ist,
+    // oberhalb. Auch in einfachen Feldern wird die Marke gemessen
+    // (unsichtbare Spiegel-Kopie des Feldtexts).
+    var marke = caretStelle(doc, ziel);
+    (doc.body || doc.documentElement).appendChild(kasten);
+    VORSCHLAG = kasten;
+    var breite = 340;
+    var fenster = doc.defaultView || { innerWidth: 800, innerHeight: 600 };
+    var hoehe = kasten.offsetHeight || 200;
+    var x = marke.x + 8;
+    var y = marke.unten + 6;
+    if (y + hoehe > fenster.innerHeight - 4 && marke.oben - hoehe - 6 > 0) {
+      y = marke.oben - hoehe - 6;
+    }
+    var maxX = fenster.innerWidth - breite - 8;
+    if (x > maxX) x = Math.max(0, maxX);
+    if (y < 0) y = 0;
+    kasten.style.left = x + "px";
+    kasten.style.top = y + "px";
+  }
+
+  function zuVorschlag() {
+    if (VORSCHLAG && VORSCHLAG.parentNode) VORSCHLAG.parentNode.removeChild(VORSCHLAG);
+    VORSCHLAG = null;
+  }
+  function vorschlagOffen() { return VORSCHLAG !== null; }
+  function imVorschlag(el2) {
+    return VORSCHLAG !== null && el2 && VORSCHLAG.contains(el2);
+  }
+
+  // ---- Entwurf-Fenster (;;neu) --------------------------------------------
+  // opt: { text, beiSichern, beiAbbruch } — zeigt die Vorschau und den
+  // Warnsatz; erst der Knopf schickt den Entwurf in die Datenablage.
+  function oeffneEntwurf(doc, opt) {
+    var karte = baue(doc, "tbx-entwurf");
+    karte.appendChild(el(doc, "div", "tbx-titel", TB.TE.entwurfTitel));
+    karte.appendChild(el(doc, "div", "tbx-warn", TB.TE.entwurfWarnung));
+    var vorschau = el(doc, "div", "tbx-vorschau", "");
+    var t = String(opt.text || "");
+    vorschau.textContent = t.length > 800 ? t.slice(0, 800) + " …" : t;
+    karte.appendChild(vorschau);
+    var leiste = el(doc, "div", "tbx-leiste");
+    var ab = el(doc, "button", "tbx-knopf", TB.TE.abbrechen);
+    var ok = el(doc, "button", "tbx-knopf tbx-haupt", TB.TE.entwurfSichern);
+    leiste.appendChild(ab); leiste.appendChild(ok);
+    karte.appendChild(leiste);
+    function abbruch() { zu(); if (opt.beiAbbruch) opt.beiAbbruch(); }
+    ab.addEventListener("click", abbruch);
+    ok.addEventListener("click", function () { zu(); opt.beiSichern(); });
+    karte.setAttribute("tabindex", "-1");
+    karte.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape") { ev.preventDefault(); abbruch(); }
+      ev.stopPropagation();
+    });
+    karte.focus();
+    ok.focus();
+  }
+
   return { oeffneLuecken: oeffneLuecken, oeffneSuche: oeffneSuche,
+           oeffneVorschlag: oeffneVorschlag, zuVorschlag: zuVorschlag,
+           vorschlagOffen: vorschlagOffen, imVorschlag: imVorschlag,
+           oeffneEntwurf: oeffneEntwurf,
            toast: toast, schliesse: zu };
 })();

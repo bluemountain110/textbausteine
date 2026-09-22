@@ -64,6 +64,16 @@ TB.einstellungen = (function () {
   function fachTasten() { return S().einstellung("fachTasten", "^+"); }
   function setzeFachTasten(w) { S().setzeEinstellung("fachTasten", w || ""); }
 
+  // ---- Standort (Etappe 6) ------------------------------------------
+  // Die feste Liste der Arbeitsorte — dieselben Namen wie im
+  // Windows-Skript und in der Erweiterung (seit Etappe 5).
+  var STANDORTE = ["Spital Limmattal", "Praxis Neuromed"];
+  function standorte() { return STANDORTE.slice(); }
+  // Gespeichert wird GERÄTELOKAL über die Speicher-Schnittstelle —
+  // bewusst nie abgeglichen (Entscheid W1, 22.9.).
+  function standort() { return S().standort(); }
+  function setzeStandort(name) { S().setzeStandort(name); }
+
   // Die Umgebung, die der Makro-Auswerter überall bekommt.
   function makroUmgebung() {
     return {
@@ -79,5 +89,7 @@ TB.einstellungen = (function () {
            entferneKonstante: entferneKonstante, makroUmgebung: makroUmgebung,
            fachStammMerken: fachStammMerken, setzeFachStammMerken: setzeFachStammMerken,
            fachStammEinsetzen: fachStammEinsetzen, setzeFachStammEinsetzen: setzeFachStammEinsetzen,
-           fachTasten: fachTasten, setzeFachTasten: setzeFachTasten };
+           fachTasten: fachTasten, setzeFachTasten: setzeFachTasten,
+           standorte: standorte, standort: standort,
+           setzeStandort: setzeStandort };
 })();

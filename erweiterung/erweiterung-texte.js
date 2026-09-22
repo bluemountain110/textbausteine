@@ -35,6 +35,9 @@ TB.TE = {
   seiteAbgelehnt: "Chrome hat die Erlaubnis nicht erteilt — nichts geändert.",
   seiteUnpassend: "Auf dieser Art von Seite kann die Erweiterung nicht wirken (z. B. Chrome-eigene Seiten).",
   anmeldungFehlt: "Bitte E-Mail und Passwort eintragen.",
+  faecherLeeren: "Fächer leeren",
+  anmeldungMerken: "Anmeldung merken — meldet sich nach Ablauf selbst neu an (gespeichert nur auf diesem Gerät)",
+  faecherGeleert: "Alle Fächer sind geleert.",
 
   // ---- Meldungen in der Seite (Toast) --------------------------------
   unbekanntesKuerzel: "Kein Baustein mit dem Kürzel „;;%s“.",
@@ -48,6 +51,34 @@ TB.TE = {
 
   // ---- Such-Fenster (;;?) ----------------------------------------------
   sucheTitel: "Baustein suchen",
-  sucheHinweis: "Tippen zum Filtern · Pfeiltasten wählen · Eingabetaste fügt ein · Esc schliesst",
-  sucheLeer: "Kein Baustein passt."
+  sucheHinweis: "Tippen zum Filtern (auch im Text) · Pfeiltasten wählen · Eingabetaste fügt ein · Esc schliesst",
+  sucheLeer: "Kein Baustein passt.",
+
+  // ---- Auswahl-Fenster beim Tippen ---------------------------------------
+  wahlHaeufigste: "——  Häufigste  ——",
+  wahlAlphabetisch: "——  Alphabetisch  ——",
+  wahlHinweis: "Klick fügt ein · Esc schliesst · Weitertippen verfeinert",
+
+  // ---- Fächer (Zwischenspeicher) ------------------------------------------
+  faecherKopf: "Zwischenspeicher — Klick setzt ein",
+  faecherMerkenKopf: "Zwischenspeicher — Klick merkt die Zwischenablage",
+  fachGemerkt: "Gemerkt in Fach ",
+  fachEingesetzt: "Eingesetzt aus Fach ",
+  fachLeer: "Dieses Fach ist leer oder abgelaufen (Fächer leeren sich nach 12 Stunden von selbst).",
+  fachLeerZeile: "(leer)",
+  fachNichtsKopiert: "Die Zwischenablage ist leer. Zuerst mit Strg+C kopieren, dann das Kürzel tippen.",
+  fachLesenVerwehrt: "Chrome lässt das Lesen der Zwischenablage hier nicht zu — die Erweiterung einmal entfernen und neu laden, dann fragt Chrome nach der Erlaubnis.",
+
+  // ---- Standort (Etappe 6) --------------------------------------------------
+  standortTitel: "Standort dieses Geräts",
+  standortKeiner: "(kein Standort)",
+  standortHinweis: "Bausteine mit Standort-Fassungen liefern hier die passende Fassung. Gilt nur in diesem Browser.",
+
+  // ---- Entwurf (;;neu) ------------------------------------------------------
+  entwurfTitel: "Als Entwurf sichern",
+  entwurfWarnung: "Das liegt in der Zwischenablage und wird als Entwurf in Deine Bausteine gelegt. KONTROLLIERE: kein Patientenname, keine Patientendaten!",
+  entwurfSichern: "Als Entwurf sichern",
+  entwurfGesichert: "Als Entwurf gesichert — am nächsten Gerät unter Entwürfe.",
+  entwurfLeer: "Die Zwischenablage ist leer. Zuerst Text markieren und Strg+C drücken, dann ;;neu tippen.",
+  entwurfFehler: "Der Entwurf konnte nicht hochgeladen werden: "
 };

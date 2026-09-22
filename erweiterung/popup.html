@@ -20,6 +20,7 @@
   <div id="anmeldung" class="verborgen">
     <label>E-Mail<input id="mail" type="email" autocomplete="username"></label>
     <label>Passwort<input id="passwort" type="password" autocomplete="current-password"></label>
+    <label class="merkenZeile"><input type="checkbox" id="merken" checked> <span id="merkenText"></span></label>
     <button id="anmelden" class="haupt"></button>
   </div>
 
@@ -32,8 +33,14 @@
       <button id="uebungsfeld"></button>
     </div>
     <div class="knoepfe">
+      <button id="faecherLeeren"></button>
+    </div>
+    <div class="knoepfe">
       <button id="seite" class="haupt"></button>
     </div>
+    <label class="klein abschnitt" id="standortZeile"><span id="standortText"></span>
+      <select id="standort"></select></label>
+    <div id="standortHinweis" class="klein"></div>
     <div id="seitenTitel" class="klein abschnitt"></div>
     <div id="seiten"></div>
     <div class="fuss">

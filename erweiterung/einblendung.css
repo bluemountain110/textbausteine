@@ -58,3 +58,22 @@
   max-width: 80vw;
 }
 .tbx-toast.tbx-rot { background: #b3261e; }
+
+/* ---- Auswahl-Fenster beim Tippen (Etappe 5) ---- */
+.tbx-vorschlag {
+  position: fixed; z-index: 2147483000;
+  background: #ffffff; color: #12333a;
+  font: 13px/1.4 Arial, sans-serif;
+  border: 1px solid #b7c7ca; border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  width: 340px; max-height: 320px; overflow: auto;
+  padding: 6px; box-sizing: border-box;
+}
+.tbx-kopfzeile {
+  color: #5a7075; font-size: 11px; text-align: center;
+  padding: 4px 6px; user-select: none;
+}
+.tbx-rand { padding: 4px 6px; margin-top: 2px; }
+.tbx-warn {
+  color: #b3261e; font-weight: bold; margin: 4px 0 8px 0;
+}

@@ -46,3 +46,7 @@ button.leise { border: none; background: none; color: #5a7075; width: auto; }
   display: flex; align-items: center; justify-content: space-between;
   margin-top: 12px;
 }
+
+.merkenZeile { display: flex; gap: 6px; align-items: flex-start;
+  font-size: 12px; color: #5a7075; margin-top: 6px; }
+.merkenZeile input { margin-top: 2px; }

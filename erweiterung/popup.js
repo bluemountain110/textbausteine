@@ -85,7 +85,8 @@ function meldeAn() {
     return;
   }
   $("anmelden").disabled = true;
-  frage({ art: "anmelden", mail: mail, passwort: pw }).then(function (a) {
+  frage({ art: "anmelden", mail: mail, passwort: pw,
+          merken: $("merken").checked }).then(function (a) {
     $("anmelden").disabled = false;
     if (a && !a.ok) {
       $("fehler").textContent = a.fehler;
@@ -131,9 +132,39 @@ function entferneSeite(muster) {
 
 document.addEventListener("DOMContentLoaded", function () {
   $("anmelden").textContent = TB.TE.anmelden;
+  $("merkenText").textContent = TB.TE.anmeldungMerken;
+  chrome.storage.local.get("anmeldung").then(function (o) {
+    if (o.anmeldung && o.anmeldung.mail && !$("mail").value) {
+      $("mail").value = o.anmeldung.mail;
+      $("passwort").value = o.anmeldung.passwort || "";
+    }
+  });
   $("abmelden").textContent = TB.TE.abmelden;
   $("holen").textContent = TB.TE.jetztHolen;
   $("uebungsfeld").textContent = TB.TE.uebungsfeldOeffnen;
+  $("faecherLeeren").textContent = TB.TE.faecherLeeren;
+
+  // ---- Standort dieses Geräts (Etappe 6) ------------------------------
+  // Gespeichert nur in DIESEM Browser (chrome.storage.local, wird nie
+  // abgeglichen). Vorbelegung: Praxis Neuromed (Entscheid W1, 22.9.).
+  $("standortText").textContent = TB.TE.standortTitel;
+  $("standortHinweis").textContent = TB.TE.standortHinweis;
+  (function () {
+    var wahl = $("standort");
+    [["", TB.TE.standortKeiner],
+     ["Spital Limmattal", "Spital Limmattal"],
+     ["Praxis Neuromed", "Praxis Neuromed"]].forEach(function (o) {
+      var opt = document.createElement("option");
+      opt.value = o[0]; opt.textContent = o[1];
+      wahl.appendChild(opt);
+    });
+    chrome.storage.local.get("standort").then(function (o) {
+      wahl.value = (o.standort === undefined) ? "Praxis Neuromed" : o.standort;
+    });
+    wahl.addEventListener("change", function () {
+      chrome.storage.local.set({ standort: wahl.value });
+    });
+  })();
 
   $("anmelden").addEventListener("click", meldeAn);
   $("passwort").addEventListener("keydown", function (e) {
@@ -151,6 +182,12 @@ document.addEventListener("DOMContentLoaded", function () {
   });
   $("uebungsfeld").addEventListener("click", function () {
     chrome.tabs.create({ url: chrome.runtime.getURL("uebungsfeld.html") });
+  });
+  $("faecherLeeren").addEventListener("click", function () {
+    frage({ art: "faecherLeeren" }).then(function () {
+      $("fehler").textContent = TB.TE.faecherGeleert;
+      $("fehler").classList.remove("verborgen");
+    });
   });
   $("seite").addEventListener("click", schalteSeite);
 

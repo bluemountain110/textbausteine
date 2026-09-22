@@ -5,8 +5,10 @@
 //        sich an der Datenablage an, holt jede Minute die fertigen
 //        Bausteine und die Einstellungen, legt sie in den Speicher der
 //        Erweiterung und schickt die Zählwerte (nur WIE OFT, nie WAS)
-//        zurück. Bausteine SCHREIBT die Erweiterung nie — gepflegt wird
-//        nur in der App. Ausserdem meldet er beim Chrome den Seiten an,
+//        zurück. Der EINZIGE Schreibweg für Bausteine ist ;;neu: Er
+//        legt ausschliesslich NEUE Entwürfe an, nie ändert er
+//        Bestehendes — gepflegt wird nur in der App (Etappe 5).
+//        Ausserdem meldet er beim Chrome den Seiten an,
 //        auf denen die Kürzel wirken dürfen.
 //        Die erste Zeile gibt diesem Arbeiter ein "window", damit die
 //        unveränderten App-Dateien (konfiguration.js) hier laufen.
@@ -24,7 +26,7 @@ var SCHLUESSEL = String(K.schluessel || "").trim();
 // dieser Reihenfolge, wie in index.html der App.
 var SEITEN_DATEIEN = ["welt.js", "texte.js", "erweiterung-texte.js",
   "makros.js", "auszeichnung.js", "reichtext.js", "einblendung.js",
-  "seite.js"];
+  "faecher.js", "seite.js"];
 
 // ---- Speicher-Helfer (chrome.storage.local) ---------------------------
 function lade(name, vorgabe) {
@@ -34,13 +36,10 @@ function lade(name, vorgabe) {
 }
 function sichere(paar) { return chrome.storage.local.set(paar); }
 
+// Der Name kommt seit Etappe 5 fest aus welt.js (Standort) — so weiss
+// die Statistik immer, WO gezählt wurde (Praxis Neuromed bzw. Mac).
 function geraet() {
-  return lade("geraet", null).then(function (g) {
-    if (g) return g;
-    var neu = "Erweiterung-" + Math.random().toString(16).slice(2, 6) +
-      (TB.ERW.welt === "dev" ? "-dev" : "");
-    return sichere({ geraet: neu }).then(function () { return neu; });
-  });
+  return Promise.resolve(TB.ERW.geraet || ("Erweiterung-" + TB.ERW.welt));
 }
 
 // ---- Netz-Helfer (nach dem Muster von wolke.js) ------------------------
@@ -82,38 +81,74 @@ function fehlerText(a) {
 }
 
 // ---- Anmeldung ---------------------------------------------------------
-function anmelden(mail, passwort) {
+function sitzungAus(a, mail) {
+  return {
+    access_token: a.daten.access_token,
+    refresh_token: a.daten.refresh_token,
+    ablauf: Date.now() + ((a.daten.expires_in || 3600) * 1000),
+    benutzer: a.daten.user ? a.daten.user.id : null,
+    mail: a.daten.user ? a.daten.user.email : String(mail || "").trim()
+  };
+}
+function anmelden(mail, passwort, merken) {
   return ruf("/auth/v1/token?grant_type=password", {
     methode: "POST",
     koerper: { email: String(mail || "").trim(), password: String(passwort || "") }
   }).then(function (a) {
     if (!a.ok) return { ok: false, fehler: fehlerText(a) };
-    var s = {
-      access_token: a.daten.access_token,
-      refresh_token: a.daten.refresh_token,
-      ablauf: Date.now() + ((a.daten.expires_in || 3600) * 1000),
-      benutzer: a.daten.user ? a.daten.user.id : null,
-      mail: a.daten.user ? a.daten.user.email : String(mail || "").trim()
-    };
-    return sichere({ sitzung: s }).then(function () {
+    var s = sitzungAus(a, mail);
+    // "Anmeldung merken" (11.1): Zugangsdaten bleiben im Speicher der
+    // Erweiterung auf DIESEM Geraet, damit sie sich nach Ablauf der
+    // Sitzung selbst neu anmeldet. Ohne Haekchen wird Gemerktes entfernt.
+    var vorab = (merken
+      ? sichere({ anmeldung: { mail: String(mail || "").trim(), passwort: String(passwort || "") } })
+      : chrome.storage.local.remove("anmeldung")
+    ).then(function () { return chrome.storage.local.remove("abgemeldet"); });
+    return vorab.then(function () {
+      return sichere({ sitzung: s });
+    }).then(function () {
       return holen().then(function () { return { ok: true, fehler: null }; });
     });
   });
 }
+// Selbst neu anmelden mit den gemerkten Zugangsdaten — der stille Weg,
+// wenn die Sitzung fehlt oder abgelaufen ist. Ohne holen(), damit sich
+// nichts im Kreis ruft; der Aufrufer holt danach selbst.
+function selbstAnmelden() {
+  return lade("abgemeldet", false).then(function (gewollt) {
+    if (gewollt) return null; // von Hand abgemeldet — nicht dagegen anmelden
+    return lade("anmeldung", null);
+  }).then(function (d) {
+    if (!d || !d.mail || !d.passwort) return null;
+    return ruf("/auth/v1/token?grant_type=password", {
+      methode: "POST", koerper: { email: d.mail, password: d.passwort }
+    }).then(function (a) {
+      if (!a.ok) return null;
+      var s = sitzungAus(a, d.mail);
+      return sichere({ sitzung: s }).then(function () { return s; });
+    });
+  });
+}
+// Abmelden beendet die Sitzung, VERGISST die gemerkte Anmeldung aber
+// nicht (Wunsch 21.9.: nie mehr alles neu eintippen) — das Formular ist
+// beim naechsten Mal vorbelegt, ein Klick genuegt. Die Marke
+// "abgemeldet" verhindert, dass sich die Erweiterung gegen Deinen
+// Willen sofort selbst wieder anmeldet.
 function abmelden() {
   return chrome.storage.local.remove(["sitzung", "bausteine", "einstellungen", "stand"])
+    .then(function () { return sichere({ abgemeldet: true }); })
     .then(zeichenSetzen);
 }
 function frischeSitzung() {
   return lade("sitzung", null).then(function (s) {
-    if (!s) return null;
+    if (!s) return selbstAnmelden();
     if (s.ablauf - Date.now() > 120000) return s;
     return ruf("/auth/v1/token?grant_type=refresh_token", {
       methode: "POST", koerper: { refresh_token: s.refresh_token }
     }).then(function (a) {
       if (!a.ok) {
         if (a.status === 400 || a.status === 401) {
-          return chrome.storage.local.remove("sitzung").then(function () { return null; });
+          return chrome.storage.local.remove("sitzung").then(selbstAnmelden);
         }
         return null;
       }
@@ -134,7 +169,7 @@ function holen() {
     if (!s) {
       return merkeStand({ fehler: "abgemeldet" });
     }
-    return ruf("/rest/v1/bausteine?select=id,titel,kuerzel,kategorie,text," +
+    return ruf("/rest/v1/bausteine?select=id,titel,kuerzel,kategorie,text,varianten," +
       "notiz,art,entwurf,ausgabeart&geloescht_am=is.null&entwurf=eq.false" +
       "&order=titel.asc", { sitzung: s })
       .then(function (a) {
@@ -179,6 +214,29 @@ function schickeZaehlwerte(s) {
         return null;
       });
     });
+}
+
+// ;;neu: einen NEUEN Entwurf in die Datenablage legen — der einzige
+// Schreibweg der Erweiterung. Der Inhalt wurde auf der Seite gezeigt
+// und von Hand bestätigt (Kontroll-Vorschau mit Warnsatz).
+function entwurfSichern(html) {
+  return frischeSitzung().then(function (s) {
+    if (!s) return { ok: false, fehler: fehlerText({ status: 401 }) };
+    var jetzt = new Date().toISOString();
+    var zeile = {
+      id: crypto.randomUUID(), benutzer: s.benutzer,
+      titel: "", kuerzel: "", kategorie: "",
+      text: html, notiz: "", art: "text", entwurf: true,
+      ausgabeart: "fenster", erstellt_am: jetzt, aktualisiert_am: jetzt
+    };
+    return ruf("/rest/v1/bausteine?on_conflict=id", {
+      methode: "POST", sitzung: s, koerper: [zeile],
+      kopf: { "Prefer": "resolution=merge-duplicates,return=minimal" }
+    }).then(function (a) {
+      if (!a.ok) return { ok: false, fehler: fehlerText(a) };
+      return { ok: true, fehler: null };
+    });
+  });
 }
 
 function merkeStand(neues) {
@@ -232,12 +290,20 @@ chrome.alarms.onAlarm.addListener(function (a) {
 // ---- Nachrichten vom Symbol-Fenster und vom Übungsfeld -----------------
 chrome.runtime.onMessage.addListener(function (n, absender, antworte) {
   if (n && n.art === "anmelden") {
-    anmelden(n.mail, n.passwort).then(antworte);
+    anmelden(n.mail, n.passwort, n.merken !== false).then(antworte);
     return true;
   }
   if (n && n.art === "abmelden") { abmelden().then(function () { antworte({ ok: true }); }); return true; }
   if (n && n.art === "holen") { holen().then(function () { antworte({ ok: true }); }); return true; }
   if (n && n.art === "seitenAnmelden") { seitenAnmelden().then(function () { antworte({ ok: true }); }); return true; }
+  if (n && n.art === "entwurfSichern") {
+    entwurfSichern(String(n.html || "")).then(antworte);
+    return true;
+  }
+  if (n && n.art === "faecherLeeren") {
+    chrome.storage.local.remove("faecher").then(function () { antworte({ ok: true }); });
+    return true;
+  }
   if (n && n.art === "status") {
     Promise.all([lade("sitzung", null), lade("stand", {}), lade("seiten", []), lade("bausteine", [])])
       .then(function (w) {
