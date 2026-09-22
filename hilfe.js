@@ -21,7 +21,7 @@ TB.hilfe = (function () {
         ["Wo Deine Bausteine liegen",
          "In der Datenablage im Netz, abgeglichen auf jedes Gerät, auf dem Du angemeldet bist — und zusätzlich im Browser jedes Geräts, damit alles auch ohne Netz weitergeht. Die Sicherung bleibt trotzdem wichtig: in den Einstellungen ab und zu „Alle Bausteine exportieren“ drücken."],
         ["Drei Wege zum Baustein",
-         "Erstens das App-Fenster: Baustein anklicken, im Zielprogramm Strg+V — geht überall, auch in Outlook und Word. Zweitens die Chrome-Erweiterung: ;;kürzel direkt im Feld einer Webseite tippen, Leertaste — der Baustein steht da, ohne Fensterwechsel (Kapitel „Kürzel im Browser“). Drittens, geplant: dasselbe für Windows-Programme wie KISIM über ein kleines Hilfsprogramm."]
+         "Erstens das App-Fenster: Baustein anklicken, im Zielprogramm Strg+V — geht überall, auch in Outlook und Word. Zweitens die Chrome-Erweiterung: ;;kürzel direkt im Feld einer Webseite tippen, Leertaste — der Baustein steht da, ohne Fensterwechsel (Kapitel „Kürzel im Browser“). Drittens das Windows-Skript am Spital: ;;kürzel und Leertaste in JEDEM Programm, allen voran KISIM (Kapitel „Kürzel in Windows-Programmen“)."]
       ]],
       ["Bausteine verwalten", [
         ["Anlegen",
@@ -32,6 +32,22 @@ TB.hilfe = (function () {
          "„Bearbeiten“ an der Zeile öffnet denselben Dialog. „In den Papierkorb“ legt den Baustein für 30 Tage beiseite; im Bereich Papierkorb holst Du ihn mit einem Klick zurück oder löschst ihn endgültig — dann fragt die App mit Anzahl nach."],
         ["Suchen und finden",
          "Das Suchfeld durchsucht Titel, Kürzel, Kategorie, Text UND Notiz. Zusätzlich kannst Du auf eine Kategorie einschränken. Solange Du nichts eingibst, zeigt die Liste zuoberst die fünf zuletzt benutzten Bausteine, darunter die Kategorien."]
+      ]],
+      ["Standort-Fassungen — ein Kürzel, je Ort der richtige Text", [
+        ["Wozu sie da sind",
+         "Manche Bausteine brauchen am Spital einen anderen Wortlaut als in der Praxis — Briefkopf, Medikamentenliste, Klinikname. Dafür bekommt EIN Baustein eigene Fassungen je Arbeitsort: Dasselbe Kürzel liefert am Spital die Spitalfassung und in der Praxis die Praxisfassung. Alle anderen Bausteine bleiben, wie sie sind."],
+        ["So legst Du eine an",
+         "Baustein bearbeiten, zum Abschnitt „Standort-Fassungen“ scrollen, „Fassung für <Ort> anlegen“ drücken. Das Feld startet mit einer Kopie der Standardfassung — Du änderst nur, was am Ort anders ist. „Fassung löschen“ entfernt sie wieder; dann gilt dort erneut die Standardfassung. In der Bausteinliste trägt so ein Baustein die Marke „Standorte“."],
+        ["Woher die App den Ort kennt",
+         "In den Einstellungen unter „Standort dieses Geräts“ — die Wahl bleibt bewusst auf DIESEM Gerät und wird nie abgeglichen, denn der Spitalrechner soll Spital bleiben und der Praxisrechner Praxis. Das Windows-Skript kennt seinen Standort aus dem Menü, die Chrome-Erweiterung aus ihrem Symbol-Fenster (dort ist die Praxis vorbelegt). Der gewählte Standort steht in der App oben in der Kopfzeile."],
+        ["Die eine Regel",
+         "Hat ein Baustein für den eingestellten Standort KEINE eigene Fassung — oder hat das Gerät keinen Standort —, kommt IMMER die Standardfassung. Es scheitert nie etwas still. Beim Kopieren sagt die Meldung dazu, welche Fassung es war. Die Suche findet auch Text, der nur in einer Standort-Fassung steht."]
+      ]],
+      ["Der Ideen-Speicher — Wünsche an die App", [
+        ["Wozu er da ist",
+         "Im Bereich „Ideen“ hältst Du Wünsche und Einfälle für die WEITERENTWICKLUNG dieser App fest, bevor sie verloren gehen — kurzer Titel, ein paar Worte dazu, fertig. Ideen sind keine Bausteine: Sie erscheinen nie in der Bausteinliste, der Suche oder bei den Kürzeln, wandern aber wie alles andere auf alle Deine Geräte. (Für halbfertige BAUSTEINE gibt es weiterhin die Entwürfe.)"],
+        ["Einplanen, verwerfen, exportieren",
+         "„eingeplant“ hakt eine Idee ab, ohne sie zu löschen; „Verwerfen“ legt sie in den Papierkorb (30 Tage zurückholbar). Der Knopf „Als Dokument für den Bau-Chat sichern“ erzeugt eine md-Datei mit allen offenen und eingeplanten Ideen — die hängst Du im nächsten Bau-Chat einfach an, und nichts geht vergessen."]
       ]],
       ["Platzhalter — die Lücken im Text", [
         ["Wozu sie da sind",
