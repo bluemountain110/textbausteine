@@ -123,7 +123,8 @@ TB.auszeichnung = (function () {
         });
       }
       var stil = stilUebernehmen(knoten, innenTabelle,
-                                 name === "TD" || name === "TH");
+                                 name === "TD" || name === "TH",
+                                 name === "TABLE");
       if (stil) kopie.setAttribute("style", stil);
       // Ein SPAN ohne jede Auszeichnung ist nur Ballast.
       if (kopie.tagName === "SPAN" && !stil) { neuerEltern = elternZiel; }
@@ -151,7 +152,7 @@ TB.auszeichnung = (function () {
     return "24px";                        // darüber: sehr gross
   }
 
-  function stilUebernehmen(knoten, imTabelle, istZelle) {
+  function stilUebernehmen(knoten, imTabelle, istZelle, istTabelle) {
     var teile = [];
     var s = knoten.style || {};
     // In der Tabelle gilt EINE Schrift: Schriftart und -grösse fliegen
@@ -161,10 +162,29 @@ TB.auszeichnung = (function () {
     if (schrift) teile.push("font-family:" + schrift.replace(/["';]/g, ""));
     var groesse = imTabelle ? null : groesseEinnorden(s.fontSize || "");
     if (groesse) teile.push("font-size:" + groesse);
+    if (istTabelle) {
+      // Die echte Druckbreite der Tabelle bleibt erhalten (23.9.).
+      var mb = String(s.minWidth || "").match(/^(\d+)px$/);
+      if (mb) teile.push("min-width:" + mb[1] + "px");
+    }
     if (istZelle) {
       var breite = String(s.width || knoten.getAttribute("width") || "");
       var bm = breite.match(/^([\d.]+)%$/);
       if (bm) teile.push("width:" + bm[1] + "%");
+      // Linien je Zellseite (23.9.): „none" wie „vorhanden" reisen
+      // ausdrücklich mit — daran hängt das Original-Bild der Legende.
+      [["Top", "top"], ["Right", "right"], ["Bottom", "bottom"],
+       ["Left", "left"]].forEach(function (seite) {
+        var art = s["border" + seite[0] + "Style"];
+        if (art === "none") teile.push("border-" + seite[1] + ":none");
+        else if (art && art !== "hidden") {
+          teile.push("border-" + seite[1] + ":1px solid #444444");
+        }
+      });
+      var ausricht = s.textAlign;
+      if (ausricht === "center" || ausricht === "right") {
+        teile.push("text-align:" + ausricht);
+      }
     }
     var farbe = s.color || knoten.getAttribute("color") || "";
     if (farbe && farbeAlsZahlen(farbe)) teile.push("color:" + farbe);
@@ -358,8 +378,24 @@ TB.auszeichnung = (function () {
   // dieser Stelle \clvmrg mit leerer Zelle; eine Zelle mit colspan wird
   // schlicht eine breitere Zelle — genau wie KISIM es schreibt.
   var TAB_GESAMT = 9214;
-  var TAB_RAND = "\\clbrdrl\\brdrw15\\brdrs\\clbrdrt\\brdrw15\\brdrs" +
-                 "\\clbrdrr\\brdrw15\\brdrs\\clbrdrb\\brdrw15\\brdrs";
+  // Ohne ausdrückliche Angaben bekommt eine Zelle Linien an allen vier
+  // Seiten (so kommen Word-Tabellen an); steht an der Zelle je Seite
+  // „none" oder eine Linie, gilt genau das (so bleibt das KISIM-Bild).
+  function zellRand(zelle) {
+    var s = (zelle && zelle.style) || {};
+    var seiten = [["l", "Left"], ["t", "Top"], ["r", "Right"], ["b", "Bottom"]];
+    var ausdruecklich = seiten.some(function (p) {
+      return !!s["border" + p[1] + "Style"];
+    });
+    var aus = "";
+    seiten.forEach(function (p) {
+      var art = s["border" + p[1] + "Style"];
+      var linie = ausdruecklich ? (art && art !== "none" && art !== "hidden")
+                                : true;
+      if (linie) aus += "\\clbrdr" + p[0] + "\\brdrw15\\brdrs";
+    });
+    return aus;
+  }
   function tabelleNachRtf(w, tabelle) {
     var quellzeilen = [];
     Array.prototype.forEach.call(tabelle.querySelectorAll("tr"), function (tr) {
@@ -386,7 +422,8 @@ TB.auszeichnung = (function () {
       while (nr < zellen.length || haengend[spalte]) {
         if (haengend[spalte]) {
           var h = haengend[spalte];
-          eintraege.push({ vmrg: true, von: spalte, weite: h.weite });
+          eintraege.push({ vmrg: true, von: spalte, weite: h.weite,
+                           rand: h.rand });
           h.rest -= 1;
           if (!h.rest) delete haengend[spalte];
           spalte += h.weite;
@@ -396,8 +433,9 @@ TB.auszeichnung = (function () {
         var weite = spann(zelle, "colspan");
         var hoehe = spann(zelle, "rowspan");
         eintraege.push({ zelle: zelle, von: spalte, weite: weite,
-                         vmgf: hoehe > 1 });
-        if (hoehe > 1) haengend[spalte] = { rest: hoehe - 1, weite: weite };
+                         vmgf: hoehe > 1, rand: zellRand(zelle) });
+        if (hoehe > 1) haengend[spalte] = { rest: hoehe - 1, weite: weite,
+                                            rand: zellRand(zelle) };
         spalte += weite;
       }
       if (spalte > spaltenzahl) spaltenzahl = spalte;
@@ -446,7 +484,7 @@ TB.auszeichnung = (function () {
             schattierung = "\\clcbpat" + farbNummer(w, grund);
           }
         }
-        defs += TAB_RAND +
+        defs += e.rand +
                 (e.vmgf ? "\\clvmgf" : "") + (e.vmrg ? "\\clvmrg" : "") +
                 schattierung + "\\cellx" + kanten[e.von + e.weite - 1];
       });
@@ -456,7 +494,9 @@ TB.auszeichnung = (function () {
         var inhalt = kinderNachRtf(w, blockKinder(e.zelle), false)
                        .replace(/^\\par /, "");
         if (e.zelle.tagName.toUpperCase() === "TH") inhalt = "{\\b " + inhalt + "}";
-        aus += "\\pard\\intbl " + inhalt + "\\cell ";
+        var ausricht = (e.zelle.style && e.zelle.style.textAlign) || "";
+        var q = ausricht === "center" ? "\\qc" : ausricht === "right" ? "\\qr" : "";
+        aus += "\\pard\\intbl" + q + " " + inhalt + "\\cell ";
       });
       aus += "\\row ";
     });

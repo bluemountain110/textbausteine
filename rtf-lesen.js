@@ -144,6 +144,7 @@ TB.rtfLesen = (function () {
     var defs = [];                // Spalten-Definitionen aus \trowd…\cellx
     var laufDef = {};             // gesammelte Eigenschaften bis zum \cellx
     var inTab = false;            // steht der laufende Absatz in der Tabelle?
+    var ausricht = "";            // \qc/\qr des laufenden Absatzes (für Zellen)
 
     function stueckSchliessen() {
       if (!puffer) return;
@@ -158,7 +159,7 @@ TB.rtfLesen = (function () {
     }
     function zelleSchliessen() {
       stueckSchliessen();
-      zellen.push(stuecke);
+      zellen.push({ stuecke: stuecke, ausricht: ausricht });
       stuecke = [];
     }
     function zeileSchliessen() {
@@ -259,7 +260,10 @@ TB.rtfLesen = (function () {
               absatzSchliessen();
             }
             break;
-          case "pard": zustand = leerZustand(); inTab = false; break;
+          case "pard": zustand = leerZustand(); inTab = false; ausricht = ""; break;
+          case "qc": ausricht = "center"; break;
+          case "qr": ausricht = "right"; break;
+          case "ql": ausricht = ""; break;
           // ---- Tabellen (Etappe 7) --------------------------------
           case "trowd":
             if (!tab) { absatzSchliessen(); tab = { zeilen: [] }; }
@@ -270,10 +274,16 @@ TB.rtfLesen = (function () {
             if (tab) {
               defs.push({ x: zahl || 0, cbpat: laufDef.cbpat || 0,
                           cfpat: laufDef.cfpat || 0, shdng: laufDef.shdng || 0,
-                          vmgf: !!laufDef.vmgf, vmrg: !!laufDef.vmrg });
+                          vmgf: !!laufDef.vmgf, vmrg: !!laufDef.vmrg,
+                          raender: { t: !!laufDef.rt, r: !!laufDef.rr,
+                                     b: !!laufDef.rb, l: !!laufDef.rl } });
               laufDef = {};
             }
             break;
+          case "clbrdrt": laufDef.rt = true; break;
+          case "clbrdrr": laufDef.rr = true; break;
+          case "clbrdrb": laufDef.rb = true; break;
+          case "clbrdrl": laufDef.rl = true; break;
           case "clcbpat": laufDef.cbpat = zahl || 0; break;
           case "clcfpat": laufDef.cfpat = zahl || 0; break;
           case "clshdng": laufDef.shdng = zahl || 0; break;
@@ -407,7 +417,7 @@ TB.rtfLesen = (function () {
     var fertigeZeilen = [];
     tab.zeilen.forEach(function (zeile) {
       var ausgabe = [];
-      zeile.zellen.forEach(function (stueckListe, nr) {
+      zeile.zellen.forEach(function (zellRoh, nr) {
         var def = zeile.defs[nr];
         if (!def) return;
         var links = nr > 0 ? zeile.defs[nr - 1].x : 0;
@@ -423,10 +433,21 @@ TB.rtfLesen = (function () {
           var breite = Math.max(1, Math.round((def.x - links) / total * 1000) / 10);
           stile.push("width:" + breite + "%");
         }
+        // Linien SEITENGENAU wie im Original (23.9.): KISIM setzt sie je
+        // Zellseite — die Legende hat z. B. nur eine linke Linie, keinen
+        // Zwischenstrich. Immer ausdrücklich, damit keine Vorgabe-Linie
+        // dazwischenfunkt.
+        var r = def.raender || {};
+        [["top", r.t], ["right", r.r], ["bottom", r.b], ["left", r.l]]
+          .forEach(function (seite) {
+            stile.push("border-" + seite[0] + ":" +
+                       (seite[1] ? "1px solid #444444" : "none"));
+          });
+        if (zellRoh.ausricht) stile.push("text-align:" + zellRoh.ausricht);
         var grund = zellGrund(def, farben);
         if (grund) stile.push("background-color:" + grund);
         var inhalt = "";
-        stueckListe.forEach(function (st) {
+        zellRoh.stuecke.forEach(function (st) {
           if (st.umbruch) { inhalt += "<br>"; return; }
           if (!st.text) return;
           inhalt += huelle(st.text, st.stil, farben, schriften, "", true);
@@ -441,7 +462,12 @@ TB.rtfLesen = (function () {
       fertigeZeilen.push(ausgabe);
     });
 
-    var aus = '<table class="tb-tabelle">';
+    // Die echte Druckbreite (Twips -> Bildpunkte) als Mindestbreite:
+    // im schmalen Bearbeiten-Fenster schiebt sich die Tabelle seitlich,
+    // statt die Zeilen umzubrechen — sonst verrutschte die Legende.
+    var mindest = total > 0 ? Math.round(total / 1440 * 96) : 0;
+    var aus = '<table class="tb-tabelle"' +
+              (mindest ? ' style="min-width:' + mindest + 'px"' : "") + ">";
     fertigeZeilen.forEach(function (zeile) {
       aus += "<tr>";
       zeile.forEach(function (z) {
