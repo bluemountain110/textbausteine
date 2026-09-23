@@ -51,6 +51,18 @@ TB.bausteine = (function () {
       return v[ort] && String(v[ort].text || "").trim(); });
   }
 
+  // Etappe 7: Trägt der Baustein (in irgendeiner Fassung) eine Tabelle?
+  // Nur für die kleine Marke in der Liste — die Anzeige selbst braucht
+  // keine Sonderbehandlung.
+  function hatTabelle(b) {
+    function traegt(x) { return /<table[\s>]/i.test(String(x || "")); }
+    if (traegt(b && b.text)) return true;
+    var v = b && b.varianten;
+    if (!v || typeof v !== "object") return false;
+    return Object.keys(v).some(function (ort) {
+      return v[ort] && traegt(v[ort].text); });
+  }
+
   // Prüfen VOR dem Speichern. Liefert eine Liste von Beanstandungen —
   // leer heisst: darf gespeichert werden.
   function pruefe(eintrag) {
@@ -135,7 +147,7 @@ TB.bausteine = (function () {
 
   return { alleFertigen: alleFertigen, alleEntwuerfe: alleEntwuerfe,
            alleIdeen: alleIdeen, fassungFuer: fassungFuer,
-           hatVarianten: hatVarianten,
+           hatVarianten: hatVarianten, hatTabelle: hatTabelle,
            pruefe: pruefe, suche: suche, kategorien: kategorien,
            zuletztBenutzt: zuletztBenutzt, beispieleEinfuegen: beispieleEinfuegen };
 })();

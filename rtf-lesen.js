@@ -14,10 +14,16 @@
 //        macht daraus eine echte Liste — sonst stünde „1." samt
 //        Tabulator wörtlich im Baustein und der Einzug wäre falsch
 //        (Näds Probe vom 16.9.).
-//        Bewusst NICHT gelesen: Tabellen, Bilder, Kopfzeilen,
-//        Formatvorlagen, Einzüge, Tabulatorabstände. Die verwirft der
-//        Leser stillschweigend, statt zu versuchen, jeden Sonderfall zu
-//        treffen — ein Baustein braucht sie nicht.
+//        Seit Etappe 7 werden auch TABELLEN gelesen (\trowd/\cellx/
+//        \cell/\row): Spaltenbreiten und Zell-Hintergründe kommen mit,
+//        die Schrift wird in der Tabelle auf die Grundschrift
+//        eingenordet (Näds Entscheid 22.9.: EINE Schrift je Tabelle),
+//        und Zeichen der KISIM-Symbolschriften (KisIcon…) werden zum
+//        Unicode-Häkchen √ — so bleiben die Häkchen sichtbar.
+//        Bewusst NICHT gelesen: Bilder, Kopfzeilen, Formatvorlagen,
+//        Einzüge, Tabulatorabstände, verschachtelte Tabellen. Die
+//        verwirft der Leser stillschweigend, statt zu versuchen, jeden
+//        Sonderfall zu treffen — ein Baustein braucht sie nicht.
 //
 //        Zwei Schreibweisen muss er beherrschen: KISIM setzt
 //        Auszeichnungen als SCHALTER (\b fett\b0), die App selbst als
@@ -28,6 +34,12 @@
 window.TB = window.TB || {};
 
 TB.rtfLesen = (function () {
+
+  // DAS Häkchen der App (Etappe 7): Unicode-Wurzelzeichen √ — es steht
+  // bewiesenermassen in KISIMs eigenem RTF (Duplex-Probe vom 22.9.).
+  // Sollte die Mini-Probe zeigen, dass ✓ in KISIM schöner ankommt,
+  // wird nur diese eine Zeile geändert.
+  var HAEKCHEN = "\u221A";
 
   // Gruppen, deren ganzer Inhalt übersprungen wird.
   var UEBERSPRINGEN = {
@@ -123,6 +135,13 @@ TB.rtfLesen = (function () {
     var uc = 1;                   // wie viele Zeichen ein \uN ersetzt
     var i = 0, n = text.length;
 
+    // ---- Tabellen-Zustand (Etappe 7) --------------------------------
+    var tab = null;               // die offene Tabelle { zeilen: [] }
+    var zellen = [];              // Zellen der laufenden Zeile
+    var defs = [];                // Spalten-Definitionen aus \trowd…\cellx
+    var laufDef = {};             // gesammelte Eigenschaften bis zum \cellx
+    var inTab = false;            // steht der laufende Absatz in der Tabelle?
+
     function stueckSchliessen() {
       if (!puffer) return;
       stuecke.push({ text: puffer, stil: kopie(laufend) });
@@ -134,9 +153,31 @@ TB.rtfLesen = (function () {
       stuecke = [];
       marke = null;
     }
+    function zelleSchliessen() {
+      stueckSchliessen();
+      zellen.push(stuecke);
+      stuecke = [];
+    }
+    function zeileSchliessen() {
+      if (zellen.length && tab) {
+        tab.zeilen.push({ defs: defs.slice(), zellen: zellen });
+      }
+      zellen = [];
+    }
+    function tabelleSchliessen() {
+      if (!tab) return;
+      zeileSchliessen();
+      if (tab.zeilen.length) absaetze.push({ tabelle: tab });
+      tab = null;
+      stuecke = [];
+      puffer = "";
+    }
+    function sichtbar(z) { return !!String(z).replace(/&nbsp;|\s/g, ""); }
     function schreibe(zeichen) {
       if (sammleMarke !== null) { sammleMarke += zeichen; return; }
       if (ueberspringeBis >= 0) return;
+      // Sichtbarer Text NACH einer Tabelle (ohne \intbl) beendet sie.
+      if (tab && !inTab && sichtbar(zeichen)) tabelleSchliessen();
       if (!gleich(zustand, laufend)) { stueckSchliessen(); laufend = kopie(zustand); }
       puffer += zeichen;
     }
@@ -206,9 +247,34 @@ TB.rtfLesen = (function () {
         switch (name) {
           case "par": case "line": case "sect":
             if (name === "line") { stueckSchliessen(); stuecke.push({ umbruch: true }); }
-            else absatzSchliessen();
+            else if (tab && inTab) {
+              // \par INNERHALB einer Zelle ist ein Zeilenwechsel in der
+              // Zelle (so schreibt es KISIM selbst, Duplex-Probe 22.9.).
+              stueckSchliessen(); stuecke.push({ umbruch: true });
+            } else {
+              if (tab) tabelleSchliessen();   // \pard\par nach der Tabelle
+              absatzSchliessen();
+            }
             break;
-          case "pard": zustand = leerZustand(); break;
+          case "pard": zustand = leerZustand(); inTab = false; break;
+          // ---- Tabellen (Etappe 7) --------------------------------
+          case "trowd":
+            if (!tab) { absatzSchliessen(); tab = { zeilen: [] }; }
+            defs = []; laufDef = {};
+            break;
+          case "intbl": if (tab) inTab = true; break;
+          case "cellx":
+            if (tab) {
+              defs.push({ x: zahl || 0, cbpat: laufDef.cbpat || 0,
+                          cfpat: laufDef.cfpat || 0, shdng: laufDef.shdng || 0 });
+              laufDef = {};
+            }
+            break;
+          case "clcbpat": laufDef.cbpat = zahl || 0; break;
+          case "clcfpat": laufDef.cfpat = zahl || 0; break;
+          case "clshdng": laufDef.shdng = zahl || 0; break;
+          case "cell": if (tab) zelleSchliessen(); break;
+          case "row": if (tab) zeileSchliessen(); break;
           case "plain": zustand = leerZustand(); break;
           case "b": zustand.b = (zahl !== 0); break;
           case "i": zustand.i = (zahl !== 0); break;
@@ -250,20 +316,28 @@ TB.rtfLesen = (function () {
       schreibe(entschaerfe(c));
       i++;
     }
+    tabelleSchliessen();
     absatzSchliessen();
 
     // ---- Aus den Stücken HTML bauen -----------------------------------
     var zeilen = absaetze.map(function (absatz) {
+      if (absatz.tabelle) {
+        return { html: "", marke: null,
+                 tabelleHtml: tabelleAlsHtml(absatz.tabelle, farben, schriften) };
+      }
       var zeile = "";
       absatz.stuecke.forEach(function (st) {
         if (st.umbruch) { zeile += "<br>"; return; }
         if (!st.text) return;
-        zeile += huelle(st.text, st.stil, farben, schriften, grundschrift);
+        zeile += huelle(st.text, st.stil, farben, schriften, grundschrift, false);
       });
       return { html: zeile, marke: absatz.marke };
     });
     // Leere Absätze am Rand wegräumen — KISIM hängt regelmässig einen an.
-    function leer(z) { return !z.html.replace(/<[^>]*>|&nbsp;|\s/g, ""); }
+    function leer(z) {
+      if (z.tabelleHtml) return false;
+      return !z.html.replace(/<[^>]*>|&nbsp;|\s/g, "");
+    }
     while (zeilen.length && leer(zeilen[zeilen.length - 1])) zeilen.pop();
     while (zeilen.length && leer(zeilen[0])) zeilen.shift();
 
@@ -273,6 +347,11 @@ TB.rtfLesen = (function () {
       return /[0-9]|^[a-zA-Z][.)]/.test(m) ? "ol" : "ul";
     }
     zeilen.forEach(function (z) {
+      if (z.tabelleHtml) {
+        if (offeneListe) { aus += "</" + offeneListe + ">"; offeneListe = null; }
+        aus += z.tabelleHtml;
+        return;
+      }
       if (z.marke) {
         var art = listenArt(z.marke);
         if (offeneListe !== art) {
@@ -292,12 +371,65 @@ TB.rtfLesen = (function () {
     return aus.replace(/(<br>)+$/, "");
   }
 
-  function huelle(inhalt, stil, farben, schriften, grundschrift) {
+  // ---- Eine gelesene Tabelle als HTML (Etappe 7) --------------------
+  // Spaltenbreiten kommen aus den \cellx-Kanten (als Prozent der
+  // Gesamtbreite), Zell-Hintergründe aus \clcbpat bzw. — wie KISIM es
+  // schreibt — aus \clcfpat mit voller Schattierung (\clshdng10000).
+  function zellGrund(def, farben) {
+    var nr = (def.shdng >= 5000 && def.cfpat) ? def.cfpat : def.cbpat;
+    var f = nr && farben[nr];
+    if (!f) return "";
+    if (f[0] > 245 && f[1] > 245 && f[2] > 245) return "";   // Weiss = Papier
+    return farbeAlsText(f);
+  }
+  function tabelleAlsHtml(tab, farben, schriften) {
+    var aus = '<table class="tb-tabelle">';
+    tab.zeilen.forEach(function (zeile) {
+      var total = zeile.defs.length ? zeile.defs[zeile.defs.length - 1].x : 0;
+      aus += "<tr>";
+      zeile.zellen.forEach(function (stueckListe, nr) {
+        var def = zeile.defs[nr] || {};
+        var stile = [];
+        if (total > 0 && zeile.defs[nr]) {
+          var links = nr > 0 ? zeile.defs[nr - 1].x : 0;
+          var breite = Math.max(1, Math.round((def.x - links) / total * 1000) / 10);
+          stile.push("width:" + breite + "%");
+        }
+        var grund = zellGrund(def, farben);
+        if (grund) stile.push("background-color:" + grund);
+        var inhalt = "";
+        stueckListe.forEach(function (st) {
+          if (st.umbruch) { inhalt += "<br>"; return; }
+          if (!st.text) return;
+          inhalt += huelle(st.text, st.stil, farben, schriften, "", true);
+        });
+        // Führende/abschliessende Leere in der Zelle wegräumen.
+        inhalt = inhalt.replace(/^(?:\s|<br>|&nbsp;)+/, "")
+                       .replace(/(?:\s|<br>|&nbsp;)+$/, "");
+        aus += "<td" + (stile.length ? ' style="' + stile.join(";") + '"' : "") +
+               ">" + inhalt + "</td>";
+      });
+      aus += "</tr>";
+    });
+    return aus + "</table>";
+  }
+
+  function huelle(inhalt, stil, farben, schriften, grundschrift, imTabelle) {
     var teile = [];
-    if (stil.f >= 0 && schriften[stil.f] && schriften[stil.f] !== grundschrift) {
-      teile.push("font-family:" + schriften[stil.f]);
+    // KISIM-Symbolschriften (KisIcon…) tragen Häkchen als gewöhnliche
+    // Zeichen (z. B. „!"). Jedes sichtbare Zeichen einer solchen Schrift
+    // wird zum Unicode-Häkchen — die Schrift selbst fliegt raus.
+    var schriftName = (stil.f >= 0 && schriften[stil.f]) ? schriften[stil.f] : "";
+    if (/^KisIcon/i.test(schriftName)) {
+      inhalt = inhalt.replace(/&[#a-zA-Z0-9]+;|[^\s]/g, HAEKCHEN);
+      schriftName = "";
     }
-    if (stil.fs) {
+    // In Tabellen gilt EINE Schrift (Näds Entscheid 22.9.): Schriftart
+    // und -grösse werden nicht übernommen, alles Übrige schon.
+    if (!imTabelle && schriftName && schriftName !== grundschrift) {
+      teile.push("font-family:" + schriftName);
+    }
+    if (!imTabelle && stil.fs) {
       var groesse = TB.auszeichnung.groesseEinnorden((stil.fs / 2) + "pt");
       if (groesse) teile.push("font-size:" + groesse);
     }

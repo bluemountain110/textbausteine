@@ -142,6 +142,9 @@ TB.oberflaeche = (function () {
     textTeil.appendChild(el("div", "zeile-neben", neben.join(" · ")));
     li.appendChild(textTeil);
     if (b.ausgabeart === "marken") li.appendChild(el("span", "marke marke-diktat", T.markeKennzeichen));
+    if (TB.bausteine.hatTabelle(b)) {
+      li.appendChild(el("span", "marke", T.markeTabelle));   // Etappe 7
+    }
     if (TB.bausteine.hatVarianten(b)) {
       var mv = el("span", "marke", T.markeVarianten);
       mv.title = Object.keys(b.varianten || {}).join(", ");

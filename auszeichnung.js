@@ -11,7 +11,14 @@
 //           ohne Formatierung (Mac, iPhone, Suche, Export).
 //        Getragen werden: fett, kursiv, unterstrichen, durchgestrichen,
 //        Schriftart, Schriftgrösse, Schriftfarbe, farbige Markierung,
-//        Absätze, Zeilenumbrüche und Aufzählungen.
+//        Absätze, Zeilenumbrüche, Aufzählungen — und seit Etappe 7
+//        TABELLEN: Zellen tragen Breite und Hintergrund; innerhalb der
+//        Tabelle wird die Schrift auf die Grundschrift eingenordet
+//        (Näds Entscheid 22.9.: EINE Schrift je Tabelle), und das gilt
+//        auf JEDEM Schreibweg, weil alle durch diese Reinigung laufen.
+//        Der reine Text macht aus einer Tabellenzeile eine Textzeile
+//        mit Tabulatoren zwischen den Zellen — der Notausgang für
+//        Felder, die keine Tabellen können.
 //        GRUNDSATZ: Hier fliesst nur Bausteintext durch, nie
 //        Patientendaten.
 //
@@ -31,12 +38,15 @@ TB.auszeichnung = (function () {
   var ERLAUBT = {
     "B": 1, "STRONG": 1, "I": 1, "EM": 1, "U": 1, "S": 1, "STRIKE": 1,
     "BR": 1, "P": 1, "DIV": 1, "UL": 1, "OL": 1, "LI": 1, "SPAN": 1,
-    "FONT": 1, "MARK": 1
+    "FONT": 1, "MARK": 1,
+    "TABLE": 1, "THEAD": 1, "TBODY": 1, "TR": 1, "TD": 1, "TH": 1
   };
   // Alles, was Inhalt bringt, aber keine Auszeichnung ist, wird zum
-  // schlichten Absatz. Alles Gefährliche fliegt ganz raus.
+  // schlichten Absatz. Alles Gefährliche fliegt ganz raus — ebenso
+  // Tabellen-Beiwerk, das ohne Struktur nur Streutext hinterliesse.
   var RAUS = { "SCRIPT": 1, "STYLE": 1, "IFRAME": 1, "OBJECT": 1,
-               "EMBED": 1, "LINK": 1, "META": 1, "HEAD": 1 };
+               "EMBED": 1, "LINK": 1, "META": 1, "HEAD": 1,
+               "CAPTION": 1, "COLGROUP": 1, "COL": 1 };
 
   function farbeAlsZahlen(wert) {
     var w = String(wert || "").trim().toLowerCase();
@@ -87,7 +97,7 @@ TB.auszeichnung = (function () {
     return ziel;
   }
 
-  function uebernehmen(knoten, elternZiel) {
+  function uebernehmen(knoten, elternZiel, imTabelle) {
     if (knoten.nodeType === 3) {
       elternZiel.appendChild(document.createTextNode(knoten.nodeValue));
       return;
@@ -96,20 +106,23 @@ TB.auszeichnung = (function () {
     var name = knoten.tagName.toUpperCase();
     if (RAUS[name]) return;
     var neuerEltern = elternZiel;
+    var innenTabelle = imTabelle || name === "TABLE";
     if (ERLAUBT[name]) {
       var kopie = document.createElement(name === "STRONG" ? "B"
                 : name === "EM" ? "I"
                 : name === "STRIKE" ? "S"
                 : name === "FONT" ? "SPAN"
                 : name === "MARK" ? "SPAN" : name);
-      var stil = stilUebernehmen(knoten);
+      if (name === "TABLE") kopie.className = "tb-tabelle";
+      var stil = stilUebernehmen(knoten, innenTabelle,
+                                 name === "TD" || name === "TH");
       if (stil) kopie.setAttribute("style", stil);
       // Ein SPAN ohne jede Auszeichnung ist nur Ballast.
       if (kopie.tagName === "SPAN" && !stil) { neuerEltern = elternZiel; }
       else { elternZiel.appendChild(kopie); neuerEltern = kopie; }
     }
     Array.prototype.forEach.call(knoten.childNodes, function (k) {
-      uebernehmen(k, neuerEltern); });
+      uebernehmen(k, neuerEltern, innenTabelle); });
   }
 
   // Fremde Schriftgrössen werden auf eine der Stufen der App gebracht.
@@ -130,13 +143,21 @@ TB.auszeichnung = (function () {
     return "24px";                        // darüber: sehr gross
   }
 
-  function stilUebernehmen(knoten) {
+  function stilUebernehmen(knoten, imTabelle, istZelle) {
     var teile = [];
     var s = knoten.style || {};
-    var schrift = s.fontFamily || knoten.getAttribute("face") || "";
+    // In der Tabelle gilt EINE Schrift: Schriftart und -grösse fliegen
+    // dort auf JEDEM Weg raus (Einfügen aus KISIM, Word, RTF-Leser).
+    var schrift = imTabelle ? "" :
+      (s.fontFamily || knoten.getAttribute("face") || "");
     if (schrift) teile.push("font-family:" + schrift.replace(/["';]/g, ""));
-    var groesse = groesseEinnorden(s.fontSize || "");
+    var groesse = imTabelle ? null : groesseEinnorden(s.fontSize || "");
     if (groesse) teile.push("font-size:" + groesse);
+    if (istZelle) {
+      var breite = String(s.width || knoten.getAttribute("width") || "");
+      var bm = breite.match(/^([\d.]+)%$/);
+      if (bm) teile.push("width:" + bm[1] + "%");
+    }
     var farbe = s.color || knoten.getAttribute("color") || "";
     if (farbe && farbeAlsZahlen(farbe)) teile.push("color:" + farbe);
     // Markierung: Word und KISIM benutzen teils backgroundColor, teils
@@ -158,6 +179,25 @@ TB.auszeichnung = (function () {
   // ---- Der reine Text -------------------------------------------------
   function reinerText(html) {
     var d = reinige(html);
+    // Tabellen (Etappe 7): eine Tabellenzeile wird eine Textzeile, die
+    // Zellen trennt je ein Tabulator — genau so gibt KISIM selbst eine
+    // Tabelle als reinen Text her. Zeilenwechsel INNERHALB einer Zelle
+    // werden zu Leerzeichen, damit die Zeile eine Zeile bleibt.
+    Array.prototype.forEach.call(d.querySelectorAll("table"), function (t) {
+      var zeilen = [];
+      Array.prototype.forEach.call(t.querySelectorAll("tr"), function (tr) {
+        var zellen = [];
+        Array.prototype.forEach.call(tr.children, function (z) {
+          var k = z.cloneNode(true);
+          Array.prototype.forEach.call(k.querySelectorAll("br"), function (b) {
+            b.parentNode.replaceChild(document.createTextNode(" "), b); });
+          zellen.push((k.textContent || "").replace(/\s+/g, " ").trim());
+        });
+        zeilen.push(zellen.join("\t"));
+      });
+      t.parentNode.replaceChild(
+        document.createTextNode("\n" + zeilen.join("\n") + "\n"), t);
+    });
     // Absätze und Umbrüche werden zu echten Zeilenwechseln, damit der
     // reine Text gleich aussieht wie der formatierte.
     Array.prototype.forEach.call(d.querySelectorAll("br"), function (b) {
@@ -260,8 +300,15 @@ TB.auszeichnung = (function () {
       return "\\par {\\pntext \\u8226?\\tab}" +
              kinderNachRtf(w, blockKinder(knoten), true);
     }
+    if (name === "TABLE") return tabelleNachRtf(w, knoten);
     if (name === "P" || name === "DIV") {
       var kinder = blockKinder(knoten);
+      // Ein Absatz, der NUR eine Tabelle enthält, ist die Tabelle —
+      // sonst entstünde davor eine leere Zeile.
+      if (kinder.length === 1 && kinder[0].nodeType === 1 &&
+          kinder[0].tagName.toUpperCase() === "TABLE") {
+        return tabelleNachRtf(w, kinder[0]);
+      }
       if (imListenpunkt) return kinderNachRtf(w, kinder, imListenpunkt);
       if (!kinder.length) return "\\par ";
       return "\\par " + kinderNachRtf(w, kinder, imListenpunkt);
@@ -290,6 +337,64 @@ TB.auszeichnung = (function () {
       return "{" + vor + (/[a-z0-9]$/i.test(vor) ? " " : "") + innen + nach + "}";
     }
     return innen;
+  }
+
+  // ---- Tabellen als RTF (Etappe 7) ----------------------------------
+  // Der Zeilenbau folgt KISIMs eigenen Vorlagen (Duplex-Probe 22.9.):
+  // je Zeile \trowd mit Zellrändern und \cellx-Kanten, dann je Zelle
+  // \pard\intbl Inhalt \cell, zum Schluss \row. Die Gesamtbreite von
+  // 9214 Twips ist die Breite, die KISIM selbst benutzt. Zeilenwechsel
+  // INNERHALB einer Zelle sind dort einfach \par — auch das schreibt
+  // KISIM selbst so.
+  var TAB_GESAMT = 9214;
+  var TAB_RAND = "\\clbrdrl\\brdrw15\\brdrs\\clbrdrt\\brdrw15\\brdrs" +
+                 "\\clbrdrr\\brdrw15\\brdrs\\clbrdrb\\brdrw15\\brdrs";
+  function tabelleNachRtf(w, tabelle) {
+    var zeilen = [];
+    Array.prototype.forEach.call(tabelle.querySelectorAll("tr"), function (tr) {
+      var zellen = Array.prototype.filter.call(tr.children, function (z) {
+        var n = z.tagName.toUpperCase();
+        return n === "TD" || n === "TH";
+      });
+      if (zellen.length) zeilen.push(zellen);
+    });
+    if (!zeilen.length) return "";
+    var aus = "\\par\\pard ";
+    zeilen.forEach(function (zellen) {
+      // Breiten: aus den Prozent-Angaben der Zellen; fehlen sie,
+      // werden die restlichen Spalten gleich breit verteilt.
+      var breiten = zellen.map(function (z) {
+        var m = String((z.style && z.style.width) || "").match(/^([\d.]+)%$/);
+        return m ? parseFloat(m[1]) : null;
+      });
+      var summe = 0, offene = 0;
+      breiten.forEach(function (p) { if (p !== null) summe += p; else offene += 1; });
+      var defs = "\\trowd\\trgaph80\\trleft-80\\trpaddl80\\trpaddr80" +
+                 "\\trpaddfl3\\trpaddfr3";
+      var rechts = 0;
+      zellen.forEach(function (z, nr) {
+        var anteil = (breiten[nr] !== null) ? breiten[nr]
+                   : Math.max(1, (100 - summe) / (offene || 1));
+        rechts = Math.min(TAB_GESAMT, rechts + Math.round(TAB_GESAMT * anteil / 100));
+        if (nr === zellen.length - 1) rechts = TAB_GESAMT;
+        var schattierung = "";
+        var grund = (z.style && z.style.backgroundColor) || "";
+        var gz = farbeAlsZahlen(grund);
+        if (gz && !(gz[0] > 245 && gz[1] > 245 && gz[2] > 245)) {
+          schattierung = "\\clcbpat" + farbNummer(w, grund);
+        }
+        defs += TAB_RAND + schattierung + "\\cellx" + rechts;
+      });
+      aus += defs;
+      zellen.forEach(function (z) {
+        var inhalt = kinderNachRtf(w, blockKinder(z), false)
+                       .replace(/^\\par /, "");
+        if (z.tagName.toUpperCase() === "TH") inhalt = "{\\b " + inhalt + "}";
+        aus += "\\pard\\intbl " + inhalt + "\\cell ";
+      });
+      aus += "\\row ";
+    });
+    return aus + "\\pard ";
   }
 
   function ausHtml(html) {

@@ -344,6 +344,20 @@ TB.T = {
   ideenExportiert: "Dokument erzeugt — im Downloads-Ordner.",
   ideenStandTitel: "Ideen-Bericht",
 
+  // Tabellen (Etappe 7)
+  markeTabelle: "Tabelle",
+  tabWerkzeug: "Tabelle:",
+  tabZeilePlus: "+ Zeile",
+  tabZeilePlusTitel: "Neue Zeile unter der aktuellen einfügen",
+  tabZeileMinus: "− Zeile",
+  tabZeileMinusTitel: "Aktuelle Zeile löschen",
+  tabSpaltePlus: "+ Spalte",
+  tabSpaltePlusTitel: "Neue Spalte rechts der aktuellen einfügen",
+  tabSpalteMinus: "− Spalte",
+  tabSpalteMinusTitel: "Aktuelle Spalte löschen",
+  tabTabelleEntfernt: "Die letzte Zeile ist weg — damit ist die ganze Tabelle entfernt.",
+  tabBreitenNeu: "Die Spalten sind jetzt gleich breit verteilt.",
+
   // Allgemein
   schliessen: "Schliessen",
   ok: "OK"

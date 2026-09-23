@@ -5,7 +5,9 @@
 //        den Datenbestand (keine doppelte Kennung, kein doppeltes
 //        Kürzel, kein Baustein ohne Titel), die Rundreise
 //        (Export -> Import-Vorschau -> „0 neu“) und seit Etappe 2 den
-//        Abgleich (Übersetzung verlustfrei, Warteschlange sauber).
+//        Abgleich (Übersetzung verlustfrei, Warteschlange sauber) und
+//        seit Etappe 7 die Tabellen (Lesen, Reinigen, reiner Text,
+//        RTF-Erzeugung, Rundreise, Symbolschrift-Häkchen).
 //        Grün heisst bewiesen, Rot heisst Programmfehler — nie
 //        „kommt darauf an“.
 //        Die Prüfungen laufen über LISTEN, nicht über handgeschriebene
@@ -108,6 +110,55 @@ TB.selbsttest = (function () {
                   ok: ohneRtf === 0 && falschesRtf === 0,
                   detail: (ohneRtf ? ohneRtf + " ohne RTF " : "") +
                           (falschesRtf ? falschesRtf + " unerwartet" : "") });
+    return faelle;
+  }
+
+  // ---- Tabellen (Etappe 7) ----------------------------------------------
+  // Reine Funktions-Prüfungen ohne Wegwerf-Baustein: Lesen, Reinigen,
+  // reiner Text, RTF-Erzeugung und die Rundreise Lesen→Erzeugen→Lesen.
+  function pruefeTabellen() {
+    var faelle = [];
+    var A = TB.auszeichnung, L = TB.rtfLesen;
+    function fall(name, ok, detail) {
+      faelle.push({ name: name, ok: !!ok, detail: ok ? "" : String(detail || "") });
+    }
+    var probe = '<table><tr><th>Kopf</th><td style="width:30%">A</td></tr>' +
+                '<tr><td>{{Feld:Wert}}</td><td>B<br>C</td></tr></table>';
+    try {
+      var rein = A.reinige('<table><tr><td style="font-family:Times">X</td>' +
+                           '</tr></table>').innerHTML;
+      fall("Reinigen: Tabelle bleibt, fremde Schrift in der Zelle nicht",
+           /<table/.test(rein) && !/font-family/.test(rein), rein);
+      var text = A.reinerText(probe);
+      fall("Reiner Text: Zellen per Tabulator, Zeilen per Umbruch",
+           text.indexOf("Kopf\tA") >= 0 && /\n\{\{Feld:Wert\}\}\t/.test("\n" + text),
+           JSON.stringify(text));
+      var rtf = A.ausHtml(probe);
+      fall("RTF: 2 Zeilen, 4 Zellen, Ränder, rechte Kante",
+           (rtf.match(/\\trowd/g) || []).length === 2 &&
+           (rtf.match(/\\cell /g) || []).length === 4 &&
+           /\\clbrdrl\\brdrw15\\brdrs/.test(rtf) && /\\cellx9214/.test(rtf),
+           rtf.slice(0, 200));
+      fall("RTF: Platzhalter reist durch die Zelle",
+           rtf.indexOf("\\{\\{Feld:Wert\\}\\}") >= 0, rtf.slice(0, 200));
+      var zurueck = L.lies(rtf);
+      fall("Rundreise: Zeilen und Zellen unverändert, Kopfzeile fett",
+           (zurueck.match(/<tr>/g) || []).length === 2 &&
+           (zurueck.match(/<td/g) || []).length === 4 &&
+           /<b>Kopf<\/b>/.test(zurueck), zurueck);
+      var symbol = L.lies("{\\rtf1\\ansi\\ansicpg1252\\deff0{\\fonttbl" +
+        "{\\f0\\fnil Arial;}{\\f1\\fnil KisIconPhysio1;}}\\viewkind4\\uc1 " +
+        "\\pard\\f0 vor {\\f1 !} nach\\par }");
+      fall("Symbolschrift: KisIcon-Zeichen wird zum Häkchen",
+           /\u221A|&#8730;/.test(symbol) && symbol.indexOf("!") === -1 &&
+           !/KisIcon/i.test(symbol), symbol);
+      var analyse = TB.reichtext.pruefe(probe, TB.einstellungen.makroUmgebung());
+      fall("Platzhalter-Prüfung sieht in die Zellen (keine Fehler, 1 Lücke)",
+           analyse.fehler.length === 0 && analyse.luecken.length === 1,
+           analyse.fehler.join(" "));
+    } catch (e) {
+      fall("Tabellen-Prüfung läuft ohne Fehler", false, String(e));
+    }
     return faelle;
   }
 
@@ -225,6 +276,7 @@ TB.selbsttest = (function () {
       pruefeRechnen().map(function (f) { f.gruppe = "Rechnen"; return f; }),
       pruefeBestand().map(function (f) { f.gruppe = "Datenbestand"; return f; }),
       pruefeRundreise().map(function (f) { f.gruppe = "Rundreise"; return f; }),
+      pruefeTabellen().map(function (f) { f.gruppe = "Tabellen"; return f; }),
       pruefeAbgleich().map(function (f) { f.gruppe = "Abgleich"; return f; }),
       pruefeVarianten().map(function (f) { f.gruppe = "Standort-Fassungen"; return f; })
     );

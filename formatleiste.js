@@ -11,6 +11,11 @@
 //        Ein Hinweis unter der Leiste sagt, was am jeweiligen Ziel
 //        ankommt: Axenita kennt keine Schriftgrösse und keine
 //        Markierung, KISIM und Word können alles.
+//        Seit Etappe 7: Steht die Schreibmarke in einer Tabelle,
+//        erscheint eine zweite Zeile mit Tabellen-Werkzeugen (Zeile und
+//        Spalte einfügen/löschen), die Tabulator-Taste springt von
+//        Zelle zu Zelle, und Tab in der letzten Zelle legt — wie in
+//        Word — eine neue Zeile an.
 //        GRUNDSATZ: Hier steht Bausteintext, nie Patiententext.
 
 "use strict";
@@ -130,6 +135,131 @@ TB.formatleiste = (function () {
     rahmen.appendChild(leiste);
     var hinweis = el("div", "erklaerung klein-hinweis", TB.T.formHinweisZiele);
     rahmen.appendChild(hinweis);
+
+    // ---- Tabellen-Werkzeuge (Etappe 7) ------------------------------
+    // Die Zeile erscheint nur, wenn die Schreibmarke in einer Tabelle
+    // steht. Diese Runde ändert Zellen-INHALTE und die Struktur
+    // (Zeile/Spalte einfügen und löschen); Zellen verbinden gibt es
+    // bewusst nicht.
+    var tabLeiste = el("div", "tabellen-leiste");
+    tabLeiste.appendChild(el("span", "leisten-titel", TB.T.tabWerkzeug));
+    function melde(text) {
+      if (TB.ui && TB.ui.melde) TB.ui.melde(text);
+    }
+    function zelleAmCursor() {
+      var auswahl = window.getSelection();
+      var k = auswahl && auswahl.anchorNode;
+      while (k && k !== feld) {
+        if (k.nodeType === 1) {
+          var n = k.tagName.toUpperCase();
+          if (n === "TD" || n === "TH") return k;
+        }
+        k = k.parentNode;
+      }
+      return null;
+    }
+    function cursorIn(zelle) {
+      if (!zelle) return;
+      var b = document.createRange();
+      b.selectNodeContents(zelle);
+      b.collapse(true);
+      var auswahl = window.getSelection();
+      auswahl.removeAllRanges();
+      auswahl.addRange(b);
+      feld.focus();
+    }
+    // Nach dem Einfügen oder Löschen einer SPALTE werden alle Spalten
+    // der Tabelle gleich breit verteilt — die alten Prozentbreiten
+    // stimmen dann ohnehin nicht mehr.
+    function breitenAusgleichen(tabelle) {
+      Array.prototype.forEach.call(tabelle.querySelectorAll("tr"), function (tr) {
+        var n = tr.children.length || 1;
+        Array.prototype.forEach.call(tr.children, function (z) {
+          z.style.width = (Math.round(1000 / n) / 10) + "%";
+        });
+      });
+    }
+    function zeileAnfuegenNach(zeile) {
+      var neu = document.createElement("tr");
+      var n = zeile.children.length || 1;
+      for (var z2 = 0; z2 < n; z2++) {
+        var zelle = document.createElement("td");
+        var vorbild = zeile.children[z2];
+        if (vorbild && vorbild.style && vorbild.style.width) {
+          zelle.style.width = vorbild.style.width;
+        }
+        neu.appendChild(zelle);
+      }
+      zeile.parentNode.insertBefore(neu, zeile.nextSibling);
+      cursorIn(neu.children[0]);
+      return neu;
+    }
+    function tabKnopf(beschriftung, titel, tat) {
+      var k = el("button", "leise klein", beschriftung);
+      k.type = "button";
+      k.title = titel;
+      k.addEventListener("mousedown", function (ev) { ev.preventDefault(); });
+      k.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        var zelle = zelleAmCursor();
+        if (!zelle) return;
+        tat(zelle);
+        leisteZeigen();
+        geaendert();
+      });
+      tabLeiste.appendChild(k);
+    }
+    tabKnopf(TB.T.tabZeilePlus, TB.T.tabZeilePlusTitel, function (zelle) {
+      zeileAnfuegenNach(zelle.parentNode);
+    });
+    tabKnopf(TB.T.tabZeileMinus, TB.T.tabZeileMinusTitel, function (zelle) {
+      var zeile = zelle.parentNode;
+      var tabelle = zeile.closest("table");
+      var alle = tabelle.querySelectorAll("tr");
+      if (alle.length <= 1) { tabelle.remove(); melde(TB.T.tabTabelleEntfernt); return; }
+      var naechste = zeile.nextElementSibling || zeile.previousElementSibling;
+      zeile.remove();
+      if (naechste) cursorIn(naechste.children[0]);
+    });
+    tabKnopf(TB.T.tabSpaltePlus, TB.T.tabSpaltePlusTitel, function (zelle) {
+      var stelle = Array.prototype.indexOf.call(zelle.parentNode.children, zelle);
+      var tabelle = zelle.closest("table");
+      Array.prototype.forEach.call(tabelle.querySelectorAll("tr"), function (tr) {
+        var neu = document.createElement("td");
+        var vorbild = tr.children[stelle];
+        if (vorbild) tr.insertBefore(neu, vorbild.nextSibling);
+        else tr.appendChild(neu);
+      });
+      breitenAusgleichen(tabelle);
+      melde(TB.T.tabBreitenNeu);
+      cursorIn(zelle.nextElementSibling || zelle);
+    });
+    tabKnopf(TB.T.tabSpalteMinus, TB.T.tabSpalteMinusTitel, function (zelle) {
+      var stelle = Array.prototype.indexOf.call(zelle.parentNode.children, zelle);
+      var tabelle = zelle.closest("table");
+      var uebrig = 0;
+      Array.prototype.forEach.call(tabelle.querySelectorAll("tr"), function (tr) {
+        if (tr.children[stelle]) tr.children[stelle].remove();
+        if (tr.children.length > uebrig) uebrig = tr.children.length;
+      });
+      if (!uebrig) { tabelle.remove(); melde(TB.T.tabTabelleEntfernt); return; }
+      breitenAusgleichen(tabelle);
+      melde(TB.T.tabBreitenNeu);
+    });
+    function leisteZeigen() {
+      // Ist das Fenster zu (Feld nicht mehr im Dokument), räumt sich
+      // der Lauscher selbst weg — sonst sammelten sich welche an.
+      if (!feld.isConnected) {
+        document.removeEventListener("selectionchange", leisteZeigen);
+        return;
+      }
+      tabLeiste.className = zelleAmCursor()
+        ? "tabellen-leiste sichtbar" : "tabellen-leiste";
+    }
+    document.addEventListener("selectionchange", leisteZeigen);
+    feld.addEventListener("focus", leisteZeigen);
+    rahmen.appendChild(tabLeiste);
+
     rahmen.appendChild(feld);
     if (platz) platz.appendChild(rahmen);
 
@@ -165,6 +295,28 @@ TB.formatleiste = (function () {
     // eine geänderte Belegung wirklich gilt und nicht beides zugleich
     // passiert.
     feld.addEventListener("keydown", function (ev) {
+      // Etappe 7: In der Tabelle springt Tab zur nächsten Zelle,
+      // Umschalt+Tab zur vorigen — und Tab in der LETZTEN Zelle legt
+      // wie in Word eine neue Zeile an.
+      if (ev.key === "Tab") {
+        var zelle = zelleAmCursor();
+        if (zelle) {
+          ev.preventDefault();
+          var tabelle = zelle.closest("table");
+          var alleZellen = tabelle.querySelectorAll("td,th");
+          var stelle = Array.prototype.indexOf.call(alleZellen, zelle);
+          if (ev.shiftKey) {
+            if (stelle > 0) cursorIn(alleZellen[stelle - 1]);
+          } else if (stelle < alleZellen.length - 1) {
+            cursorIn(alleZellen[stelle + 1]);
+          } else {
+            zeileAnfuegenNach(zelle.parentNode);
+          }
+          leisteZeigen();
+          geaendert();
+          return;
+        }
+      }
       var treffer = TB.tastenkuerzel.befehlFuer(ev);
       if (!treffer) return;
       ev.preventDefault();

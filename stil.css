@@ -253,3 +253,19 @@ table.konstanten button:hover { background: var(--warn-grund);
 
 /* Fassungsmarke oben auf jeder Seite (20.9.) */
 .fassung-marke { margin-left: 10px; font-size: 12px; color: #5a7075; font-weight: normal; white-space: nowrap; }
+
+/* ---- Tabellen (Etappe 7) ------------------------------------------- */
+.tb-tabelle { border-collapse: collapse; width: 100%; margin: 6px 0;
+  table-layout: fixed; }
+.tb-tabelle td, .tb-tabelle th { border: 1px solid var(--linie);
+  padding: 3px 6px; vertical-align: top; word-wrap: break-word;
+  min-width: 24px; }
+.tb-tabelle th { font-weight: 700; background: var(--karte);
+  text-align: left; }
+.schreibfeld { overflow-x: auto; }
+.tabellen-leiste { display: none; flex-wrap: wrap; gap: 4px;
+  align-items: center; padding: 4px 8px;
+  border-top: 1px dashed var(--linie); }
+.tabellen-leiste.sichtbar { display: flex; }
+.tabellen-leiste .leisten-titel { font-size: .78rem;
+  color: var(--gedaempft); margin-right: 2px; }
