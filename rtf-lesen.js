@@ -38,11 +38,12 @@ window.TB = window.TB || {};
 
 TB.rtfLesen = (function () {
 
-  // DAS Häkchen der App (Etappe 7): Unicode-Wurzelzeichen √ — es steht
-  // bewiesenermassen in KISIMs eigenem RTF (Duplex-Probe vom 22.9.).
-  // Sollte die Mini-Probe zeigen, dass ✓ in KISIM schöner ankommt,
-  // wird nur diese eine Zeile geändert.
-  var HAEKCHEN = "\u221A";
+  // DAS Häkchen der App: ✓ (Näds Entscheid nach der KISIM-Mini-Probe
+  // vom 23.9. — „das Word-Häkchen ist schöner", beide kommen in KISIM
+  // sauber an). Beim Einlesen werden BEIDE KISIM-Schreibweisen darauf
+  // eingenordet: die Symbolschrift-Zeichen (KisIcon…) UND das
+  // Wurzelzeichen √, denn im selben Original stecken beide gemischt.
+  var HAEKCHEN = "\u2713";
 
   // Gruppen, deren ganzer Inhalt übersprungen wird.
   var UEBERSPRINGEN = {
@@ -260,7 +261,15 @@ TB.rtfLesen = (function () {
               absatzSchliessen();
             }
             break;
-          case "pard": zustand = leerZustand(); inTab = false; ausricht = ""; break;
+          case "pard":
+            // Setzt NUR Absatz-Eigenschaften zurück — das Zeichenformat
+            // (fett usw.) läuft weiter, bis \b0 oder \plain es beendet.
+            // KISIM verlässt sich darauf: EIN \b vor „Gefäss" macht die
+            // ganze Kopfzeile fett (Befund 23.9.). Bis 13.2 wurde hier
+            // fälschlich alles gelöscht — darum verloren „rechts/links/
+            // Legende" ihr Fett beim Einlesen.
+            inTab = false; ausricht = "";
+            break;
           case "qc": ausricht = "center"; break;
           case "qr": ausricht = "right"; break;
           case "ql": ausricht = ""; break;
@@ -492,6 +501,7 @@ TB.rtfLesen = (function () {
       inhalt = inhalt.replace(/&[#a-zA-Z0-9]+;|[^\s]/g, HAEKCHEN);
       schriftName = "";
     }
+    inhalt = inhalt.replace(/&#8730;|\u221A/g, HAEKCHEN);
     // In Tabellen gilt EINE Schrift (Näds Entscheid 22.9.): Schriftart
     // und -grösse werden nicht übernommen, alles Übrige schon.
     if (!imTabelle && schriftName && schriftName !== grundschrift) {

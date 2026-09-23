@@ -49,6 +49,10 @@ TB.auszeichnung = (function () {
                "EMBED": 1, "LINK": 1, "META": 1, "HEAD": 1,
                "CAPTION": 1, "COLGROUP": 1, "COL": 1 };
 
+  // Punkt-/Bildpunkt-Breite der gerade übernommenen Zelle — wandert als
+  // data-Merkmal an die Kopie, breitenNachrechnen macht Prozent daraus.
+  var knotenBreiteMerken = null;
+
   function farbeAlsZahlen(wert) {
     var w = String(wert || "").trim().toLowerCase();
     var m = w.match(/^#([0-9a-f]{3})$/);
@@ -95,7 +99,36 @@ TB.auszeichnung = (function () {
       ? Array.prototype.forEach.call(quelle.childNodes, function (n) {
           uebernehmen(n, ziel); })
       : null;
+    breitenNachrechnen(ziel);
     return ziel;
+  }
+
+  // Word/Excel geben Zellbreiten in Punkt/Bildpunkten an; hier werden
+  // sie je Zeile in Prozent umgerechnet, Zellen ohne Angabe teilen sich
+  // den Rest (23.9.).
+  function breitenNachrechnen(ziel) {
+    Array.prototype.forEach.call(ziel.querySelectorAll("table"), function (t) {
+      Array.prototype.forEach.call(t.querySelectorAll("tr"), function (tr) {
+        var roh = [], summe = 0, offene = 0, dabei = false;
+        Array.prototype.forEach.call(tr.children, function (z) {
+          var wert = z.getAttribute("data-tb-breite");
+          z.removeAttribute("data-tb-breite");
+          var zahl = wert ? parseFloat(wert) : null;
+          if (zahl && zahl > 0) { dabei = true; summe += zahl; }
+          else { zahl = null; offene += 1; }
+          roh.push(zahl);
+        });
+        if (!dabei) return;
+        var mittel = offene ? (summe / Math.max(1, roh.length - offene)) : 0;
+        var gesamt = summe + offene * mittel;
+        if (!(gesamt > 0)) return;
+        Array.prototype.forEach.call(tr.children, function (z, nr) {
+          if (z.style && z.style.width) return;   // Prozent war schon da
+          var anteil = (roh[nr] === null ? mittel : roh[nr]) / gesamt * 100;
+          z.style.width = (Math.round(anteil * 10) / 10) + "%";
+        });
+      });
+    });
   }
 
   function uebernehmen(knoten, elternZiel, imTabelle) {
@@ -126,6 +159,10 @@ TB.auszeichnung = (function () {
                                  name === "TD" || name === "TH",
                                  name === "TABLE");
       if (stil) kopie.setAttribute("style", stil);
+      if (knotenBreiteMerken !== null) {
+        kopie.setAttribute("data-tb-breite", String(knotenBreiteMerken));
+        knotenBreiteMerken = null;
+      }
       // Ein SPAN ohne jede Auszeichnung ist nur Ballast.
       if (kopie.tagName === "SPAN" && !stil) { neuerEltern = elternZiel; }
       else { elternZiel.appendChild(kopie); neuerEltern = kopie; }
@@ -154,6 +191,7 @@ TB.auszeichnung = (function () {
 
   function stilUebernehmen(knoten, imTabelle, istZelle, istTabelle) {
     var teile = [];
+    knotenBreiteMerken = null;
     var s = knoten.style || {};
     // In der Tabelle gilt EINE Schrift: Schriftart und -grösse fliegen
     // dort auf JEDEM Weg raus (Einfügen aus KISIM, Word, RTF-Leser).
@@ -171,8 +209,15 @@ TB.auszeichnung = (function () {
       var breite = String(s.width || knoten.getAttribute("width") || "");
       var bm = breite.match(/^([\d.]+)%$/);
       if (bm) teile.push("width:" + bm[1] + "%");
-      // Linien je Zellseite (23.9.): „none" wie „vorhanden" reisen
-      // ausdrücklich mit — daran hängt das Original-Bild der Legende.
+      else {
+        // Punkt-/Bildpunkt-Angabe (Word/Excel) fürs Nachrechnen merken.
+        var bp = breite.match(/^([\d.]+)\s*(pt|px)?$/);
+        if (bp) {
+          var einheit = bp[2] === "pt" ? 96 / 72 : 1;
+          knotenBreiteMerken = parseFloat(bp[1]) * einheit;
+        }
+      }
+      // Linien je Zellseite reisen ausdrücklich mit (23.9.).
       [["Top", "top"], ["Right", "right"], ["Bottom", "bottom"],
        ["Left", "left"]].forEach(function (seite) {
         var art = s["border" + seite[0] + "Style"];
@@ -368,19 +413,14 @@ TB.auszeichnung = (function () {
   }
 
   // ---- Tabellen als RTF (Etappe 7) ----------------------------------
-  // Der Zeilenbau folgt KISIMs eigenen Vorlagen (Duplex-Probe 22.9.):
-  // je Zeile \trowd mit Zellrändern und \cellx-Kanten, dann je Zelle
-  // \pard\intbl Inhalt \cell, zum Schluss \row. Die Gesamtbreite von
-  // 9214 Twips ist die Breite, die KISIM selbst benutzt. Zeilenwechsel
-  // INNERHALB einer Zelle sind dort einfach \par — auch das schreibt
-  // KISIM selbst so. VERBUNDENE Zellen (23.9., Duplex-Legende): eine
-  // Zelle mit rowspan wird \clvmgf, ihre Fortsetzungszeilen bekommen an
-  // dieser Stelle \clvmrg mit leerer Zelle; eine Zelle mit colspan wird
-  // schlicht eine breitere Zelle — genau wie KISIM es schreibt.
+  // Zeilenbau wie in KISIMs eigenen Vorlagen (Proben 22./23.9.): je
+  // Zeile \trowd mit Rändern und \cellx-Kanten (Gesamtbreite 9214
+  // Twips wie KISIM), je Zelle \pard\intbl Inhalt \cell, dann \row;
+  // \par in der Zelle ist der Zeilenwechsel. Verbünde: rowspan wird
+  // \clvmgf mit \clvmrg-Fortsetzungen, colspan eine breitere Zelle.
   var TAB_GESAMT = 9214;
-  // Ohne ausdrückliche Angaben bekommt eine Zelle Linien an allen vier
-  // Seiten (so kommen Word-Tabellen an); steht an der Zelle je Seite
-  // „none" oder eine Linie, gilt genau das (so bleibt das KISIM-Bild).
+  // Zellrand je Seite: ohne Angaben alle vier Linien (Word-Weg); mit
+  // ausdrücklichem „none"/Linie je Seite genau diese (KISIM-Bild).
   function zellRand(zelle) {
     var s = (zelle && zelle.style) || {};
     var seiten = [["l", "Left"], ["t", "Top"], ["r", "Right"], ["b", "Bottom"]];

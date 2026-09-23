@@ -148,10 +148,15 @@ TB.selbsttest = (function () {
            /<b>Kopf<\/b>/.test(zurueck), zurueck);
       var symbol = L.lies("{\\rtf1\\ansi\\ansicpg1252\\deff0{\\fonttbl" +
         "{\\f0\\fnil Arial;}{\\f1\\fnil KisIconPhysio1;}}\\viewkind4\\uc1 " +
-        "\\pard\\f0 vor {\\f1 !} nach\\par }");
-      fall("Symbolschrift: KisIcon-Zeichen wird zum Häkchen",
-           /\u221A|&#8730;/.test(symbol) && symbol.indexOf("!") === -1 &&
-           !/KisIcon/i.test(symbol), symbol);
+        "\\pard\\f0 vor {\\f1 !} und \\u8730? nach\\par }");
+      fall("Symbolschrift und Wurzelzeichen werden zum Häkchen \u2713",
+           /\u2713|&#10003;/.test(symbol) && symbol.indexOf("!") === -1 &&
+           !/KisIcon/i.test(symbol) && !/\u221A|&#8730;/.test(symbol), symbol);
+      var fett = L.lies("{\\rtf1\\ansi\\ansicpg1252\\deff0{\\fonttbl" +
+        "{\\f0\\fnil Arial;}}\\viewkind4\\uc1 \\trowd\\cellx4000\\cellx8000" +
+        "\\pard\\intbl\\b eins\\cell\\pard\\intbl zwei\\cell\\row\\pard\\par }");
+      fall("Fett läuft über den Absatzwechsel weiter (\\pard löscht es nicht)",
+           /<b>eins<\/b>/.test(fett) && /<b>zwei<\/b>/.test(fett), fett);
       var verbund = '<table><tr><td rowspan="2">Hoch</td><td>B</td>' +
         '<td>C</td></tr><tr><td colspan="2">Breit</td></tr></table>';
       var vRtf = A.ausHtml(verbund);
