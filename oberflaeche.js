@@ -220,6 +220,7 @@ TB.oberflaeche = (function () {
       liste.forEach(function (b) {
         var li = zeileFuerBaustein(b, [
           [T.bearbeitenKnopf, function () { bearbeiteBaustein(b); }],
+          [T.kopierenKnopf, function () { kopiereBaustein(b); }],
           [T.loeschenKnopf, function () {
             S.inPapierkorb(b.id); TB.statistik.zaehle("papierkorb");
             TB.abgleich.anstossen(); melde(T.inPapierkorb); zeichneAnOrt(); }]
@@ -343,6 +344,22 @@ TB.oberflaeche = (function () {
   // (oberflaeche.js war über die 600-Zeilen-Grenze gewachsen; das
   // Bearbeiten-Fenster ist ein eigenes Thema und hat jetzt seine Datei.)
   function bearbeiteBaustein(b) { TB.ansichtBearbeiten.bearbeite(b); }
+
+  // Einen Baustein als Vorlage nehmen (Näds Wunsch 23.9.): Der Inhalt
+  // samt Tabellen und Standort-Fassungen wird übernommen, Titel und
+  // Kürzel bleiben aber LEER — beides muss neu vergeben werden, sonst
+  // gäbe es zwei Bausteine mit demselben Kürzel. Gespeichert wird
+  // erst, wenn Du im Fenster auf Speichern drückst.
+  function kopiereBaustein(b) {
+    var vorlage = {
+      id: null, titel: "", kuerzel: "", kategorie: b.kategorie || "",
+      text: b.text || "", textRtf: null, notiz: b.notiz || "",
+      varianten: JSON.parse(JSON.stringify(b.varianten || {})),
+      art: b.art || "text", ausgabeart: b.ausgabeart || "fenster",
+      entwurf: false, sortierung: 0, vorlageVon: b.titel || ""
+    };
+    TB.ansichtBearbeiten.bearbeite(vorlage, true);
+  }
 
   // ---- Papierkorb -------------------------------------------------------
   function zeichnePapierkorb(wurzel) {

@@ -157,6 +157,9 @@ dialog h2 { margin: 0 0 10px; font-size: 1.05rem; }
   background: var(--karte); border-top: 1px solid var(--linie);
   padding: 10px 0 4px; margin-bottom: -4px; }
 .hinweis-gut { color: var(--gut-schrift); font-size: .85rem; }
+/* Hinweiszeile im Kopier-Fenster (23.9.). */
+dialog p.hinweis { margin: -4px 0 10px; font-size: .85rem;
+  color: var(--gedaempft); }
 ul.fehlerliste { margin: 2px 0 0; padding-left: 20px; }
 ul.fehlerliste li { font-size: .85rem; margin-bottom: 2px; }
 ul.fehlerliste.warn li { color: var(--warn-schrift); }

@@ -15,10 +15,18 @@ TB.ansichtBearbeiten = (function () {
   var el = TB.ui.el, melde = TB.ui.melde, dialogOeffnen = TB.ui.dialogOeffnen;
   var T = null, S = null;
 
-  function bearbeite(b) {
-    var neu = !b;
+  // istKopie: b ist dann eine VORLAGE ohne Kennung (Näds Wunsch 23.9.).
+  // Der Inhalt ist schon da, Titel und Kürzel sind leer und müssen neu
+  // vergeben werden — gespeichert wird ein NEUER Baustein, der alte
+  // bleibt unangetastet.
+  function bearbeite(b, istKopie) {
+    var neu = !b || istKopie === true;
     var d = el("dialog", "weit");
-    d.appendChild(el("h2", "", neu ? T.neuTitel : T.bearbeitenTitel));
+    d.appendChild(el("h2", "", istKopie ? T.kopieTitel
+                                        : (neu ? T.neuTitel : T.bearbeitenTitel)));
+    if (istKopie && b && b.vorlageVon) {
+      d.appendChild(el("p", "hinweis", T.kopieHinweis + b.vorlageVon));
+    }
     function feldzeile(beschriftung, feld) {
       var z = el("div", "feldzeile");
       z.appendChild(el("label", "", beschriftung));
@@ -217,11 +225,13 @@ TB.ansichtBearbeiten = (function () {
         var wert = varianteSchreiber[ort] ? varianteSchreiber[ort].wert()
                                           : varianteStart[ort];
         if (TB.auszeichnung.reinerText(wert || "").trim()) {
-          var alteV = (b && b.varianten && b.varianten[ort]) || {};
+          // Bei einer Kopie wird das Druckformat neu erzeugt, statt das
+          // der Vorlage mitzuschleppen.
+          var alteV = (b && !istKopie && b.varianten && b.varianten[ort]) || {};
           varianten[ort] = { text: wert, textRtf: alteV.textRtf || null };
         }
       });
-      var eintrag = { id: b ? b.id : undefined,
+      var eintrag = { id: (b && !istKopie) ? b.id : undefined,
         titel: fTitel.value.trim(), kuerzel: fKuerzel.value.trim(),
         kategorie: fKategorie.value.trim(), text: schreiber.wert(),
         varianten: varianten,
