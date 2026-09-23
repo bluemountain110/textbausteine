@@ -135,6 +135,11 @@ dialog {
   width: min(560px, 92vw); color: var(--schrift);
   max-height: 88vh; overflow-y: auto; overscroll-behavior: contain;
 }
+/* Das Bearbeiten-Fenster ist bewusst BREIT (Näd 23.9.): Nur so sieht
+   man beim Schreiben, wo eine Zeile wirklich umbricht und wo ein
+   Absatz endet — und Tabellen stehen in ihrer echten Breite da,
+   statt zusammengequetscht. Auf kleinen Bildschirmen greift 96vw. */
+dialog.weit { width: min(1180px, 96vw); }
 dialog::backdrop { background: rgba(20, 30, 40, .35); }
 dialog h2 { margin: 0 0 10px; font-size: 1.05rem; }
 .feldzeile { margin-bottom: 10px; }
@@ -263,7 +268,11 @@ table.konstanten button:hover { background: var(--warn-grund);
 .tb-tabelle th { font-weight: 700; background: var(--karte);
   text-align: left; }
 .schreibfeld { overflow-x: auto; }
-.tabellen-leiste { display: none; flex-wrap: wrap; gap: 4px;
+/* Die Werkzeuge stehen in EINER Zeile und rücken erst um, wenn der
+   Platz wirklich fehlt; zusammengehörende Gruppen bleiben beisammen
+   (Näd 23.9.: „L, M und R sollten auf der gleichen Zeile sein"). */
+.tabellen-leiste .gruppe { display: inline-flex; gap: 4px; }
+.tabellen-leiste { display: none; flex-wrap: wrap; gap: 4px; align-items: center;
   align-items: center; padding: 4px 8px;
   border-top: 1px dashed var(--linie); }
 .tabellen-leiste.sichtbar { display: flex; }

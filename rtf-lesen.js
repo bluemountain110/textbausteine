@@ -45,6 +45,12 @@ TB.rtfLesen = (function () {
   // Wurzelzeichen √, denn im selben Original stecken beide gemischt.
   var HAEKCHEN = "\u2713";
 
+  // Die Zeichen der KISIM-Symbolschriften und ihre Bedeutung. Belegt aus
+  // den RTF-Fängen vom 22./23.9.: „!" ist in KisIconPhysio1 das
+  // Durchmesserzeichen ø (Näds Entscheid 23.9.), nicht ein Häkchen.
+  // Neue Funde kommen hier dazu.
+  var ZEICHENTAFEL = { "!": "\u00F8" };
+
   // Gruppen, deren ganzer Inhalt übersprungen wird.
   var UEBERSPRINGEN = {
     fonttbl: 1, colortbl: 1, stylesheet: 1, info: 1, pict: 1, object: 1, pn: 1,
@@ -374,6 +380,11 @@ TB.rtfLesen = (function () {
     zeilen.forEach(function (z) {
       if (z.tabelleHtml) {
         if (offeneListe) { aus += "</" + offeneListe + ">"; offeneListe = null; }
+        // Der Absatz vor der Tabelle hat bereits ein <br> gesetzt; die
+        // Tabelle beginnt ohnehin auf neuer Zeile. Ohne dieses Kürzen
+        // entstünden zwei Leerzeilen, wo im Original eine steht
+        // (Befund 23.9., „Nervus medianus").
+        aus = aus.replace(/<br>$/, "");
         aus += z.tabelleHtml;
         return;
       }
@@ -422,6 +433,20 @@ TB.rtfLesen = (function () {
     var total = kanten.length ? kanten[kanten.length - 1] : 0;
     function kantenIndex(x) { return kanten.indexOf(x); }
 
+    // Gibt die Vorlage NIRGENDS eine Linie an (so die Medianus-Tabelle),
+    // zeichnen KISIM und Word von sich aus einen Rahmen rundum — die
+    // App muss das gleich halten. Nennt die Vorlage auch nur an einer
+    // Zelle eine Linie (so das Duplex), gilt überall seitengenau das
+    // Original. Befund 23.9.: ohne diese Regel stand die Medianus-
+    // Tabelle in Word, Axenita und der Erweiterung nackt da.
+    var ohneLinienangabe = true;
+    tab.zeilen.forEach(function (zeile) {
+      zeile.defs.forEach(function (d) {
+        var r = d.raender || {};
+        if (r.t || r.r || r.b || r.l) ohneLinienangabe = false;
+      });
+    });
+
     var offenSenkrecht = {};   // Start-Spalte -> Zelle mit wachsendem rowspan
     var fertigeZeilen = [];
     tab.zeilen.forEach(function (zeile) {
@@ -447,6 +472,7 @@ TB.rtfLesen = (function () {
         // Zwischenstrich. Immer ausdrücklich, damit keine Vorgabe-Linie
         // dazwischenfunkt.
         var r = def.raender || {};
+        if (ohneLinienangabe) r = { t: true, r: true, b: true, l: true };
         [["top", r.t], ["right", r.r], ["bottom", r.b], ["left", r.l]]
           .forEach(function (seite) {
             stile.push("border-" + seite[0] + ":" +
@@ -475,8 +501,12 @@ TB.rtfLesen = (function () {
     // im schmalen Bearbeiten-Fenster schiebt sich die Tabelle seitlich,
     // statt die Zeilen umzubrechen — sonst verrutschte die Legende.
     var mindest = total > 0 ? Math.round(total / 1440 * 96) : 0;
-    var aus = '<table class="tb-tabelle"' +
-              (mindest ? ' style="min-width:' + mindest + 'px"' : "") + ">";
+    // Die Tabelle trägt ihr Aussehen selbst mit (23.9.), damit sie auch
+    // ohne das Stilblatt der App richtig steht — in Word, Axenita und
+    // der Erweiterung.
+    var tabStil = "width:100%;border-collapse:collapse" +
+                  (mindest ? ";min-width:" + mindest + "px" : "");
+    var aus = '<table class="tb-tabelle" style="' + tabStil + '">';
     fertigeZeilen.forEach(function (zeile) {
       aus += "<tr>";
       zeile.forEach(function (z) {
@@ -493,12 +523,17 @@ TB.rtfLesen = (function () {
 
   function huelle(inhalt, stil, farben, schriften, grundschrift, imTabelle) {
     var teile = [];
-    // KISIM-Symbolschriften (KisIcon…) tragen Häkchen als gewöhnliche
-    // Zeichen (z. B. „!"). Jedes sichtbare Zeichen einer solchen Schrift
-    // wird zum Unicode-Häkchen — die Schrift selbst fliegt raus.
+    // KISIM-Symbolschriften (KisIcon…) benutzen gewöhnliche Zeichen als
+    // Platzhalter für Sinnbilder. Welches Zeichen welches Sinnbild
+    // zeigt, steht in ZEICHENTAFEL — bis 13.3 wurde pauschal ALLES zum
+    // Häkchen, wodurch das Durchmesserzeichen ø verschwand (Befund
+    // 23.9., „A. vertebralis intervertebral"). Unbekannte Zeichen
+    // bleiben unverändert stehen, statt still verfälscht zu werden.
     var schriftName = (stil.f >= 0 && schriften[stil.f]) ? schriften[stil.f] : "";
     if (/^KisIcon/i.test(schriftName)) {
-      inhalt = inhalt.replace(/&[#a-zA-Z0-9]+;|[^\s]/g, HAEKCHEN);
+      inhalt = inhalt.replace(/&[#a-zA-Z0-9]+;|[^\s]/g, function (z) {
+        return ZEICHENTAFEL.hasOwnProperty(z) ? ZEICHENTAFEL[z] : z;
+      });
       schriftName = "";
     }
     inhalt = inhalt.replace(/&#8730;|\u221A/g, HAEKCHEN);

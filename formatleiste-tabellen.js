@@ -40,11 +40,15 @@ TB.formatleisteTabellen = (function () {
       }
       return null;
     }
-    function cursorIn(zelle) {
+    // Beim Zellensprung landet die Schreibmarke am ENDE des vorhandenen
+    // Inhalts, damit man sofort weiterschreiben kann (Näd 23.9.) — so
+    // macht es Word auch. Nur beim Anlegen frischer, leerer Zellen ist
+    // Anfang und Ende dasselbe.
+    function cursorIn(zelle, anfang) {
       if (!zelle) return;
       var b = document.createRange();
       b.selectNodeContents(zelle);
-      b.collapse(true);
+      b.collapse(anfang === true);
       var auswahl = window.getSelection();
       auswahl.removeAllRanges();
       auswahl.addRange(b);
@@ -142,6 +146,13 @@ TB.formatleisteTabellen = (function () {
       cursorIn(neu.children[0]);
       return neu;
     }
+    // Die Werkzeuge stehen in Gruppen, damit Zusammengehörendes beim
+    // Umbruch beisammenbleibt (Näd 23.9.).
+    var gruppeJetzt = tabLeiste;
+    function gruppeBeginnen() {
+      gruppeJetzt = el("div", "gruppe");
+      tabLeiste.appendChild(gruppeJetzt);
+    }
     function tabKnopf(beschriftung, titel, tat, beiVerbundErlaubt) {
       var k = el("button", "leise klein", beschriftung);
       k.type = "button";
@@ -160,8 +171,9 @@ TB.formatleisteTabellen = (function () {
         leisteZeigen();
         geaendert();
       });
-      tabLeiste.appendChild(k);
+      gruppeJetzt.appendChild(k);
     }
+    gruppeBeginnen();
     tabKnopf(TB.T.tabZeilePlus, TB.T.tabZeilePlusTitel, function (zelle) {
       zeileAnfuegenNach(zelle.parentNode);
     });
@@ -231,6 +243,7 @@ TB.formatleisteTabellen = (function () {
       stand.zelle.style.width = (Math.round((w1 + schritt) * 10) / 10) + "%";
       nachbar.zelle.style.width = (Math.round((w2 - schritt) * 10) / 10) + "%";
     }
+    gruppeBeginnen();
     tabKnopf(TB.T.tabSchmaler, TB.T.tabSchmalerTitel, function (zelle) {
       spalteBreite(zelle, -3);
     }, true);
@@ -238,6 +251,7 @@ TB.formatleisteTabellen = (function () {
       spalteBreite(zelle, 3);
     }, true);
     // Ausrichtung je Zelle.
+    gruppeBeginnen();
     [["L", TB.T.tabAusrLinks, ""], ["M", TB.T.tabAusrMitte, "center"],
      ["R", TB.T.tabAusrRechts, "right"]].forEach(function (a) {
       tabKnopf(a[0], a[1], function (zelle) {
@@ -246,6 +260,7 @@ TB.formatleisteTabellen = (function () {
       }, true);
     });
     // Zell-Hintergrund.
+    gruppeBeginnen();
     var GRUENDE = [["Silber", "#c0c0c0"], ["Gelb", "#ffff00"],
                    ["Grün", "#b6f2c4"], ["Blau", "#cfe3ff"], ["Keine", ""]];
     var grundWahl = document.createElement("select");
@@ -267,10 +282,11 @@ TB.formatleisteTabellen = (function () {
       }
       grundWahl.selectedIndex = 0;
     });
-    tabLeiste.appendChild(grundWahl);
+    gruppeJetzt.appendChild(grundWahl);
     // Zellen verbinden und lösen (Näds Entscheid 23.9.): verbunden wird
     // von der Zelle der Schreibmarke aus nach rechts oder nach unten —
     // ohne heikles Aufziehen über mehrere Zellen.
+    gruppeBeginnen();
     tabKnopf(TB.T.tabVerbRechts, TB.T.tabVerbRechtsTitel, function (zelle) {
       var tabelle = zelle.closest("table");
       var info = eintragZu(tabelle, zelle);

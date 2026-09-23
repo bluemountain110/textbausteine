@@ -222,7 +222,7 @@ TB.oberflaeche = (function () {
           [T.bearbeitenKnopf, function () { bearbeiteBaustein(b); }],
           [T.loeschenKnopf, function () {
             S.inPapierkorb(b.id); TB.statistik.zaehle("papierkorb");
-            TB.abgleich.anstossen(); melde(T.inPapierkorb); zeichne(); }]
+            TB.abgleich.anstossen(); melde(T.inPapierkorb); zeichneAnOrt(); }]
         ]);
         li.addEventListener("click", function () { benutzeBaustein(b); });
         ul.appendChild(li);
@@ -395,6 +395,14 @@ TB.oberflaeche = (function () {
       (S.WELT === "dev" ? " · TESTWELT" : "");
   }
 
+  // Beim Neuzeichnen bleibt die Bildlaufstelle erhalten (Näd, geparkt
+  // 22.9.): Ohne das sprang die Liste nach jedem Löschen an den Anfang,
+  // und man musste sich zur Arbeitsstelle zurückscrollen.
+  function zeichneAnOrt() {
+    var stelle = window.scrollY || window.pageYOffset || 0;
+    zeichne();
+    window.scrollTo(0, stelle);
+  }
   function zeichne() {
     zeichneNavigation();
     var wurzel = document.getElementById("inhalt");

@@ -17,7 +17,7 @@ TB.ansichtBearbeiten = (function () {
 
   function bearbeite(b) {
     var neu = !b;
-    var d = el("dialog");
+    var d = el("dialog", "weit");
     d.appendChild(el("h2", "", neu ? T.neuTitel : T.bearbeitenTitel));
     function feldzeile(beschriftung, feld) {
       var z = el("div", "feldzeile");

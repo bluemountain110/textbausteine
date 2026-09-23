@@ -134,11 +134,17 @@ TB.formatleiste = (function () {
       var spalten = parseInt(window.prompt(TB.T.tabFrageSpalten, "3"), 10);
       if (!(spalten >= 1 && spalten <= 10)) return;
       var breite = Math.round(1000 / spalten) / 10;
+      // Linien und Gesamtbreite gehören an die Tabelle selbst (23.9.) —
+      // sonst steht sie in Word und Axenita ohne Rahmen und schmal da.
+      var zellStil = "width:" + breite + "%;border-top:1px solid #444444" +
+        ";border-right:1px solid #444444;border-bottom:1px solid #444444" +
+        ";border-left:1px solid #444444";
       var zeileHtml = "";
       for (var sp = 0; sp < spalten; sp++) {
-        zeileHtml += '<td style="width:' + breite + '%"></td>';
+        zeileHtml += '<td style="' + zellStil + '"></td>';
       }
-      var html = '<table class="tb-tabelle" data-tb-neu="1">';
+      var html = '<table class="tb-tabelle" data-tb-neu="1" ' +
+        'style="width:100%;border-collapse:collapse">';
       for (var ze = 0; ze < zeilen; ze++) html += "<tr>" + zeileHtml + "</tr>";
       html += "</table>";
       befehl(feld, "insertHTML", html);
