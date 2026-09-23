@@ -49,8 +49,8 @@ TB.auszeichnung = (function () {
                "EMBED": 1, "LINK": 1, "META": 1, "HEAD": 1,
                "CAPTION": 1, "COLGROUP": 1, "COL": 1 };
 
-  // Punkt-/Bildpunkt-Breite der gerade übernommenen Zelle — wandert als
-  // data-Merkmal an die Kopie, breitenNachrechnen macht Prozent daraus.
+  // Punkt-/Bildpunkt-Breite der Zelle — breitenNachrechnen macht
+  // später Prozent daraus.
   var knotenBreiteMerken = null;
 
   function farbeAlsZahlen(wert) {
@@ -103,9 +103,8 @@ TB.auszeichnung = (function () {
     return ziel;
   }
 
-  // Word/Excel geben Zellbreiten in Punkt/Bildpunkten an; hier werden
-  // sie je Zeile in Prozent umgerechnet, Zellen ohne Angabe teilen sich
-  // den Rest (23.9.).
+  // Word/Excel-Breiten (Punkt/Bildpunkte) werden je Zeile zu Prozent;
+  // Zellen ohne Angabe teilen sich den Rest (23.9.).
   function breitenNachrechnen(ziel) {
     Array.prototype.forEach.call(ziel.querySelectorAll("table"), function (t) {
       Array.prototype.forEach.call(t.querySelectorAll("tr"), function (tr) {
@@ -201,7 +200,11 @@ TB.auszeichnung = (function () {
     var groesse = imTabelle ? null : groesseEinnorden(s.fontSize || "");
     if (groesse) teile.push("font-size:" + groesse);
     if (istTabelle) {
-      // Die echte Druckbreite der Tabelle bleibt erhalten (23.9.).
+      // Die Tabelle trägt ihr Aussehen selbst (23.9.): volle Breite und
+      // Linien auf Stoss. Vorher borgte sie beides vom Stilblatt — in
+      // Word und Axenita schrumpfte sie darum zusammen.
+      teile.push("width:100%");
+      teile.push("border-collapse:collapse");
       var mb = String(s.minWidth || "").match(/^(\d+)px$/);
       if (mb) teile.push("min-width:" + mb[1] + "px");
     }
