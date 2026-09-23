@@ -16,7 +16,10 @@
 //        (Näds Probe vom 16.9.).
 //        Seit Etappe 7 werden auch TABELLEN gelesen (\trowd/\cellx/
 //        \cell/\row): Spaltenbreiten und Zell-Hintergründe kommen mit,
-//        die Schrift wird in der Tabelle auf die Grundschrift
+//        SENKRECHT VERBUNDENE Zellen (\clvmgf/\clvmrg) werden zu einer
+//        hohen Zelle über mehrere Zeilen, waagrecht verbundene schreibt
+//        KISIM ohnehin als eine breitere Zelle. Die Schrift wird in der
+//        Tabelle auf die Grundschrift
 //        eingenordet (Näds Entscheid 22.9.: EINE Schrift je Tabelle),
 //        und Zeichen der KISIM-Symbolschriften (KisIcon…) werden zum
 //        Unicode-Häkchen √ — so bleiben die Häkchen sichtbar.
@@ -266,13 +269,16 @@ TB.rtfLesen = (function () {
           case "cellx":
             if (tab) {
               defs.push({ x: zahl || 0, cbpat: laufDef.cbpat || 0,
-                          cfpat: laufDef.cfpat || 0, shdng: laufDef.shdng || 0 });
+                          cfpat: laufDef.cfpat || 0, shdng: laufDef.shdng || 0,
+                          vmgf: !!laufDef.vmgf, vmrg: !!laufDef.vmrg });
               laufDef = {};
             }
             break;
           case "clcbpat": laufDef.cbpat = zahl || 0; break;
           case "clcfpat": laufDef.cfpat = zahl || 0; break;
           case "clshdng": laufDef.shdng = zahl || 0; break;
+          case "clvmgf": laufDef.vmgf = true; break;   // Verbund: erste Zelle
+          case "clvmrg": laufDef.vmrg = true; break;   // Verbund: Fortsetzung
           case "cell": if (tab) zelleSchliessen(); break;
           case "row": if (tab) zeileSchliessen(); break;
           case "plain": zustand = leerZustand(); break;
@@ -383,15 +389,37 @@ TB.rtfLesen = (function () {
     return farbeAlsText(f);
   }
   function tabelleAlsHtml(tab, farben, schriften) {
-    var aus = '<table class="tb-tabelle">';
+    // Globale Spaltenkanten über ALLE Zeilen: eine Zelle, die mehrere
+    // Kanten überspannt, ist eine waagrecht verbundene Zelle (colspan) —
+    // so schreibt KISIM sie. Senkrechte Verbünde (\clvmgf/\clvmrg)
+    // werden zur hohen Zelle: die erste bekommt rowspan, die
+    // Fortsetzungen fallen weg.
+    var kantenMenge = {};
     tab.zeilen.forEach(function (zeile) {
-      var total = zeile.defs.length ? zeile.defs[zeile.defs.length - 1].x : 0;
-      aus += "<tr>";
+      zeile.defs.forEach(function (d) { kantenMenge[d.x] = 1; });
+    });
+    var kanten = Object.keys(kantenMenge).map(Number).sort(function (a, b) {
+      return a - b; });
+    var total = kanten.length ? kanten[kanten.length - 1] : 0;
+    function kantenIndex(x) { return kanten.indexOf(x); }
+
+    var offenSenkrecht = {};   // Start-Spalte -> Zelle mit wachsendem rowspan
+    var fertigeZeilen = [];
+    tab.zeilen.forEach(function (zeile) {
+      var ausgabe = [];
       zeile.zellen.forEach(function (stueckListe, nr) {
-        var def = zeile.defs[nr] || {};
+        var def = zeile.defs[nr];
+        if (!def) return;
+        var links = nr > 0 ? zeile.defs[nr - 1].x : 0;
+        var start = nr > 0 ? kantenIndex(links) + 1 : 0;
+        var spannweite = Math.max(1, kantenIndex(def.x) - start + 1);
+        if (def.vmrg && offenSenkrecht[start]) {
+          // Fortsetzung eines senkrechten Verbunds: zur Zelle darüber.
+          offenSenkrecht[start].rowspan += 1;
+          return;
+        }
         var stile = [];
-        if (total > 0 && zeile.defs[nr]) {
-          var links = nr > 0 ? zeile.defs[nr - 1].x : 0;
+        if (total > 0) {
           var breite = Math.max(1, Math.round((def.x - links) / total * 1000) / 10);
           stile.push("width:" + breite + "%");
         }
@@ -403,11 +431,25 @@ TB.rtfLesen = (function () {
           if (!st.text) return;
           inhalt += huelle(st.text, st.stil, farben, schriften, "", true);
         });
-        // Führende/abschliessende Leere in der Zelle wegräumen.
         inhalt = inhalt.replace(/^(?:\s|<br>|&nbsp;)+/, "")
                        .replace(/(?:\s|<br>|&nbsp;)+$/, "");
-        aus += "<td" + (stile.length ? ' style="' + stile.join(";") + '"' : "") +
-               ">" + inhalt + "</td>";
+        var zelle = { stile: stile, inhalt: inhalt, rowspan: 1,
+                      colspan: spannweite };
+        ausgabe.push(zelle);
+        offenSenkrecht[start] = def.vmgf ? zelle : null;
+      });
+      fertigeZeilen.push(ausgabe);
+    });
+
+    var aus = '<table class="tb-tabelle">';
+    fertigeZeilen.forEach(function (zeile) {
+      aus += "<tr>";
+      zeile.forEach(function (z) {
+        aus += "<td";
+        if (z.rowspan > 1) aus += ' rowspan="' + z.rowspan + '"';
+        if (z.colspan > 1) aus += ' colspan="' + z.colspan + '"';
+        if (z.stile.length) aus += ' style="' + z.stile.join(";") + '"';
+        aus += ">" + z.inhalt + "</td>";
       });
       aus += "</tr>";
     });

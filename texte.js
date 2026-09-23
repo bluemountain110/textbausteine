@@ -357,6 +357,7 @@ TB.T = {
   tabSpalteMinusTitel: "Aktuelle Spalte löschen",
   tabTabelleEntfernt: "Die letzte Zeile ist weg — damit ist die ganze Tabelle entfernt.",
   tabBreitenNeu: "Die Spalten sind jetzt gleich breit verteilt.",
+  tabVerbundStruktur: "Diese Tabelle hat verbundene Zellen — Zeilen und Spalten hier bitte nicht mit den Werkzeugen ändern, Inhalte bearbeiten geht.",
 
   // Allgemein
   schliessen: "Schliessen",

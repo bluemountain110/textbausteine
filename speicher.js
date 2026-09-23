@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "13.0 · Etappe 7 Tabellen · 22.09.2026";
+TB.FASSUNG = "13.1 · Etappe 7 Tabellen · 23.09.2026";
 
 TB.speicher = (function () {
 

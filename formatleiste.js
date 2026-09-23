@@ -180,6 +180,13 @@ TB.formatleiste = (function () {
       });
     }
     function zeileAnfuegenNach(zeile) {
+      // Bei verbundenen Zellen (Etappe 7, 23.9.) legen die Werkzeuge
+      // keine Struktur um — eine blind eingefügte Zeile zerrisse den
+      // Verbund. Inhalte bearbeiten geht immer.
+      if (zeile.closest("table").querySelector("[rowspan],[colspan]")) {
+        melde(TB.T.tabVerbundStruktur);
+        return null;
+      }
       var neu = document.createElement("tr");
       var n = zeile.children.length || 1;
       for (var z2 = 0; z2 < n; z2++) {
@@ -203,6 +210,10 @@ TB.formatleiste = (function () {
         ev.preventDefault();
         var zelle = zelleAmCursor();
         if (!zelle) return;
+        if (zelle.closest("table").querySelector("[rowspan],[colspan]")) {
+          melde(TB.T.tabVerbundStruktur);
+          return;
+        }
         tat(zelle);
         leisteZeigen();
         geaendert();

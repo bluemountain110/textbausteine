@@ -12,7 +12,8 @@
 //        Getragen werden: fett, kursiv, unterstrichen, durchgestrichen,
 //        Schriftart, Schriftgrösse, Schriftfarbe, farbige Markierung,
 //        Absätze, Zeilenumbrüche, Aufzählungen — und seit Etappe 7
-//        TABELLEN: Zellen tragen Breite und Hintergrund; innerhalb der
+//        TABELLEN: Zellen tragen Breite, Hintergrund und Verbünde
+//        (rowspan/colspan — die Duplex-Legende ist eine hohe Zelle); innerhalb der
 //        Tabelle wird die Schrift auf die Grundschrift eingenordet
 //        (Näds Entscheid 22.9.: EINE Schrift je Tabelle), und das gilt
 //        auf JEDEM Schreibweg, weil alle durch diese Reinigung laufen.
@@ -114,6 +115,13 @@ TB.auszeichnung = (function () {
                 : name === "FONT" ? "SPAN"
                 : name === "MARK" ? "SPAN" : name);
       if (name === "TABLE") kopie.className = "tb-tabelle";
+      if (name === "TD" || name === "TH") {
+        // Verbundene Zellen: rowspan/colspan reisen mit (Etappe 7).
+        ["rowspan", "colspan"].forEach(function (a) {
+          var wert = parseInt(knoten.getAttribute(a), 10);
+          if (wert > 1) kopie.setAttribute(a, wert);
+        });
+      }
       var stil = stilUebernehmen(knoten, innenTabelle,
                                  name === "TD" || name === "TH");
       if (stil) kopie.setAttribute("style", stil);
@@ -345,51 +353,109 @@ TB.auszeichnung = (function () {
   // \pard\intbl Inhalt \cell, zum Schluss \row. Die Gesamtbreite von
   // 9214 Twips ist die Breite, die KISIM selbst benutzt. Zeilenwechsel
   // INNERHALB einer Zelle sind dort einfach \par — auch das schreibt
-  // KISIM selbst so.
+  // KISIM selbst so. VERBUNDENE Zellen (23.9., Duplex-Legende): eine
+  // Zelle mit rowspan wird \clvmgf, ihre Fortsetzungszeilen bekommen an
+  // dieser Stelle \clvmrg mit leerer Zelle; eine Zelle mit colspan wird
+  // schlicht eine breitere Zelle — genau wie KISIM es schreibt.
   var TAB_GESAMT = 9214;
   var TAB_RAND = "\\clbrdrl\\brdrw15\\brdrs\\clbrdrt\\brdrw15\\brdrs" +
                  "\\clbrdrr\\brdrw15\\brdrs\\clbrdrb\\brdrw15\\brdrs";
   function tabelleNachRtf(w, tabelle) {
-    var zeilen = [];
+    var quellzeilen = [];
     Array.prototype.forEach.call(tabelle.querySelectorAll("tr"), function (tr) {
       var zellen = Array.prototype.filter.call(tr.children, function (z) {
         var n = z.tagName.toUpperCase();
         return n === "TD" || n === "TH";
       });
-      if (zellen.length) zeilen.push(zellen);
+      if (zellen.length) quellzeilen.push(zellen);
     });
-    if (!zeilen.length) return "";
-    var aus = "\\par\\pard ";
-    zeilen.forEach(function (zellen) {
-      // Breiten: aus den Prozent-Angaben der Zellen; fehlen sie,
-      // werden die restlichen Spalten gleich breit verteilt.
-      var breiten = zellen.map(function (z) {
-        var m = String((z.style && z.style.width) || "").match(/^([\d.]+)%$/);
-        return m ? parseFloat(m[1]) : null;
+    if (!quellzeilen.length) return "";
+
+    // 1. Gitter legen: jede Zelle an ihre Spalten, senkrechte Verbünde
+    //    reservieren die Stelle in den Folgezeilen.
+    function spann(zelle, art) {
+      var wert = parseInt(zelle.getAttribute(art), 10);
+      return (wert > 1) ? wert : 1;
+    }
+    var haengend = {};   // Spalten-Index -> { rest, weite }
+    var gitterzeilen = [];
+    var spaltenzahl = 0;
+    quellzeilen.forEach(function (zellen) {
+      var eintraege = [];
+      var spalte = 0, nr = 0;
+      while (nr < zellen.length || haengend[spalte]) {
+        if (haengend[spalte]) {
+          var h = haengend[spalte];
+          eintraege.push({ vmrg: true, von: spalte, weite: h.weite });
+          h.rest -= 1;
+          if (!h.rest) delete haengend[spalte];
+          spalte += h.weite;
+          continue;
+        }
+        var zelle = zellen[nr]; nr += 1;
+        var weite = spann(zelle, "colspan");
+        var hoehe = spann(zelle, "rowspan");
+        eintraege.push({ zelle: zelle, von: spalte, weite: weite,
+                         vmgf: hoehe > 1 });
+        if (hoehe > 1) haengend[spalte] = { rest: hoehe - 1, weite: weite };
+        spalte += weite;
+      }
+      if (spalte > spaltenzahl) spaltenzahl = spalte;
+      gitterzeilen.push(eintraege);
+    });
+
+    // 2. Spaltenbreiten: aus unverbundenen Zellen mit Prozent-Angabe;
+    //    der Rest wird gleich verteilt.
+    var breiten = [];
+    gitterzeilen.forEach(function (eintraege, zr) {
+      eintraege.forEach(function (e) {
+        if (!e.zelle || e.weite !== 1 || breiten[e.von] !== undefined) return;
+        var m = String((e.zelle.style && e.zelle.style.width) || "")
+                  .match(/^([\d.]+)%$/);
+        if (m) breiten[e.von] = parseFloat(m[1]);
       });
-      var summe = 0, offene = 0;
-      breiten.forEach(function (p) { if (p !== null) summe += p; else offene += 1; });
+    });
+    var summe = 0, offene = 0;
+    for (var s = 0; s < spaltenzahl; s++) {
+      if (breiten[s] !== undefined) summe += breiten[s]; else offene += 1;
+    }
+    for (var s2 = 0; s2 < spaltenzahl; s2++) {
+      if (breiten[s2] === undefined) {
+        breiten[s2] = Math.max(1, (100 - summe) / (offene || 1));
+      }
+    }
+    var kanten = [];   // rechte Kante je Spalte, in Twips
+    var lauf = 0;
+    for (var s3 = 0; s3 < spaltenzahl; s3++) {
+      lauf += breiten[s3];
+      kanten[s3] = Math.min(TAB_GESAMT, Math.round(TAB_GESAMT * lauf / 100));
+    }
+    if (spaltenzahl) kanten[spaltenzahl - 1] = TAB_GESAMT;
+
+    // 3. Zeilen schreiben.
+    var aus = "\\par\\pard ";
+    gitterzeilen.forEach(function (eintraege) {
       var defs = "\\trowd\\trgaph80\\trleft-80\\trpaddl80\\trpaddr80" +
                  "\\trpaddfl3\\trpaddfr3";
-      var rechts = 0;
-      zellen.forEach(function (z, nr) {
-        var anteil = (breiten[nr] !== null) ? breiten[nr]
-                   : Math.max(1, (100 - summe) / (offene || 1));
-        rechts = Math.min(TAB_GESAMT, rechts + Math.round(TAB_GESAMT * anteil / 100));
-        if (nr === zellen.length - 1) rechts = TAB_GESAMT;
+      eintraege.forEach(function (e) {
         var schattierung = "";
-        var grund = (z.style && z.style.backgroundColor) || "";
-        var gz = farbeAlsZahlen(grund);
-        if (gz && !(gz[0] > 245 && gz[1] > 245 && gz[2] > 245)) {
-          schattierung = "\\clcbpat" + farbNummer(w, grund);
+        if (e.zelle) {
+          var grund = (e.zelle.style && e.zelle.style.backgroundColor) || "";
+          var gz = farbeAlsZahlen(grund);
+          if (gz && !(gz[0] > 245 && gz[1] > 245 && gz[2] > 245)) {
+            schattierung = "\\clcbpat" + farbNummer(w, grund);
+          }
         }
-        defs += TAB_RAND + schattierung + "\\cellx" + rechts;
+        defs += TAB_RAND +
+                (e.vmgf ? "\\clvmgf" : "") + (e.vmrg ? "\\clvmrg" : "") +
+                schattierung + "\\cellx" + kanten[e.von + e.weite - 1];
       });
       aus += defs;
-      zellen.forEach(function (z) {
-        var inhalt = kinderNachRtf(w, blockKinder(z), false)
+      eintraege.forEach(function (e) {
+        if (!e.zelle) { aus += "\\pard\\intbl \\cell "; return; }
+        var inhalt = kinderNachRtf(w, blockKinder(e.zelle), false)
                        .replace(/^\\par /, "");
-        if (z.tagName.toUpperCase() === "TH") inhalt = "{\\b " + inhalt + "}";
+        if (e.zelle.tagName.toUpperCase() === "TH") inhalt = "{\\b " + inhalt + "}";
         aus += "\\pard\\intbl " + inhalt + "\\cell ";
       });
       aus += "\\row ";

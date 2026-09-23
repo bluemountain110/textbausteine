@@ -7,7 +7,7 @@
 //        (Export -> Import-Vorschau -> „0 neu“) und seit Etappe 2 den
 //        Abgleich (Übersetzung verlustfrei, Warteschlange sauber) und
 //        seit Etappe 7 die Tabellen (Lesen, Reinigen, reiner Text,
-//        RTF-Erzeugung, Rundreise, Symbolschrift-Häkchen).
+//        RTF-Erzeugung, Rundreise, Symbolschrift-Häkchen, verbundene Zellen).
 //        Grün heisst bewiesen, Rot heisst Programmfehler — nie
 //        „kommt darauf an“.
 //        Die Prüfungen laufen über LISTEN, nicht über handgeschriebene
@@ -152,6 +152,14 @@ TB.selbsttest = (function () {
       fall("Symbolschrift: KisIcon-Zeichen wird zum Häkchen",
            /\u221A|&#8730;/.test(symbol) && symbol.indexOf("!") === -1 &&
            !/KisIcon/i.test(symbol), symbol);
+      var verbund = '<table><tr><td rowspan="2">Hoch</td><td>B</td>' +
+        '<td>C</td></tr><tr><td colspan="2">Breit</td></tr></table>';
+      var vRtf = A.ausHtml(verbund);
+      var vZurueck = L.lies(vRtf);
+      fall("Verbundene Zellen: hohe Zelle als \\clvmgf/\\clvmrg, Rundreise heil",
+           /\\clvmgf/.test(vRtf) && /\\clvmrg/.test(vRtf) &&
+           /rowspan="2"/.test(vZurueck) && /colspan="2"/.test(vZurueck) &&
+           (vZurueck.match(/<td/g) || []).length === 4, vRtf + " | " + vZurueck);
       var analyse = TB.reichtext.pruefe(probe, TB.einstellungen.makroUmgebung());
       fall("Platzhalter-Prüfung sieht in die Zellen (keine Fehler, 1 Lücke)",
            analyse.fehler.length === 0 && analyse.luecken.length === 1,
