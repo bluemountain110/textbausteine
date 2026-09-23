@@ -171,6 +171,10 @@ button.klein:hover { background: var(--akzent-hell); border-color: var(--akzent)
 h3.unterkapitel { font-size: .92rem; margin: 12px 0 2px; }
 h3.unterkapitel:first-of-type { margin-top: 4px; }
 .hinweis-warn { color: var(--warn-schrift); font-size: .85rem; white-space: pre-line; }
+/* Fehlerzeile im Bearbeiten-Fenster: deutlich sichtbar über den
+   Knöpfen (23.9.), weil die Sprechblase vom Fenster verdeckt wird. */
+dialog > p.hinweis-warn { margin: 10px 0 0; padding: 8px 10px;
+  border: 1px solid var(--warn-schrift); border-radius: 8px; }
 .vorschau-kasten {
   background: var(--grund); border: 1px solid var(--linie); border-radius: 8px;
   padding: 10px; white-space: pre-wrap; font-size: .9rem; margin-top: 8px;

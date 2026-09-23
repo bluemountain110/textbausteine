@@ -218,6 +218,18 @@ TB.ansichtBearbeiten = (function () {
     var knoepfe = el("div", "dialog-knoepfe");
     var ab = el("button", "neben", T.abbrechen);
     ab.addEventListener("click", function () { d.close(); });
+    // Meldungen MÜSSEN im Fenster selbst stehen (Näd 23.9.): Ein
+    // Bearbeiten-Fenster liegt in der obersten Ebene des Browsers, die
+    // Sprechblase am unteren Rand wird davon verdeckt. Vorher scheiterte
+    // das Speichern darum stumm — man hielt den Baustein für gesichert.
+    var fehlerZeile = el("p", "hinweis-warn", "");
+    fehlerZeile.style.display = "none";
+    d.appendChild(fehlerZeile);
+    function fehlerZeigen(text) {
+      fehlerZeile.textContent = text;
+      fehlerZeile.style.display = text ? "block" : "none";
+      if (text) fehlerZeile.scrollIntoView({ block: "nearest" });
+    }
     var ok = el("button", "haupt", T.speichern);
     ok.addEventListener("click", function () {
       var varianten = {};
@@ -239,7 +251,12 @@ TB.ansichtBearbeiten = (function () {
         notiz: fNotiz.value.trim() };
       if (b && b.entwurf) eintrag.entwurf = false;
       var fehler = TB.bausteine.pruefe(eintrag);
-      if (fehler.length) { melde(T.nichtGespeichert + fehler.join(" "), true); return; }
+      if (fehler.length) {
+        fehlerZeigen(T.nichtGespeichert + fehler.join(" "));
+        melde(T.nichtGespeichert + fehler.join(" "), true);
+        return;
+      }
+      fehlerZeigen("");
       S.speichern(eintrag);
       TB.statistik.zaehle(neu ? "angelegt" : "geaendert");
       TB.abgleich.anstossen();
