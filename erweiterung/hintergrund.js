@@ -25,8 +25,8 @@ var SCHLUESSEL = String(K.schluessel || "").trim();
 // Die Dateien, die auf einer eingeschalteten Seite mitfahren — in
 // dieser Reihenfolge, wie in index.html der App.
 var SEITEN_DATEIEN = ["welt.js", "texte.js", "erweiterung-texte.js",
-  "makros.js", "auszeichnung.js", "reichtext.js", "einblendung.js",
-  "faecher.js", "seite.js"];
+  "makros.js", "masken.js", "auszeichnung.js", "reichtext.js",
+  "einblendung.js", "faecher.js", "seite.js", "seite-masken.js"];
 
 // ---- Speicher-Helfer (chrome.storage.local) ---------------------------
 function lade(name, vorgabe) {

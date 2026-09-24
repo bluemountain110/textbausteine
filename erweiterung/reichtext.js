@@ -115,6 +115,12 @@ TB.reichtext = (function () {
     var reinerText = TB.auszeichnung.reinerText(html);
     var analyse = TB.makros.analysiere(reinerText, umgebung || {});
     var fehler = analyse.fehler.slice();
+    // Etappe 8: Die Masken-Sprache prüft sich selbst (Paarigkeit von
+    // Wenn/Ende, Wenn=Wert braucht seine Auswahl, Sprung-Zahlen).
+    if (typeof TB.masken !== "undefined" && TB.masken.istMaske(reinerText)) {
+      TB.masken.analysiere(html).fehler.forEach(function (f) {
+        if (fehler.indexOf(f) === -1) fehler.push(f); });
+    }
     if (z.zerrissen > 0) {
       fehler.unshift(TB.T.reichtextZerrissen.replace("%s", z.zerrissen) +
         (z.namen.length ? " (" + z.namen.join(", ") + ")" : ""));

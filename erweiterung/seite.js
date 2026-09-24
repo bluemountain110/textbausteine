@@ -359,6 +359,12 @@ if (typeof document !== "undefined") (function () {
 
   function starteBaustein(ort, baustein, urspruenglich) {
     var u = umgebung();
+    // Etappe 8: Masken (Kästchen, Wenn-Abschnitte, Bausteinwahl je
+    // Abschnitt) haben ihr eigenes Fenster und ihre eigene Kette.
+    if (TB.masken.istMaske(baustein.text || "")) {
+      TB.seiteMasken.starte(ort, baustein, urspruenglich);
+      return;
+    }
     var luecken = TB.reichtext.luecken(baustein.text || "", u);
     if (baustein.ausgabeart === "marken" || !luecken.length) {
       setzeEin(ort, baustein, {});
@@ -383,6 +389,17 @@ if (typeof document !== "undefined") (function () {
     });
   }
   TB.seite.starteBaustein = starteBaustein;
+
+  // Der Masken-Ablauf (Etappe 8) wohnt in seite-masken.js — diese
+  // Datei stände sonst über der 600-Zeilen-Grenze. Er braucht ein
+  // paar Helfer von hier:
+  TB.seite.maskenHelfer = {
+    umgebung: umgebung, halteStelle: halteStelle,
+    schreibeText: schreibeText, schreibeHtml: schreibeHtml,
+    inZwischenablage: inZwischenablage, meldung: meldung,
+    zaehle: zaehle, obersteTuer: obersteTuer,
+    bausteine: function () { return zustand.bausteine || []; }
+  };
 
   function starteSuche(ort) {
     var zurueck = halteStelle(ort);

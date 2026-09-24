@@ -80,5 +80,10 @@ TB.TE = {
   entwurfSichern: "Als Entwurf sichern",
   entwurfGesichert: "Als Entwurf gesichert — am nächsten Gerät unter Entwürfe.",
   entwurfLeer: "Die Zwischenablage ist leer. Zuerst Text markieren und Strg+C drücken, dann ;;neu tippen.",
-  entwurfFehler: "Der Entwurf konnte nicht hochgeladen werden: "
+  entwurfFehler: "Der Entwurf konnte nicht hochgeladen werden: ",
+
+  // ---- Masken (Etappe 8) ----------------------------------------------------
+  weiter: "Weiter",
+  maskeKategorie: "Aus der Kategorie „%s“ einfügen:",
+  maskeKategorieLeer: "Noch kein Baustein mit dieser Kategorie — der Abschnitt bleibt leer, und Du diktierst später direkt ins Zielfeld."
 };

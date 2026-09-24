@@ -129,6 +129,172 @@ TB.einblendung = (function () {
     if (eingaben[0] && eingaben[0].feld.select) eingaben[0].feld.select();
   }
 
+  // ---- Masken-Fenster (Etappe 8) ------------------------------------------
+  // Spiegel des Masken-Fensters der App: Kästchen (mit überschreibbaren
+  // Ankreuz-Texten), Auswahlen, Felder und die Bausteinwahl je
+  // {{Aus Kategorie:…}} — alles in der Reihenfolge des Textes, mit
+  // Vorschau. Was gerade nicht gilt, wird gedimmt, nicht versteckt.
+  // opt: { titel, zeilen, kaestchen, okText,
+  //        bausteineFuer(kategorie)->[baustein],
+  //        vorschau(zustand, katVorschau)->Text,
+  //        beiFertig(zustand, reihen), beiAbbruch }
+  function oeffneMaske(doc, opt) {
+    var karte = baue(doc, "tbx-luecken tbx-maske");
+    karte.appendChild(el(doc, "div", "tbx-titel", opt.titel || ""));
+
+    var vorgabeAn = {};
+    (opt.kaestchen || []).forEach(function (k) { vorgabeAn[k.name] = k.an; });
+    var zeilen = [], kaestchenFeld = {}, textFeld = {}, antwortFeld = {};
+    var katWahl = [];
+    var erstesFeld = null;
+
+    (opt.zeilen || []).forEach(function (z) {
+      var zeile = el(doc, "div", "tbx-zeile tbx-maske-zeile");
+      var felder = [];
+      if (z.typ === "ankreuz") {
+        var k = (opt.kaestchen || []).filter(function (x) {
+          return x.name === z.name; })[0] || { an: true, text: null };
+        var kopf = el(doc, "label", "tbx-maske-kopf");
+        var box = doc.createElement("input");
+        box.type = "checkbox"; box.checked = k.an;
+        kopf.appendChild(box);
+        kopf.appendChild(el(doc, "span", "", z.name));
+        zeile.appendChild(kopf);
+        kaestchenFeld[z.name] = box; felder.push(box);
+        if (k.text !== null && k.text !== undefined) {
+          var ta = doc.createElement("textarea");
+          ta.className = "tbx-feld tbx-maske-text";
+          ta.value = k.text;
+          ta.rows = Math.min(4, Math.max(1, String(k.text).split("\n").length));
+          zeile.appendChild(ta);
+          textFeld[z.name] = ta; felder.push(ta);
+          box.addEventListener("change", function () { ta.disabled = !box.checked; });
+        }
+      } else if (z.typ === "auswahl") {
+        zeile.appendChild(el(doc, "span", "tbx-beschriftung", z.name));
+        var w = doc.createElement("select"); w.className = "tbx-feld";
+        (z.optionen || []).forEach(function (o) {
+          var op = doc.createElement("option");
+          op.value = o; op.textContent = o; w.appendChild(op);
+        });
+        zeile.appendChild(w); antwortFeld[z.name] = w; felder.push(w);
+        if (!erstesFeld) erstesFeld = w;
+      } else if (z.typ === "feld") {
+        zeile.appendChild(el(doc, "span", "tbx-beschriftung", z.name));
+        var e2 = doc.createElement("input");
+        e2.type = "text"; e2.className = "tbx-feld"; e2.value = z.vorgabe || "";
+        zeile.appendChild(e2); antwortFeld[z.name] = e2; felder.push(e2);
+        if (!erstesFeld) erstesFeld = e2;
+      } else if (z.typ === "kategorie") {
+        zeile.appendChild(el(doc, "span", "tbx-beschriftung",
+          TB.TE.maskeKategorie.replace("%s", z.kategorie)));
+        var passende = opt.bausteineFuer ? opt.bausteineFuer(z.kategorie) : [];
+        var wahl = { zeile: z, gewaehlt: [] };
+        katWahl.push(wahl);
+        if (!passende.length) {
+          zeile.appendChild(el(doc, "div", "tbx-klein", TB.TE.maskeKategorieLeer));
+        } else {
+          var liste = el(doc, "div", "tbx-maske-katliste");
+          passende.forEach(function (x) {
+            var eintrag = el(doc, "label", "tbx-maske-kateintrag");
+            var box2 = doc.createElement("input"); box2.type = "checkbox";
+            eintrag.appendChild(box2);
+            eintrag.appendChild(el(doc, "span", "",
+              x.titel || ("; " + (x.kuerzel || ""))));
+            box2.addEventListener("change", function () {
+              // Reihenfolge des Anklickens bleibt erhalten (F2).
+              var i = wahl.gewaehlt.indexOf(x);
+              if (box2.checked && i === -1) wahl.gewaehlt.push(x);
+              if (!box2.checked && i !== -1) wahl.gewaehlt.splice(i, 1);
+              zeichneVorschau();
+            });
+            liste.appendChild(eintrag);
+            felder.push(box2);
+          });
+          zeile.appendChild(liste);
+        }
+      }
+      karte.appendChild(zeile);
+      zeilen.push({ wurzel: zeile, bedingungen: z.sichtbarWenn || [],
+                    felder: felder });
+    });
+
+    karte.appendChild(el(doc, "div", "tbx-klein", TB.TE.vorschau));
+    var vorschau = el(doc, "div", "tbx-vorschau", "");
+    karte.appendChild(vorschau);
+
+    var leiste = el(doc, "div", "tbx-leiste");
+    var abKnopf = el(doc, "button", "tbx-knopf", TB.TE.abbrechen);
+    var okKnopf = el(doc, "button", "tbx-knopf tbx-haupt",
+      opt.okText || TB.TE.lueckenEinfuegen);
+    leiste.appendChild(abKnopf); leiste.appendChild(okKnopf);
+    karte.appendChild(leiste);
+
+    function zustandJetzt() {
+      var kaestchen = {};
+      Object.keys(vorgabeAn).forEach(function (n) { kaestchen[n] = vorgabeAn[n]; });
+      Object.keys(kaestchenFeld).forEach(function (n) {
+        kaestchen[n] = kaestchenFeld[n].checked; });
+      var antworten = {}, texte = {};
+      Object.keys(antwortFeld).forEach(function (n) {
+        antworten[n] = antwortFeld[n].value; });
+      Object.keys(textFeld).forEach(function (n) { texte[n] = textFeld[n].value; });
+      return { kaestchen: kaestchen, antworten: antworten, texte: texte };
+    }
+    function grauNach(zustand) {
+      zeilen.forEach(function (z) {
+        var sichtbar = z.bedingungen.every(function (b) {
+          return TB.masken.bedingungGilt(b, zustand); });
+        if (sichtbar) z.wurzel.classList.remove("tbx-gedimmt");
+        else z.wurzel.classList.add("tbx-gedimmt");
+        z.felder.forEach(function (f) { f.disabled = !sichtbar; });
+      });
+      Object.keys(textFeld).forEach(function (n) {
+        if (kaestchenFeld[n] && !kaestchenFeld[n].checked) {
+          textFeld[n].disabled = true; }
+      });
+    }
+    function zeichneVorschau() {
+      var zustand = zustandJetzt();
+      grauNach(zustand);
+      var katVorschau = katWahl.map(function (w) {
+        return w.gewaehlt.map(function (x) {
+          return "«" + (x.titel || x.kuerzel || "?") + "»"; }).join("\n");
+      });
+      var t = "";
+      try { t = opt.vorschau(zustand, katVorschau); } catch (e) { t = ""; }
+      vorschau.textContent = t.length > 600 ? t.slice(0, 600) + " …" : t;
+    }
+    function fertig() {
+      var zustand = zustandJetzt();
+      // Eine Kategorie in einem abgewählten Abschnitt zählt nicht mit.
+      var reihen = katWahl.map(function (w) {
+        var sichtbar = (w.zeile.sichtbarWenn || []).every(function (b) {
+          return TB.masken.bedingungGilt(b, zustand); });
+        return { nummer: w.zeile.nummer,
+                 gewaehlt: sichtbar ? w.gewaehlt.slice() : [] };
+      });
+      zu(); opt.beiFertig(zustand, reihen);
+    }
+    function abbruch() { zu(); opt.beiAbbruch(); }
+
+    karte.addEventListener("input", zeichneVorschau);
+    karte.addEventListener("change", zeichneVorschau);
+    karte.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); abbruch(); }
+      else if (ev.key === "Enter" && ev.target.tagName !== "TEXTAREA") {
+        ev.preventDefault(); ev.stopPropagation(); fertig();
+      }
+      ev.stopPropagation(); // die Seite darunter bekommt nichts mit
+    });
+    okKnopf.addEventListener("click", fertig);
+    abKnopf.addEventListener("click", abbruch);
+
+    zeichneVorschau();
+    karte.setAttribute("tabindex", "-1");
+    if (erstesFeld) erstesFeld.focus(); else karte.focus();
+  }
+
   // ---- Such-Fenster (;;?) -------------------------------------------------
   // opt: { bausteine, beiWahl(baustein), beiAbbruch }
   // Seit Etappe 5 sucht es auch im Text der Bausteine (wie das
@@ -368,7 +534,8 @@ TB.einblendung = (function () {
     ok.focus();
   }
 
-  return { oeffneLuecken: oeffneLuecken, oeffneSuche: oeffneSuche,
+  return { oeffneLuecken: oeffneLuecken, oeffneMaske: oeffneMaske,
+           oeffneSuche: oeffneSuche,
            oeffneVorschlag: oeffneVorschlag, zuVorschlag: zuVorschlag,
            vorschlagOffen: vorschlagOffen, imVorschlag: imVorschlag,
            oeffneEntwurf: oeffneEntwurf,

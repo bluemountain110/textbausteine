@@ -77,3 +77,18 @@
 .tbx-warn {
   color: #b3261e; font-weight: bold; margin: 4px 0 8px 0;
 }
+
+/* ---- Etappe 8: Masken-Fenster ------------------------------------- */
+.tbx-karte.tbx-maske { width: min(640px, 92vw); max-height: 84vh; overflow-y: auto; }
+.tbx-maske-zeile { display: block; }
+.tbx-maske-kopf { display: flex; gap: 8px; align-items: center;
+  font-weight: 600; cursor: pointer; }
+.tbx-maske-kopf input[type="checkbox"] { width: 16px; height: 16px; }
+.tbx-maske-text { margin-top: 4px; resize: vertical; min-height: 0; }
+.tbx-maske-katliste { display: flex; flex-direction: column; gap: 3px;
+  margin-top: 4px; padding-left: 4px; }
+.tbx-maske-kateintrag { display: flex; gap: 8px; align-items: center;
+  font-weight: normal; cursor: pointer; }
+.tbx-maske-kateintrag input[type="checkbox"] { width: 15px; height: 15px; }
+/* Was gerade nicht gilt, bleibt sichtbar, aber gedimmt. */
+.tbx-maske-zeile.tbx-gedimmt { opacity: .45; }
