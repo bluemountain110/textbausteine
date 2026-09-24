@@ -315,3 +315,10 @@ dialog.maske { width: min(720px, 94vw); }
 /* Was gerade nicht gilt (Abschnitt abgewählt), bleibt sichtbar, aber
    gedimmt — das Fenster springt nicht (Entscheid Etappe 8). */
 .maske-zeile.gedimmt { opacity: .45; }
+
+/* Sammelrunde E8: Bausteine ohne Kategorie stehen abgesetzt zuunterst. */
+.gruppe-ohne { color: #8a6d1a; border-top: 2px solid #e6d9a8;
+  margin-top: 18px; padding-top: 10px; }
+.liste-ohne li { background: #fdf9ec; }
+.erklaerzeile { margin-top: 6px; min-height: 2.4em; font-size: 0.85rem;
+  color: #4a5b60; background: #f2f6f7; border-radius: 6px; padding: 6px 10px; }

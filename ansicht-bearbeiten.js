@@ -76,30 +76,37 @@ TB.ansichtBearbeiten = (function () {
     // damit kein Platzhalter halb ausgezeichnet ist und stumm ausfällt.
     var einfuegenZeile = el("div", "feldzeile");
     einfuegenZeile.appendChild(el("label", "", T.einfuegenTitel));
+    var erklaerZeile = null; // wird unter der Knopfleiste gefüllt
     var knopfleiste = el("div", "knopfleiste");
     var ersteKonstante = Object.keys(TB.einstellungen.konstanten())[0] || "Untersucher";
-    [[T.knopfDatum, "{{Datum}}", undefined, undefined],
-     [T.knopfZeit, "{{Zeit}}", undefined, undefined],
-     [T.knopfFeld, "{{Feld:Beschriftung}}", 7, 19],
-     [T.knopfAuswahl, "{{Auswahl:Beschriftung:eins/zwei}}", 10, 22],
-     [T.knopfKonstante, "{{" + ersteKonstante + "}}", undefined, undefined],
-     [T.knopfBaustein, "{{Baustein:kürzel}}", 11, 17],
+    [[T.knopfDatum, "{{Datum}}", undefined, undefined, T.hilfDatum],
+     [T.knopfZeit, "{{Zeit}}", undefined, undefined, T.hilfZeit],
+     [T.knopfFeld, "{{Feld:Beschriftung}}", 7, 19, T.hilfFeld],
+     [T.knopfAuswahl, "{{Auswahl:Beschriftung:eins/zwei}}", 10, 22, T.hilfAuswahl],
+     [T.knopfKonstante, "{{" + ersteKonstante + "}}", undefined, undefined, T.hilfKonstante],
+     [T.knopfBaustein, "{{Baustein:kürzel}}", 11, 17, T.hilfBaustein],
      // Etappe 8: die Masken-Platzhalter
-     [T.knopfAnkreuz, "{{Ankreuz:Beschriftung=Text}}", 10, 22],
-     [T.knopfWenn, "{{Wenn:Beschriftung}}…{{Ende}}", 7, 19],
-     [T.knopfKategorie, "{{Aus Kategorie:Name}}", 16, 20],
-     [T.knopfSprung, "{{Sprung:2}}", undefined, undefined]
+     [T.knopfAnkreuz, "{{Ankreuz:Beschriftung=Text}}", 10, 22, T.hilfAnkreuz],
+     [T.knopfWenn, "{{Wenn:Beschriftung}}…{{Ende}}", 7, 19, T.hilfWenn],
+     [T.knopfKategorie, "{{Aus Kategorie:Name}}", 16, 20, T.hilfKategorie],
+     [T.knopfSprung, "{{Sprung:2}}", undefined, undefined, T.hilfSprung]
     ].forEach(function (k) {
       var knopf = el("button", "leise klein", k[0]);
       knopf.type = "button";
+      knopf.title = k[4] || "";
+      knopf.addEventListener("mouseenter", function () {
+        if (erklaerZeile) erklaerZeile.textContent = k[4] || ""; });
       knopf.addEventListener("mousedown", function (ev) { ev.preventDefault(); });
       knopf.addEventListener("click", function (ev) {
         ev.preventDefault();
+        if (erklaerZeile) erklaerZeile.textContent = k[4] || "";
         schreiber.platzhalterEinsetzen(k[1], k[2], k[3]);
       });
       knopfleiste.appendChild(knopf);
     });
     einfuegenZeile.appendChild(knopfleiste);
+    erklaerZeile = el("div", "erklaerzeile", T.einfuegenErklaerung);
+    einfuegenZeile.appendChild(erklaerZeile);
     d.appendChild(einfuegenZeile);
 
     // ---- Standort-Fassungen (Etappe 6) --------------------------------

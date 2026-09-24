@@ -261,8 +261,14 @@ TB.ansichtAusfuellen = (function () {
     reihen.forEach(function (r) { inhalte[r.nummer] = []; });
 
     function fertigstellen() {
+      // Ein einzelner Absatz wird ausgepackt, dann trennt genau EIN
+      // Umbruch die gewaehlten Bausteine (kein doppelter Abstand).
+      function ausgepackt(t) {
+        var m = /^\s*<p[^>]*>([\s\S]*)<\/p>\s*$/i.exec(t || "");
+        return (m && m[1].indexOf("<p") === -1) ? m[1] : (t || "");
+      }
       var kategorieInhalte = inhalte.map(function (teile) {
-        return (teile || []).join("<br>");
+        return (teile || []).map(ausgepackt).join("<br>");
       });
       var vor = TB.masken.wendeAn(html, zustand, kategorieInhalte);
       var ergebnis = TB.reichtext.auswerte(vor.html, zustand.antworten,

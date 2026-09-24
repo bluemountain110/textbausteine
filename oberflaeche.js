@@ -216,10 +216,10 @@ TB.oberflaeche = (function () {
     if (treffer.length === 0) {
       platz.appendChild(el("div", "leer", T.keineTreffer)); return;
     }
-    function haengeGruppe(name, liste) {
+    function haengeGruppe(name, liste, art) {
       if (!liste.length) return;
-      platz.appendChild(el("div", "gruppe", name));
-      var ul = el("ul", "liste");
+      platz.appendChild(el("div", art === "ohne" ? "gruppe gruppe-ohne" : "gruppe", name));
+      var ul = el("ul", art === "ohne" ? "liste liste-ohne" : "liste");
       liste.forEach(function (b) {
         var li = zeileFuerBaustein(b, [
           [T.bearbeitenKnopf, function () { bearbeiteBaustein(b); }],
@@ -236,16 +236,18 @@ TB.oberflaeche = (function () {
     if (!suchbegriff && !kategorieFilter) {
       var letzte = TB.bausteine.zuletztBenutzt(5);
       haengeGruppe(T.zuletztBenutzt, letzte);
-      var letzteIds = letzte.map(function (b) { return b.id; });
+      // Sammelrunde E8: "Zuletzt benutzt" ist eine ZUSATZ-Anzeige.
+      // Jede Kategorie zeigt immer ALLE ihre Bausteine; wer ohne
+      // Kategorie ist, steht abgesetzt ganz unten.
       var kategorien = {};
       treffer.forEach(function (b) {
-        if (letzteIds.indexOf(b.id) !== -1) return;
-        var k = b.kategorie || T.ohneKategorie;
+        var k = b.kategorie || "";
         (kategorien[k] = kategorien[k] || []).push(b);
       });
-      Object.keys(kategorien).sort(function (a, b) {
-        return a.localeCompare(b, "de"); })
+      Object.keys(kategorien).filter(function (k) { return k !== ""; })
+        .sort(function (a, b) { return a.localeCompare(b, "de"); })
         .forEach(function (k) { haengeGruppe(k, kategorien[k]); });
+      haengeGruppe(T.ohneKategorie, kategorien[""] || [], "ohne");
     } else {
       haengeGruppe(treffer.length + " Treffer", treffer);
     }

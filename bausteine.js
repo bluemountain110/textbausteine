@@ -99,6 +99,12 @@ TB.bausteine = (function () {
       fehler.push(TB.T.fehlerTitelFehlt);
     }
     var k = (eintrag.kuerzel || "").trim();
+    // Kürzelpflicht (Sammelrunde E8): Ein fertiger Baustein ohne Kürzel
+    // wäre am Spital und in der Praxis unerreichbar — dort führt nur
+    // ;;kürzel zu ihm. Entwürfe und Ideen dürfen weiter ohne.
+    if (!k && !eintrag.entwurf && eintrag.art !== "idee") {
+      fehler.push(TB.T.fehlerKuerzelFehlt);
+    }
     if (k) {
       if (/[;\s]/.test(k)) fehler.push(TB.T.fehlerKuerzelZeichen);
       var anderer = S().holenPerKuerzel(k);

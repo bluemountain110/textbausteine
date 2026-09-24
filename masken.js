@@ -352,7 +352,11 @@ TB.masken = (function () {
     textknoten(wurzel).forEach(function (k) {
       k.nodeValue = k.nodeValue
         .replace(/[ \t]{2,}/g, " ")
-        .replace(/ ([.,;:!?])/g, "$1");
+        .replace(/ ([.,;:!?])/g, "$1")
+        // Zwei Sätze aus zwei Stücken kleben aneinander ("Dauer.Die"):
+        // nach Satzende vor Grossbuchstabe ein Leerzeichen einsetzen.
+        // (Nur nach einem Wort — "z.B." bleibt unberührt.)
+        .replace(/([a-zäöüéèà]{2,}[.!?])([A-ZÄÖÜ])/g, "$1 $2");
     });
     // Blöcke, die vorher Inhalt hatten und jetzt leer sind, entfernen.
     var voll = wurzel.querySelectorAll("[data-tb-voll]");
@@ -423,6 +427,7 @@ TB.masken = (function () {
     return String(t)
       .replace(/[ \t]{2,}/g, " ")
       .replace(/ ([.,;:!?])/g, "$1")
+      .replace(/([a-zäöüéèà]{2,}[.!?])([A-ZÄÖÜ])/g, "$1 $2")
       .replace(/[ \t]+\n/g, "\n")
       .replace(/\n{3,}/g, "\n\n");
   }

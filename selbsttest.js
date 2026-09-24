@@ -323,6 +323,11 @@ TB.selbsttest = (function () {
       { kaestchen: { X: false }, antworten: {}, texte: {} }, []).html;
     fall("Heilung: kein Leerzeichen vor dem Punkt",
       heil.indexOf("A.") !== -1 && heil.indexOf(" .") === -1, heil);
+    var stoss = M.wendeAn(
+      "<p>{{Ankreuz:A=Satz eins.}}{{Ankreuz:B=Der zweite folgt.}}</p>",
+      { kaestchen: { A: true, B: true }, antworten: {}, texte: {} }, []).html;
+    fall("Heilung: Abstand zwischen zwei Sätzen aus zwei Stücken",
+      stoss.indexOf("eins. Der") !== -1, stoss);
     var kat = M.wendeAn("<p>{{Aus Kategorie:Status}}</p>",
       { kaestchen: {}, antworten: {}, texte: {} }, ["<b>Inhalt A.</b>"]).html;
     fall("Kategorie-Inhalt steht an seinem Platz",
