@@ -83,7 +83,12 @@ TB.ansichtBearbeiten = (function () {
      [T.knopfFeld, "{{Feld:Beschriftung}}", 7, 19],
      [T.knopfAuswahl, "{{Auswahl:Beschriftung:eins/zwei}}", 10, 22],
      [T.knopfKonstante, "{{" + ersteKonstante + "}}", undefined, undefined],
-     [T.knopfBaustein, "{{Baustein:kürzel}}", 11, 17]
+     [T.knopfBaustein, "{{Baustein:kürzel}}", 11, 17],
+     // Etappe 8: die Masken-Platzhalter
+     [T.knopfAnkreuz, "{{Ankreuz:Beschriftung=Text}}", 10, 22],
+     [T.knopfWenn, "{{Wenn:Beschriftung}}…{{Ende}}", 7, 19],
+     [T.knopfKategorie, "{{Aus Kategorie:Name}}", 16, 20],
+     [T.knopfSprung, "{{Sprung:2}}", undefined, undefined]
     ].forEach(function (k) {
       var knopf = el("button", "leise klein", k[0]);
       knopf.type = "button";

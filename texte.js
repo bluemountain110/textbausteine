@@ -386,6 +386,16 @@ TB.T = {
   tabVerbUngleich: "Die beiden Zellen sind ungleich hoch — zuerst die Höhen angleichen (Verbund lösen).",
   tabLoesenNichts: "Diese Zelle ist gar nicht verbunden.",
 
+  // Masken (Etappe 8)
+  knopfAnkreuz: "Ankreuz-Lücke",
+  knopfWenn: "Wenn-Abschnitt",
+  knopfKategorie: "Aus Kategorie",
+  knopfSprung: "Sprung (KISIM)",
+  markeMaske: "Maske",
+  weiter: "Weiter",
+  maskeKategorie: "Aus der Kategorie „%s“ einfügen:",
+  maskeKategorieLeer: "Noch kein Baustein mit dieser Kategorie — der Abschnitt bleibt leer, und Du diktierst später direkt ins Zielfeld.",
+
   // Allgemein
   schliessen: "Schliessen",
   ok: "OK"

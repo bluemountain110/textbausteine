@@ -145,6 +145,9 @@ TB.oberflaeche = (function () {
     if (TB.bausteine.hatTabelle(b)) {
       li.appendChild(el("span", "marke", T.markeTabelle));   // Etappe 7
     }
+    if (TB.bausteine.hatMaske(b)) {
+      li.appendChild(el("span", "marke marke-maske", T.markeMaske)); // Etappe 8
+    }
     if (TB.bausteine.hatVarianten(b)) {
       var mv = el("span", "marke", T.markeVarianten);
       mv.title = Object.keys(b.varianten || {}).join(", ");
@@ -251,78 +254,13 @@ TB.oberflaeche = (function () {
   // ---- Baustein benutzen (Lücken-Dialog + Kopieren) --------------------
   function holeBaustein(kuerzel) { return S.holenPerKuerzel(kuerzel); }
 
+  // Das Ausfüll-Fenster wohnt seit Etappe 8 in ansicht-ausfuellen.js
+  // (Masken, Kategorie-Auswahl und die Fenster-Kette des Berichts
+  // hätten diese Datei weit über die 600-Zeilen-Grenze gebracht).
   function benutzeBaustein(b) {
-    var umgebung = TB.einstellungen.makroUmgebung();
-    // Etappe 6: Auf einem Gerät mit Standort liefert derselbe Baustein
-    // die Standort-Fassung; ohne eigene Fassung die Standardfassung.
-    var f = TB.bausteine.fassungFuer(b);
-    var fassungsHinweis = f.variante ?
-      T.benutztVariante.replace("%s", f.variante) : "";
-    // Diktat-Bausteine gehen ohne Rückfrage hinaus — die Lücken werden
-    // ja im Zielprogramm angesprungen.
-    if (b.ausgabeart === "marken") {
-      abschliessen(b, TB.reichtext.auswerte(f.text, {}, umgebung, holeBaustein, "marken"), fassungsHinweis);
-      return;
-    }
-    var analyse = TB.reichtext.pruefe(f.text, umgebung);
-    if (analyse.luecken.length === 0) {
-      abschliessen(b, TB.reichtext.auswerte(f.text, {}, umgebung, holeBaustein), fassungsHinweis);
-      return;
-    }
-    var d = el("dialog");
-    d.appendChild(el("h2", "", T.ausfuellenTitel + " — " + (b.titel || "") + fassungsHinweis));
-    var eingaben = {};
-    analyse.luecken.forEach(function (l, i) {
-      var zeile = el("div", "feldzeile");
-      zeile.appendChild(el("label", "", l.beschriftung));
-      var feld;
-      if (l.art === "auswahl") {
-        feld = el("select");
-        l.optionen.forEach(function (o) {
-          var opt = el("option", "", o); opt.value = o; feld.appendChild(opt);
-        });
-      } else {
-        feld = el("input"); feld.type = "text"; feld.value = l.vorgabe || "";
-        if (i === 0) setTimeout(function () { feld.select(); }, 0);
-      }
-      eingaben[l.beschriftung] = feld;
-      zeile.appendChild(feld);
-      d.appendChild(zeile);
+    TB.ansichtAusfuellen.starte(b, function (ergebnis, fassungsHinweis) {
+      abschliessen(b, ergebnis, fassungsHinweis);
     });
-    var vorschauTitel = el("label", "", T.vorschauTitel);
-    var vorschau = el("div", "vorschau-kasten");
-    d.appendChild(vorschauTitel); d.appendChild(vorschau);
-
-    function antworten() {
-      var a = {};
-      Object.keys(eingaben).forEach(function (k) { a[k] = eingaben[k].value; });
-      return a;
-    }
-    function aktualisiereVorschau() {
-      vorschau.innerHTML =
-        TB.reichtext.auswerte(f.text, antworten(), umgebung, holeBaustein).html;
-    }
-    Object.keys(eingaben).forEach(function (k) {
-      eingaben[k].addEventListener("input", aktualisiereVorschau);
-      eingaben[k].addEventListener("change", aktualisiereVorschau);
-    });
-    aktualisiereVorschau();
-
-    var knoepfe = el("div", "dialog-knoepfe");
-    var ab = el("button", "neben", T.abbrechen);
-    ab.addEventListener("click", function () { d.close(); });
-    var ok = el("button", "haupt", T.kopieren);
-    ok.addEventListener("click", function () {
-      var e = TB.reichtext.auswerte(f.text, antworten(), umgebung, holeBaustein);
-      d.close(); abschliessen(b, e, fassungsHinweis);
-    });
-    knoepfe.appendChild(ab); knoepfe.appendChild(ok);
-    d.appendChild(knoepfe);
-    d.addEventListener("keydown", function (ev) {
-      if (ev.key === "Enter" && ev.target.tagName !== "TEXTAREA") {
-        ev.preventDefault(); ok.click(); }
-    });
-    dialogOeffnen(d);
   }
 
   function abschliessen(b, ausgewertet, fassungsHinweis) {

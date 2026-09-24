@@ -50,6 +50,11 @@ TB.makros = (function () {
       var name = t.name;
       if (/^Datum([+-]\d+)?$/.test(name) || name === "Zeit" ||
           name === "Cursor") continue;
+      // Etappe 8: Die Masken-Platzhalter gehören masken.js — hier
+      // zählen sie nur als BEKANNT, damit die Prüfung nicht anschlägt.
+      // Ihre eigene Prüfung (Paarigkeit usw.) macht TB.masken.
+      if (name === "Ankreuz" || name === "Wenn" || name === "WennNicht" ||
+          name === "Ende" || name === "Aus Kategorie" || name === "Sprung") continue;
       if (name === "Feld" || name === "Auswahl") {
         if (t.rest === null || t.rest.trim() === "") {
           fehler.push("{{" + m[1] + "}}: Beschriftung fehlt"); continue;
@@ -141,6 +146,9 @@ TB.makros = (function () {
         fehler = fehler.concat(innen.fehler);
         return innen.text;
       }
+      if (name === "Ankreuz" || name === "Wenn" || name === "WennNicht" ||
+          name === "Ende" || name === "Aus Kategorie") return "";
+      if (name === "Sprung") return "\n";
       if (name in konstanten) return String(konstanten[name]);
       fehler.push("{{" + name + "}}: unbekannter Platzhalter");
       return ganz;

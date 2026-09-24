@@ -71,7 +71,11 @@ TB.hilfe = (function () {
         ["Platzhalter nie halb formatieren",
          "Ein Platzhalter muss GANZ ausgezeichnet sein oder gar nicht. Machst Du nur die Hälfte von {{Datum}} fett, wirkt er nicht mehr und stünde als roher Text im Befund. Die Prüfung unter der Leiste warnt Dich davor."],
         ["Text von aussen hereinholen",
-         "Fügst Du etwas aus KISIM, Word oder Axenita ein, kommen die Auszeichnungen mit — der Rest (Formatvorlagen, Seitenaufbau, Tabellen) wird verworfen. KISIM kopiert in einem eigenen Format, das die App liest; daraus werden auch Aufzählungen und Nummerierungen wieder echte Listen. Tabellen-Vorlagen wie die Duplex-Vorlage bleiben deshalb vorerst in KISIM — die Tabellen bekommen eine eigene Etappe."],
+         "Fügst Du etwas aus KISIM, Word oder Axenita ein, kommen die Auszeichnungen mit — der Rest (Formatvorlagen, Seitenaufbau) wird verworfen. KISIM kopiert in einem eigenen Format, das die App liest; daraus werden auch Aufzählungen und Nummerierungen wieder echte Listen. Seit Etappe 7 kommen auch TABELLEN mit, samt verbundenen Zellen, Spaltenbreiten, Linien und Hintergründen."],
+        ["Tabellen bearbeiten",
+         "Steht die Schreibmarke in einer Tabelle, erscheint unter der Formatierungsleiste eine zweite Zeile mit Tabellen-Werkzeugen: Zeile und Spalte einfügen oder löschen, Spaltenbreite in Stufen ändern, Ausrichtung und Hintergrund je Zelle, Zellen nach rechts oder unten verbinden und einen Verbund wieder lösen. Mit Tab springst Du zur nächsten Zelle, mit Tab in der letzten Zelle entsteht eine neue Zeile. Eine ganz neue Tabelle legt der Knopf ⊞ an. Bei Tabellen mit verbundenen Zellen bleiben Zeilen und Spalten geschützt — der Verbund würde sonst zerreissen; Inhalte, Breiten und Farben lassen sich dort trotzdem ändern."],
+        ["Einen Baustein als Vorlage nehmen",
+         "Neben „Bearbeiten“ steht „Kopieren“. Der ganze Inhalt wird übernommen, Titel und Kürzel bleiben leer und müssen neu vergeben werden — das Original bleibt unangetastet. Gedacht für Arbeitsfassungen einer grossen Vorlage."],
         ["Zwei Wege, die Lücken zu füllen",
          "Beim Bearbeiten wählst Du unten die Ausgabeart. „Vorher fragen“ ist die Vorgabe: Die Lücken werden abgefragt, der Text kommt fertig ins Zielprogramm. „Als Marken mitliefern“ ist fürs Diktieren: Der Text wird sofort eingefügt, die Lücken bleiben als [Beschriftung] stehen und lassen sich mit Dragon oder dem Speech Mike anspringen. Vorsicht: Eine übersprungene Marke bleibt im Befund stehen. Solche Bausteine tragen in der Liste die Kennzeichnung „Marken“."]
       ]],
@@ -175,7 +179,7 @@ TB.hilfe = (function () {
       ]],
       ["Was noch kommt", [
         ["Die nächsten Etappen",
-         "Kandidaten sind die Tabellen (Duplex- und andere Tabellen-Vorlagen), standortabhängige Inhalte (z. B. Medikamentenlisten je Standort — der Grundstein mit den Standortnamen liegt), die Kürzel auf dem Mac, das iPhone-Symbol, Masken für ganze Befunde und Werkzeuge wie der EMG-Bericht. Offen bleibt auch, ob das Spital zusätzlich die Chrome-Erweiterung bekommt (die Probe hat gezeigt: es ginge) und ob die Praxis einen Weg für Word und Outlook braucht."],
+         "Als Nächstes kommen die Masken: einen ganzen Befund über vorgegebene Felder schreiben, mit Auswahl- und Ankreuzfeldern und Abschnitten, die nur bei Bedarf erscheinen. Danach die Formular-Abläufe (Felder in Axenita und KISIM automatisch füllen), das KI-Gegenlesen ganzer Kategorien, die Kürzel auf dem Mac, das iPhone-Symbol und Werkzeuge wie der EMG-Bericht. Kleinere Runden dazwischen: eine sortierbare Übersicht aller Bausteine mit PDF-Ausgabe, eine Statistik mit mehr Aussagekraft, eine Gestaltungsrunde."],
         ["Was noch nicht bewiesen ist",
          "Ob das Diktat die Marken anspringt, und ob die Zählung der Erweiterung in der Statistik der App als eigenes Gerät auftaucht. Beides zeigt sich erst im Alltag."]
       ]]

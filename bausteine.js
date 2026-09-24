@@ -63,6 +63,34 @@ TB.bausteine = (function () {
       return v[ort] && traegt(v[ort].text); });
   }
 
+  // Etappe 8: Trägt der Baustein (in irgendeiner Fassung) Masken-
+  // Platzhalter? Für die Marke in der Liste und die Speicher-Prüfung.
+  function hatMaske(b) {
+    function traegt(x) { return TB.masken.istMaske(x); }
+    if (traegt(b && b.text)) return true;
+    var v = b && b.varianten;
+    if (!v || typeof v !== "object") return false;
+    return Object.keys(v).some(function (ort) {
+      return v[ort] && traegt(v[ort].text); });
+  }
+
+  // Etappe 8, Weg A: Vor dem Speichern einer Maske wird das erzeugte
+  // RTF geprüft — jeder Wenn-Abschnitt und jedes Stück zwischen den
+  // Marken muss eine geschlossene Einheit sein, sonst kann das
+  // Windows-Skript nicht gefahrlos schneiden. Gemeldet wird IM
+  // Bearbeiten-Fenster, nicht still (Lehre I4).
+  function maskeTauglich(html) {
+    var fehler = TB.masken.analysiere(html).fehler.slice();
+    try {
+      var eingesetzt = TB.reichtext.bausteineEinsetzen(
+        html || "", S().holenPerKuerzel, 0, []);
+      var t = TB.masken.rtfTauglich(TB.auszeichnung.ausHtml(eingesetzt.html));
+      t.fehler.forEach(function (f) {
+        if (fehler.indexOf(f) === -1) fehler.push(f); });
+    } catch (e) { /* ohne RTF keine Schnitt-Prüfung */ }
+    return fehler;
+  }
+
   // Prüfen VOR dem Speichern. Liefert eine Liste von Beanstandungen —
   // leer heisst: darf gespeichert werden.
   function pruefe(eintrag) {
@@ -76,6 +104,24 @@ TB.bausteine = (function () {
       var anderer = S().holenPerKuerzel(k);
       if (anderer && anderer.id !== eintrag.id) {
         fehler.push(TB.T.fehlerKuerzelDoppelt.replace("%s", anderer.titel || "?"));
+      }
+    }
+    // Masken-Prüfung — für die Standardfassung und jede Standort-
+    // Fassung. Ein Entwurf darf noch unfertig sein.
+    if (!eintrag.entwurf) {
+      if (TB.masken.istMaske(eintrag.text)) {
+        maskeTauglich(eintrag.text).forEach(function (f) {
+          if (fehler.indexOf(f) === -1) fehler.push(f); });
+      }
+      var v = eintrag.varianten;
+      if (v && typeof v === "object") {
+        Object.keys(v).forEach(function (ort) {
+          if (v[ort] && v[ort].text && TB.masken.istMaske(v[ort].text)) {
+            maskeTauglich(v[ort].text).forEach(function (f) {
+              var mf = ort + ": " + f;
+              if (fehler.indexOf(mf) === -1) fehler.push(mf); });
+          }
+        });
       }
     }
     return fehler;
@@ -148,6 +194,7 @@ TB.bausteine = (function () {
   return { alleFertigen: alleFertigen, alleEntwuerfe: alleEntwuerfe,
            alleIdeen: alleIdeen, fassungFuer: fassungFuer,
            hatVarianten: hatVarianten, hatTabelle: hatTabelle,
+           hatMaske: hatMaske,
            pruefe: pruefe, suche: suche, kategorien: kategorien,
            zuletztBenutzt: zuletztBenutzt, beispieleEinfuegen: beispieleEinfuegen };
 })();

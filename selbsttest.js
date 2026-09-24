@@ -285,6 +285,66 @@ TB.selbsttest = (function () {
     return faelle;
   }
 
+  // ---- Masken (Etappe 8) ----------------------------------------------
+  // Dieselben Fälle laufen in der Prüfsuite (Node) und hier in der App —
+  // die stille Logik wird nie nur "auf Sicht" geliefert.
+  function pruefeMasken() {
+    var faelle = [];
+    var M = TB.masken;
+    function fall(name, ok, detail) {
+      faelle.push({ name: name, ok: !!ok, detail: ok ? "" : String(detail || "") });
+    }
+    var maske = "<p>Seite {{Auswahl:Seite:rechts|links|beidseits}}." +
+      " {{Ankreuz:Phalen=Der Phalen-Test ist positiv.}}</p>" +
+      "<p>{{Wenn:Atrophie}}Es besteht eine Atrophie.{{Ende}}" +
+      "{{WennNicht:Atrophie}}Kein Hinweis auf eine Atrophie.{{Ende}}</p>" +
+      "<p>{{Wenn:Seite=beidseits}}Beidseitiger Befund.{{Ende}}</p>";
+    var a = M.analysiere(maske);
+    fall("Maske erkannt, Kästchen gefunden",
+      a.istMaske && a.kaestchen.length === 2,
+      a.kaestchen.map(function (k) { return k.name; }).join(","));
+    fall("Fehlendes {{Ende}} wird gemeldet",
+      M.analysiere("<p>{{Wenn:X}}offen</p>").fehler.length === 1);
+    fall("{{Wenn:Name=Wert}} ohne Auswahl wird gemeldet",
+      M.analysiere("<p>{{Wenn:Seite=rechts}}x{{Ende}}</p>").fehler.length === 1);
+    var an = M.wendeAn(maske, { kaestchen: { Phalen: true, Atrophie: false },
+      antworten: { Seite: "rechts" }, texte: {} }, []).html;
+    fall("Abgewählter Abschnitt fällt, WennNicht springt ein",
+      an.indexOf("Es besteht") === -1 && an.indexOf("Kein Hinweis") !== -1, an);
+    fall("Ankreuz-Lücke erscheint mit ihrem Text",
+      an.indexOf("Der Phalen-Test ist positiv.") !== -1, an);
+    var ue = M.wendeAn(maske, { kaestchen: { Phalen: true, Atrophie: true },
+      antworten: { Seite: "beidseits" },
+      texte: { Phalen: "Der Phalen-Test ist beidseits positiv." } }, []).html;
+    fall("Überschriebener Text und Wenn=Wert wirken",
+      ue.indexOf("beidseits positiv") !== -1 &&
+      ue.indexOf("Beidseitiger Befund.") !== -1, ue);
+    var heil = M.wendeAn("<p>A {{Wenn:X}}weg{{Ende}}.</p>",
+      { kaestchen: { X: false }, antworten: {}, texte: {} }, []).html;
+    fall("Heilung: kein Leerzeichen vor dem Punkt",
+      heil.indexOf("A.") !== -1 && heil.indexOf(" .") === -1, heil);
+    var kat = M.wendeAn("<p>{{Aus Kategorie:Status}}</p>",
+      { kaestchen: {}, antworten: {}, texte: {} }, ["<b>Inhalt A.</b>"]).html;
+    fall("Kategorie-Inhalt steht an seinem Platz",
+      kat.indexOf("<b>Inhalt A.</b>") !== -1, kat);
+    var spiegel = M.textAnwenden("A {{Wenn:X}}weg{{Ende}}.",
+      { kaestchen: { X: false }, antworten: {}, texte: {} });
+    fall("Text-Spiegel rechnet gleich (fürs Windows-Skript)",
+      spiegel === "A.", spiegel);
+    function rtfBau(k) {
+      return "{\\rtf1\\ansi\\ansicpg1252\\deff0\\deflang2055" +
+        "{\\fonttbl{\\f0\\fnil\\fcharset0 Arial;}}" +
+        "\\viewkind4\\uc1 \\pard\\f0\\fs20 " + k + "}";
+    }
+    var gut = rtfBau("\\{\\{Wenn:X\\}\\}{\\b fett} a\\{\\{Ende\\}\\}");
+    var boese = rtfBau("{\\b fett \\{\\{Wenn:X\\}\\} b} c \\{\\{Ende\\}\\}");
+    fall("RTF-Prüfung: ganze Abschnitte bestehen",
+      M.rtfTauglich(gut).ok, M.rtfTauglich(gut).fehler.join("|"));
+    fall("RTF-Prüfung: zerschnittene Formatierung wird gemeldet",
+      !M.rtfTauglich(boese).ok);
+    return faelle;
+  }
+
   function alleTests() {
     return [].concat(
       pruefeRechnen().map(function (f) { f.gruppe = "Rechnen"; return f; }),
@@ -292,7 +352,8 @@ TB.selbsttest = (function () {
       pruefeRundreise().map(function (f) { f.gruppe = "Rundreise"; return f; }),
       pruefeTabellen().map(function (f) { f.gruppe = "Tabellen"; return f; }),
       pruefeAbgleich().map(function (f) { f.gruppe = "Abgleich"; return f; }),
-      pruefeVarianten().map(function (f) { f.gruppe = "Standort-Fassungen"; return f; })
+      pruefeVarianten().map(function (f) { f.gruppe = "Standort-Fassungen"; return f; }),
+      pruefeMasken().map(function (f) { f.gruppe = "Masken"; return f; })
     );
   }
 
