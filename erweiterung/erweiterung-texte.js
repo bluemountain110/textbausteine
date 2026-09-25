@@ -85,5 +85,7 @@ TB.TE = {
   // ---- Masken (Etappe 8) ----------------------------------------------------
   weiter: "Weiter",
   maskeKategorie: "Aus der Kategorie „%s“ einfügen:",
-  maskeKategorieLeer: "Noch kein Baustein mit dieser Kategorie — der Abschnitt bleibt leer, und Du diktierst später direkt ins Zielfeld."
+  maskeKategorieLeer: "Noch kein Baustein mit dieser Kategorie — der Abschnitt bleibt leer, und Du diktierst später direkt ins Zielfeld.",
+  stelleVerloren: "Die Einfügestelle ging verloren — bitte nochmals ins Feld klicken und das Kürzel neu tippen.",
+  startFehler: "Baustein konnte nicht gestartet werden"
 };

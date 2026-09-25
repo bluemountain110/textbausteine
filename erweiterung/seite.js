@@ -343,8 +343,25 @@ if (typeof document !== "undefined") (function () {
     }
     var anker = ort.doc.createElement("span");
     anker.setAttribute("data-tb-anker", "1");
-    var sel = ort.doc.getSelection();
-    var r = sel.getRangeAt(0);
+    // Härtung (Nachrunde 25.09.): Seiten wie Axenita bauen ihr Feld
+    // nach Eingaben um und verlieren dabei die lebende Auswahl. Der
+    // Anker kommt darum primär an die GEMERKTE Stelle (knoten/offset
+    // aus dem Ort); die Auswahl ist nur noch Rückfallebene.
+    var r = null;
+    try {
+      if (ort.knoten && ort.doc.contains(ort.knoten)) {
+        r = ort.doc.createRange();
+        var grenze = (ort.knoten.nodeType === 3)
+          ? ort.knoten.nodeValue.length : ort.knoten.childNodes.length;
+        r.setStart(ort.knoten, Math.min(ort.offset || 0, grenze));
+        r.collapse(true);
+      }
+    } catch (e) { r = null; }
+    if (!r) {
+      var sel = ort.doc.getSelection();
+      if (!sel || !sel.rangeCount) throw new Error(TB.TE.stelleVerloren);
+      r = sel.getRangeAt(0);
+    }
     r.insertNode(anker);
     return function () {
       var r2 = ort.doc.createRange();
@@ -358,6 +375,17 @@ if (typeof document !== "undefined") (function () {
   TB.seite.halteStelle = halteStelle;
 
   function starteBaustein(ort, baustein, urspruenglich) {
+    // Härtung (Nachrunde 25.09.): Stirbt der Start (z. B. weil die
+    // Seite das Feld umgebaut hat), war das Kürzel schon gelöscht und
+    // es geschah STILL nichts. Jetzt kommt der Text zurück und eine
+    // Meldung zeigt den Grund.
+    try { starteBausteinKern(ort, baustein, urspruenglich); }
+    catch (w) {
+      try { if (urspruenglich) schreibeText(ort, urspruenglich); } catch (e2) {}
+      meldung(TB.TE.startFehler + ": " + (w && w.message ? w.message : w), true);
+    }
+  }
+  function starteBausteinKern(ort, baustein, urspruenglich) {
     var u = umgebung();
     // Etappe 8: Masken (Kästchen, Wenn-Abschnitte, Bausteinwahl je
     // Abschnitt) haben ihr eigenes Fenster und ihre eigene Kette.
