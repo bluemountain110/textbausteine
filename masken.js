@@ -361,7 +361,11 @@ TB.masken = (function () {
     // Blöcke, die vorher Inhalt hatten und jetzt leer sind, entfernen.
     var voll = wurzel.querySelectorAll("[data-tb-voll]");
     Array.prototype.forEach.call(voll, function (bl) {
-      var leer = bl.textContent.replace(/\u00a0/g, " ").trim() === "" &&
+      // Nachrunde 25.09.: Ein geschütztes Leerzeichen zählt als Inhalt.
+      // So überlebt eine gewollte Leerzeile "<p>{{Wenn:X}}&nbsp;{{Ende}}</p>"
+      // das Ankreuzen (Browser zeigen ein <br> am Blockende nicht an,
+      // darum braucht die Kapitel-Leerzeile einen echten Absatz).
+      var leer = bl.textContent.replace(/\u00a0/g, "x").trim() === "" &&
                  !bl.querySelector("table,img,br");
       if (leer && bl.parentNode) bl.parentNode.removeChild(bl);
       else bl.removeAttribute("data-tb-voll");
