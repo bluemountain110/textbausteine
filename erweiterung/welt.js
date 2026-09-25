@@ -11,4 +11,4 @@
 window.TB = window.TB || {};
 TB.ERW = { welt: "prod", istDev: false,
            geraet: "Praxis Neuromed - Erweiterung",
-           fassung: "14.2 · 25.09.2026" };
+           fassung: "14.3 · 25.09.2026" };
