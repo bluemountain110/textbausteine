@@ -322,3 +322,26 @@ dialog.maske { width: min(720px, 94vw); }
 .liste-ohne li { background: #fdf9ec; }
 .erklaerzeile { margin-top: 6px; min-height: 2.4em; font-size: 0.85rem;
   color: #4a5b60; background: #f2f6f7; border-radius: 6px; padding: 6px 10px; }
+
+/* Kärtchen-Runde: Platzhalter als Klartext-Kärtchen im Schreibfeld. */
+.tb-chip { display: inline-block; padding: 1px 8px; margin: 0 1px;
+  border-radius: 10px; font-size: 0.82em; font-weight: 600;
+  background: #e3edf0; color: #14595f; border: 1px solid #b9d2d8;
+  cursor: pointer; user-select: none; white-space: nowrap;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+  vertical-align: baseline; }
+.tb-chip:hover { filter: brightness(0.94); }
+.tb-chip-ankreuz { background: #e7f0e2; border-color: #bfd6b3; color: #2f5c1f; }
+.tb-chip-kategorie { background: #efe6f4; border-color: #d3bede; color: #5b2d78; }
+.tb-chip-sprung { background: #fdeee0; border-color: #ecd0b0; color: #8a4b12; }
+.tb-chip-roh { background: #eee; border-color: #ccc; color: #555; }
+.tb-chip-wenn, .tb-chip-wennnicht, .tb-chip-ende { font-weight: 700; }
+.tb-paar-0 { background: #dcebf7; border-color: #aecfe8; color: #114b78; }
+.tb-paar-1 { background: #fdf3d7; border-color: #e8d79a; color: #6d5410; }
+.tb-paar-2 { background: #fbe3ea; border-color: #eab6c6; color: #7c1f3f; }
+.tb-paar-3 { background: #e2f2ec; border-color: #b2dccd; color: #145c43; }
+.tb-paar-fehl { background: #fdecea; border-color: #d33; color: #a11;
+  border-style: dashed; }
+.rohzeile { margin-top: 6px; display: flex; gap: 6px; align-items: center;
+  font-size: 0.8rem; color: #7a888c; }
+.rohzeile label { cursor: pointer; }

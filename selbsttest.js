@@ -345,6 +345,17 @@ TB.selbsttest = (function () {
     var boese = rtfBau("{\\b fett \\{\\{Wenn:X\\}\\} b} c \\{\\{Ende\\}\\}");
     fall("RTF-Prüfung: ganze Abschnitte bestehen",
       M.rtfTauglich(gut).ok, M.rtfTauglich(gut).fehler.join("|"));
+    var kProbe = document.createElement("div");
+    kProbe.innerHTML = "<p>A {{Feld:Grund=X}} <b>f</b> " +
+      "{{Wenn:Y}}drin {{Ankreuz:Z=Satz.}}{{Ende}} {{Unbekannt:Q}}</p>";
+    var kSoll = kProbe.innerHTML;
+    TB.kaertchen.schmueckeElement(kProbe);
+    var keineKlammern = kProbe.textContent.indexOf("{{") === -1;
+    var kZurueck = TB.kaertchen.entHtml(kProbe);
+    fall("Kärtchen: Rundreise verlustfrei, Klammern unsichtbar",
+      keineKlammern && kZurueck === kSoll, kZurueck);
+    fall("Kärtchen: unbekannter Platzhalter überlebt als Rohform",
+      kZurueck.indexOf("{{Unbekannt:Q}}") !== -1, kZurueck);
     fall("RTF-Prüfung: zerschnittene Formatierung wird gemeldet",
       !M.rtfTauglich(boese).ok);
     return faelle;

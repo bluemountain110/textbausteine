@@ -76,37 +76,52 @@ TB.ansichtBearbeiten = (function () {
     // damit kein Platzhalter halb ausgezeichnet ist und stumm ausfällt.
     var einfuegenZeile = el("div", "feldzeile");
     einfuegenZeile.appendChild(el("label", "", T.einfuegenTitel));
+    TB.kaertchen.anbinden(schreiber); // Kärtchen statt Klammern
     var erklaerZeile = null; // wird unter der Knopfleiste gefüllt
     var knopfleiste = el("div", "knopfleiste");
     var ersteKonstante = Object.keys(TB.einstellungen.konstanten())[0] || "Untersucher";
-    [[T.knopfDatum, "{{Datum}}", undefined, undefined, T.hilfDatum],
-     [T.knopfZeit, "{{Zeit}}", undefined, undefined, T.hilfZeit],
-     [T.knopfFeld, "{{Feld:Beschriftung}}", 7, 19, T.hilfFeld],
-     [T.knopfAuswahl, "{{Auswahl:Beschriftung:eins/zwei}}", 10, 22, T.hilfAuswahl],
-     [T.knopfKonstante, "{{" + ersteKonstante + "}}", undefined, undefined, T.hilfKonstante],
-     [T.knopfBaustein, "{{Baustein:kürzel}}", 11, 17, T.hilfBaustein],
-     // Etappe 8: die Masken-Platzhalter
-     [T.knopfAnkreuz, "{{Ankreuz:Beschriftung=Text}}", 10, 22, T.hilfAnkreuz],
-     [T.knopfWenn, "{{Wenn:Beschriftung}}…{{Ende}}", 7, 19, T.hilfWenn],
-     [T.knopfKategorie, "{{Aus Kategorie:Name}}", 16, 20, T.hilfKategorie],
-     [T.knopfSprung, "{{Sprung:2}}", undefined, undefined, T.hilfSprung]
+    [[T.knopfDatum, "datum", T.hilfDatum],
+     [T.knopfZeit, "zeit", T.hilfZeit],
+     [T.knopfFeld, "feld", T.hilfFeld],
+     [T.knopfAuswahl, "auswahl", T.hilfAuswahl],
+     [T.knopfKonstante, "konstante", T.hilfKonstante],
+     [T.knopfBaustein, "baustein", T.hilfBaustein],
+     // Etappe 8 / Kärtchen-Runde: die Masken-Platzhalter
+     [T.knopfAnkreuz, "ankreuz", T.hilfAnkreuz],
+     [T.knopfWenn, "wenn", T.hilfWenn],
+     [T.knopfKategorie, "kategorie", T.hilfKategorie],
+     [T.knopfSprung, "sprung", T.hilfSprung]
     ].forEach(function (k) {
       var knopf = el("button", "leise klein", k[0]);
       knopf.type = "button";
-      knopf.title = k[4] || "";
+      knopf.title = k[2] || "";
       knopf.addEventListener("mouseenter", function () {
-        if (erklaerZeile) erklaerZeile.textContent = k[4] || ""; });
+        if (erklaerZeile) erklaerZeile.textContent = k[2] || ""; });
       knopf.addEventListener("mousedown", function (ev) { ev.preventDefault(); });
       knopf.addEventListener("click", function (ev) {
         ev.preventDefault();
-        if (erklaerZeile) erklaerZeile.textContent = k[4] || "";
-        schreiber.platzhalterEinsetzen(k[1], k[2], k[3]);
+        if (erklaerZeile) erklaerZeile.textContent = k[2] || "";
+        schreiber.kaertchenNeu(k[1]);
       });
       knopfleiste.appendChild(knopf);
     });
     einfuegenZeile.appendChild(knopfleiste);
     erklaerZeile = el("div", "erklaerzeile", T.einfuegenErklaerung);
     einfuegenZeile.appendChild(erklaerZeile);
+    // K3: der kleine Rohtext-Schalter (Notausgang)
+    var rohZeile = el("div", "rohzeile");
+    var rohKasten = el("input"); rohKasten.type = "checkbox";
+    var rohLabel = el("label", "", TB.kaertchen.W.rohSchalter);
+    rohZeile.appendChild(rohKasten); rohZeile.appendChild(rohLabel);
+    rohLabel.addEventListener("click", function () {
+      rohKasten.checked = !rohKasten.checked;
+      rohKasten.dispatchEvent(new Event("change")); });
+    rohKasten.addEventListener("change", function () {
+      schreiber.rohModus(rohKasten.checked);
+      Object.keys(varianteSchreiber).forEach(function (ort) {
+        varianteSchreiber[ort].rohModus(rohKasten.checked); });
+    });
+    einfuegenZeile.appendChild(rohZeile);
     d.appendChild(einfuegenZeile);
 
     // ---- Standort-Fassungen (Etappe 6) --------------------------------
@@ -157,6 +172,7 @@ TB.ansichtBearbeiten = (function () {
               pruefeMakros();
             }
           });
+          TB.kaertchen.anbinden(varianteSchreiber[ort]);
         } else {
           var anlegen = el("button", "neben klein", T.varianteAnlegen.replace("%s", ort));
           anlegen.type = "button";
