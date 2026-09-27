@@ -7,7 +7,9 @@
 //        (Export -> Import-Vorschau -> „0 neu“) und seit Etappe 2 den
 //        Abgleich (Übersetzung verlustfrei, Warteschlange sauber) und
 //        seit Etappe 7 die Tabellen (Lesen, Reinigen, reiner Text,
-//        RTF-Erzeugung, Rundreise, Symbolschrift-Häkchen, verbundene Zellen).
+//        RTF-Erzeugung, Rundreise, Symbolschrift-Häkchen, verbundene Zellen)
+//        und seit Etappe 9 das Status-Werk (Grundlage, Fliesstext,
+//        Tardoc-Zählung) und den Bericht Memory Clinic (Zerlegen).
 //        Grün heisst bewiesen, Rot heisst Programmfehler — nie
 //        „kommt darauf an“.
 //        Die Prüfungen laufen über LISTEN, nicht über handgeschriebene
@@ -361,6 +363,110 @@ TB.selbsttest = (function () {
     return faelle;
   }
 
+  // ---- Status-Werk (Etappe 9) ----------------------------------------
+  // Geprüft wird die GRUNDAUSSTATTUNG (feste, bekannte Daten) — nicht
+  // Näds bearbeitete Fassung. Strukturprüfungen laufen über die Listen,
+  // damit sie mit jeder neuen Untersuchung von selbst mitwachsen.
+  function pruefeStatus() {
+    var faelle = [];
+    var m = TB.statusGrundlage.master();
+    var teilmengen = TB.statusGrundlage.teilmengen();
+    var katIds = {}, uIds = {}, doppelt = [], fremdKat = [], leerText = [];
+    m.kategorien.forEach(function (k) { katIds[k.id] = true; });
+    m.untersuchungen.forEach(function (u) {
+      if (uIds[u.id]) doppelt.push(u.id);
+      uIds[u.id] = true;
+      if (!katIds[u.kategorie]) fremdKat.push(u.id);
+      if (!u.name || !u.normal) leerText.push(u.id);
+    });
+    faelle.push({ name: "Kennungen eindeutig", ok: !doppelt.length,
+      detail: doppelt.join(", ") });
+    faelle.push({ name: "Jede Untersuchung hat ihre Kategorie",
+      ok: !fremdKat.length, detail: fremdKat.join(", ") });
+    faelle.push({ name: "Name und Normalbefund überall gefüllt",
+      ok: !leerText.length, detail: leerText.join(", ") });
+    var blind = [];
+    teilmengen.forEach(function (t) {
+      t.punkte.forEach(function (p) {
+        if (!uIds[p]) blind.push(t.name + ":" + p); });
+    });
+    faelle.push({ name: "Alle Status-Muster zeigen auf Vorhandenes",
+      ok: !blind.length, detail: blind.join(", ") });
+    var schief = [];
+    m.untersuchungen.forEach(function (u) {
+      (u.tardoc || []).forEach(function (e) {
+        var art = TB.tardocDaten.arten[e.a];
+        if (!art || !art.gruppen[e.g]) schief.push(u.id);
+        else if (!(e.m && e.m.length) && !e.muskeln) schief.push(u.id);
+      });
+    });
+    faelle.push({ name: "Tardoc-Etiketten gültig", ok: !schief.length,
+      detail: schief.join(", ") });
+
+    var leerF = TB.status.fliesstext(m, {}, {});
+    faelle.push({ name: "Leere Auswahl ergibt leeren Text",
+      ok: leerF.text === "" && leerF.html === "", detail: leerF.text });
+    var f = TB.status.fliesstext(m, { meningismus: true },
+      { meningismus: "angedeutet endgradig" });
+    faelle.push({ name: "Fliesstext: Kategorie unterstrichen, Punkt ergänzt",
+      ok: f.html.indexOf("<u>Kopf und Hirnnerven:</u>") !== -1 &&
+          f.text === "Kopf und Hirnnerven: Meningismus: angedeutet endgradig.",
+      detail: f.text });
+    faelle.push({ name: "Fliesstext: Abweichung fett in Dunkelgrau",
+      ok: f.html.indexOf("<b><span style=\"color:#444444\">") !== -1,
+      detail: f.html.slice(0, 120) });
+
+    var wahl = {};
+    ["az", "vigilanz", "kooperation", "haendigkeit",
+     "beruehrung", "pallaesthesie", "fnv", "khv", "diadochokinese"]
+      .forEach(function (id) { wahl[id] = true; });
+    var t = TB.status.tardoc(m, wahl);
+    faelle.push({ name: "Tardoc: feste Auswahl ergibt Neurostatus A",
+      ok: t.neuro.stufe === "A" && t.neuro.erfuellte === 4,
+      detail: t.neuro.stufe + " mit " + t.neuro.erfuellte + " Gruppen" });
+    faelle.push({ name: "Tardoc: dieselbe Auswahl ergibt Hirnnerven B",
+      ok: t.hirn.stufe === "B",
+      detail: t.hirn.stufe + " mit " + t.hirn.erfuellte + " Gruppen" });
+    var t0 = TB.status.tardoc(m, {});
+    faelle.push({ name: "Tardoc: leere Auswahl ergibt keine Stufe",
+      ok: t0.neuro.stufe === "–" && t0.hirn.stufe === "–",
+      detail: t0.neuro.stufe + "/" + t0.hirn.stufe });
+    return faelle;
+  }
+
+  // ---- Bericht Memory Clinic (Etappe 9): Zerlegen mit fester Antwort --
+  function pruefeBerichtMc() {
+    var faelle = [];
+    var probe = "Konsultationsgrund\nDemenzabklärung\n\nSozialanamnese\nVerheiratet, keine Kinder.\n\nKrankheitsanamnese\nSchädelbruch mit drei Jahren.\n\nSystemanamnese\nNikotin: nihil.\n\nIQCODE (Fragebogen): Der IQCODE-Score beträgt 3.12, was unterhalb des Cut-offs liegt.\n\nDie IADL-Skala ergab einen Scorewert von 8/8.\n\nKognitive und funktionelle Leistung (formal): CDR 0,5.\n";
+    var z = TB.ansichtBerichtMc.zerlege(probe);
+    faelle.push({ name: "Zerlegen: Krankheitsanamnese wird Persönliche Anamnese",
+      ok: z.abschnitte.persoenlich === "Schädelbruch mit drei Jahren." &&
+          z.abschnitte.sozial === "Verheiratet, keine Kinder." &&
+          z.abschnitte.system === "Nikotin: nihil.",
+      detail: JSON.stringify(z.abschnitte) });
+    faelle.push({ name: "Zerlegen: fehlende Abschnitte werden gemeldet",
+      ok: z.fehlend.indexOf("Familienanamnese") !== -1 &&
+          z.fehlend.indexOf("Sozialanamnese") === -1,
+      detail: z.fehlend.join(", ") });
+    faelle.push({ name: "Scores: IQCODE, IADL und CDR aus dem Text gelesen",
+      ok: z.scores.iqcode === "3.12" && z.scores.iadl === "8/8" &&
+          z.scores.cdr === "0.5",
+      detail: JSON.stringify(z.scores) });
+    var an = TB.ansichtBerichtMc.bauAnamnese(z,
+      { geschlecht: "w", erscheinen: "allein", begleitText: "", kompetenz: 1 });
+    faelle.push({ name: "Anamnese-Feld: Überschriften unterstrichen, Lücken als xx",
+      ok: an.html.indexOf("<u>Persönliche Anamnese</u>") !== -1 &&
+          an.html.indexOf("<u>Familienanamnese</u> <i>") !== -1 &&
+          an.text.indexOf("Familienanamnese (übernommen aus neuropsychologischem Vorbericht)\nxx") !== -1,
+      detail: "" });
+    var un = TB.ansichtBerichtMc.bauUntersuchungen(z);
+    faelle.push({ name: "Untersuchungen-Feld: Scores eingesetzt",
+      ok: un.text.indexOf("Lawton und Brody: 8/8 Punkte.") !== -1 &&
+          un.text.indexOf(": 3.12 (Cut-off") !== -1,
+      detail: "" });
+    return faelle;
+  }
+
   function alleTests() {
     return [].concat(
       pruefeRechnen().map(function (f) { f.gruppe = "Rechnen"; return f; }),
@@ -369,7 +475,9 @@ TB.selbsttest = (function () {
       pruefeTabellen().map(function (f) { f.gruppe = "Tabellen"; return f; }),
       pruefeAbgleich().map(function (f) { f.gruppe = "Abgleich"; return f; }),
       pruefeVarianten().map(function (f) { f.gruppe = "Standort-Fassungen"; return f; }),
-      pruefeMasken().map(function (f) { f.gruppe = "Masken"; return f; })
+      pruefeMasken().map(function (f) { f.gruppe = "Masken"; return f; }),
+      pruefeStatus().map(function (f) { f.gruppe = "Status-Werk"; return f; }),
+      pruefeBerichtMc().map(function (f) { f.gruppe = "Bericht Memory Clinic"; return f; })
     );
   }
 

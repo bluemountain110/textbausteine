@@ -106,6 +106,8 @@ TB.oberflaeche = (function () {
   // ---- Navigation ------------------------------------------------------
   var BEREICHE = [
     ["bausteine", function () { return T.bereichBausteine; }],
+    ["status", function () { return TB.statusTexte.bereichStatus; }],
+    ["berichte", function () { return TB.berichtMcTexte.bereichBerichte; }],
     ["entwuerfe", function () {
       var n = TB.bausteine.alleEntwuerfe().length;
       return T.bereichEntwuerfe + (n ? " (" + n + ")" : ""); }],
@@ -116,6 +118,7 @@ TB.oberflaeche = (function () {
     ["papierkorb", function () { return T.bereichPapierkorb; }],
     ["einstellungen", function () { return T.bereichEinstellungen; }],
     ["statistik", function () { return T.bereichStatistik; }],
+    ["uebersicht", function () { return TB.statusTexte.bereichUebersicht; }],
     ["hilfe", function () { return T.bereichHilfe; }],
     ["chronik", function () { return T.bereichChronik; }]
   ];
@@ -366,6 +369,9 @@ TB.oberflaeche = (function () {
     wurzel.textContent = "";
     wurzel.className = (ansicht === "bausteine") ? "" : "breit";
     if (ansicht === "bausteine") zeichneBausteine(wurzel);
+    else if (ansicht === "status") TB.ansichtStatus.zeichne(wurzel);
+    else if (ansicht === "berichte") TB.ansichtBerichtMc.zeichne(wurzel);
+    else if (ansicht === "uebersicht") TB.ansichtUebersicht.zeichne(wurzel);
     else if (ansicht === "entwuerfe") TB.ansichtEntwuerfe.zeichne(wurzel);
     else if (ansicht === "ideen") TB.ansichtIdeen.zeichne(wurzel);
     else if (ansicht === "papierkorb") zeichnePapierkorb(wurzel);

@@ -345,3 +345,106 @@ dialog.maske { width: min(720px, 94vw); }
 .rohzeile { margin-top: 6px; display: flex; gap: 6px; align-items: center;
   font-size: 0.8rem; color: #7a888c; }
 .rohzeile label { cursor: pointer; }
+
+/* ---- Status-Werk (Etappe 9) ---------------------------------------- */
+.status-kopf { display: flex; align-items: center; gap: 12px;
+  justify-content: space-between; flex-wrap: wrap; }
+.status-teilmengen { display: flex; flex-wrap: wrap; gap: 6px;
+  align-items: center; margin: 8px 0; }
+.status-chip { border-radius: 999px; padding: 4px 12px; }
+.status-chip.aktiv { background: #2c7a7b; color: #fff;
+  border-color: #2c7a7b; }
+.status-tardoc { background: #f6f8f8; border: 1px solid #dde4e6;
+  border-radius: 8px; padding: 8px 10px; margin: 8px 0; }
+.status-tardoc-zeile { display: flex; align-items: center; gap: 10px;
+  flex-wrap: wrap; margin: 2px 0; }
+.status-pille { border-radius: 999px; padding: 2px 10px;
+  background: #e7ebec; font-weight: 600; white-space: nowrap; }
+.status-pille.gut { background: #d9f2e2; color: #1c7c3c; }
+.status-pille.halb { background: #fdf3d7; color: #8a6d00; }
+.status-tardoc-fuss { font-size: 0.72rem; color: #8a9599;
+  margin-top: 4px; }
+.status-suche { width: 100%; max-width: 420px; margin: 4px 0 10px;
+  padding: 6px 10px; }
+.status-flaeche { display: grid; grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px; align-items: start; }
+@media (max-width: 900px) { .status-flaeche { grid-template-columns: 1fr; } }
+.status-rechts { position: sticky; top: 10px; }
+.status-knoepfe { display: flex; flex-wrap: wrap; gap: 6px; }
+.status-kopieren { font-weight: 700; }
+.status-vorschau { margin-top: 8px; max-height: 62vh; overflow: auto; }
+.status-vorschau-inhalt p { margin: 0 0 8px; }
+.status-kategorie { border: 1px solid #e2e8ea; border-radius: 8px;
+  padding: 8px 10px; margin: 0 0 10px; background: #fff; }
+.status-kategorie h3 { margin: 0 0 6px; font-size: 0.95rem;
+  text-decoration: underline; }
+.status-zeile { display: flex; gap: 8px; align-items: flex-start;
+  padding: 3px 0; }
+.status-zeile input[type="checkbox"] { margin-top: 3px; }
+.status-zeile.selten { opacity: 0.82; font-size: 0.9em;
+  background: #fafcfc; }
+.status-zeile-inhalt { flex: 1; min-width: 0; }
+.status-name { font-weight: 600; }
+.status-befund { cursor: pointer; border-bottom: 1px dotted #b8c4c7; }
+.status-befund:hover { background: #eef4f5; }
+.status-befund.abweichend { font-weight: 700; color: #444444; }
+.status-zurueck { margin-left: 6px; padding: 0 6px; }
+.status-abweichfeld { width: 100%; box-sizing: border-box; }
+.status-weitere { margin-top: 4px; font-size: 0.8rem; color: #4a6a6e;
+  background: none; border: none; text-decoration: underline;
+  cursor: pointer; padding: 2px 0; }
+/* Pflege */
+.status-pflege-katzeile { display: flex; align-items: center; gap: 8px; }
+.status-pflege-katzeile h3 { cursor: pointer; margin: 0; }
+.status-pflege-zeile { display: flex; align-items: center; gap: 8px;
+  padding: 3px 0; flex-wrap: wrap; }
+.status-pflege-befund { flex: 1; min-width: 180px; color: #5c6a6e;
+  font-size: 0.88em; }
+.status-pfeil { padding: 0 7px; }
+.status-pfeil:disabled { opacity: 0.3; }
+.status-marke { font-size: 0.72rem; border-radius: 999px;
+  padding: 1px 9px; background: #eef1f2; color: #7a888c; }
+.status-marke.haeufig { background: #dcefe4; color: #1c7c3c; }
+.status-katwahl { max-width: 180px; }
+.status-klein { font-size: 0.78rem; padding: 2px 8px; }
+.status-grundneu { margin-top: 14px; color: #a11; }
+.status-dialog { max-width: 560px; width: 92vw; }
+.status-etiketten { margin: 4px 0; }
+.status-etikett { display: flex; align-items: center; gap: 8px;
+  font-size: 0.85rem; padding: 2px 0; }
+.status-etikett-neu { display: flex; flex-wrap: wrap; gap: 6px;
+  align-items: center; margin-top: 4px; }
+.status-muskeln { width: 90px; }
+/* Übersicht */
+.uebersicht-tabelle h3 { margin: 12px 0 4px; }
+.uebersicht-zeile { display: grid;
+  grid-template-columns: 110px 220px minmax(0, 1fr) 90px;
+  gap: 10px; padding: 3px 0; border-bottom: 1px solid #eef1f2;
+  align-items: baseline; }
+@media (max-width: 800px) {
+  .uebersicht-zeile { grid-template-columns: 90px minmax(0, 1fr); }
+  .uebersicht-text, .uebersicht-benutzt { display: none; }
+}
+.uebersicht-kuerzel { font-family: ui-monospace, Consolas, monospace;
+  color: #2c7a7b; }
+.uebersicht-titel { font-weight: 600; }
+.uebersicht-text { color: #5c6a6e; font-size: 0.88em; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; }
+.uebersicht-benutzt { font-size: 0.78em; color: #8a9599;
+  text-align: right; }
+
+/* ---- Berichte: Bericht Memory Clinic (Etappe 9, R6) ----------------- */
+.bmc-quelle { width: 100%; box-sizing: border-box; font: 0.85rem/1.4 inherit;
+  padding: 8px; border: 1px solid #c8d0d3; border-radius: 6px; }
+.bmc-wahlen { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
+  margin: 10px 0; }
+.bmc-wahl { display: flex; flex-direction: column; gap: 3px;
+  font-size: 0.8rem; color: #5b6b70; }
+.bmc-ziel { margin-top: 14px; }
+.bmc-zielkopf { display: flex; align-items: center; gap: 12px;
+  justify-content: space-between; }
+.bmc-zielkopf h3 { margin: 0; }
+.bmc-vorschau { background: #fff; border: 1px solid #dde4e6; border-radius: 6px;
+  padding: 10px 12px; margin-top: 8px; max-height: 300px; overflow: auto;
+  font-size: 0.85rem; }
+.bmc-vorschau p { margin: 0 0 8px; }
