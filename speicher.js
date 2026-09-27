@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "15.0 · Etappe 9 Status-Werk · 26.09.2026";
+TB.FASSUNG = "15.1 · Etappe 9 Sammelrunde · 27.09.2026";
 
 TB.speicher = (function () {
 

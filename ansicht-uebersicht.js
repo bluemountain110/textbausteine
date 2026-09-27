@@ -21,6 +21,7 @@ TB.ansichtUebersicht = (function () {
     nachKuerzel: "Kürzel",
     nachBenutzt: "Zuletzt benutzt",
     pdfKnopf: "Als PDF sichern",
+    bearbeitenHinweis: "Klick öffnet den Baustein zum Bearbeiten",
     leer: "Noch keine fertigen Bausteine.",
     ohneKategorie: "(ohne Kategorie)",
     ohneKuerzel: "—",
@@ -120,6 +121,10 @@ TB.ansichtUebersicht = (function () {
         }
       }
       var z = el("div", "uebersicht-zeile");
+      // Sammelrunde 27.9.: Klick öffnet den Baustein zum Bearbeiten.
+      z.title = TU.bearbeitenHinweis;
+      z.addEventListener("click", function () {
+        TB.oberflaeche.bearbeiteBaustein(b); });
       z.appendChild(el("span", "uebersicht-kuerzel",
         b.kuerzel ? ";;" + b.kuerzel : TU.ohneKuerzel));
       z.appendChild(el("span", "uebersicht-titel", b.titel || "?"));

@@ -415,6 +415,20 @@ TB.selbsttest = (function () {
     faelle.push({ name: "Fliesstext: Abweichung fett in Dunkelgrau",
       ok: f.html.indexOf("<b><span style=\"color:#444444\">") !== -1,
       detail: f.html.slice(0, 120) });
+    var teilA = "radial 8/8, patellär 8/8, malleolär 8/8, Grosszehengrundgelenk 8/8.";
+    var teilB = "radial 8/8, patellär 8/8, malleolär 4/6, Grosszehengrundgelenk 8/8.";
+    var d = TB.status.wortUnterschied(teilA, teilB);
+    faelle.push({ name: "Teil-Hervorhebung: nur der veränderte Wortbereich",
+      ok: d.mitte === "4/6," && d.vor.indexOf("malleolär ") !== -1 &&
+          d.nach.indexOf("Grosszehengrundgelenk") !== -1,
+      detail: JSON.stringify(d.mitte) });
+    var fT = TB.status.fliesstext(m, { pallaesthesie: true },
+      { pallaesthesie: teilB });
+    faelle.push({ name: "Teil-Hervorhebung im Fliesstext: Name bleibt normal",
+      ok: fT.html.indexOf("color:#444444\">4/6,</span></b>") !== -1 &&
+          fT.html.indexOf("Pallästhesie") <
+          fT.html.indexOf("<b><span"),
+      detail: fT.html.slice(0, 200) });
 
     var wahl = {};
     ["az", "vigilanz", "kooperation", "haendigkeit",
@@ -464,6 +478,16 @@ TB.selbsttest = (function () {
       ok: un.text.indexOf("Lawton und Brody: 8/8 Punkte.") !== -1 &&
           un.text.indexOf(": 3.12 (Cut-off") !== -1,
       detail: "" });
+    faelle.push({ name: "Demenz-Scores als Aufzählung, Lücke vor Amyloid-PET",
+      ok: un.text.indexOf("\u2022 IQCODE") !== -1 &&
+          un.text.indexOf("\u2022 CDR-Skala") !== -1 &&
+          un.text.indexOf("Zürich): xx.\n\nAmyloid-PET") !== -1,
+      detail: "" });
+    var z2 = TB.ansichtBerichtMc.zerlege("Die IADL-Skala ergab einen Scorewert von 8/8. Gemäss diesen Fragebögen wäre sie auf geringe Fremdhilfe angewiesen. Unterstützungsbedarf: Die Einzahlungen erledigt der Ehemann, er traue ihr das Erlernen bei Bedarf zu.\n\nSozialanamnese\nVerheiratet.");
+    var un2 = TB.ansichtBerichtMc.bauUntersuchungen(z2);
+    faelle.push({ name: "IADL: Unterstützungsbedarf wandert mit",
+      ok: un2.text.indexOf("8/8 Punkte. Unterstützungsbedarf: Die Einzahlungen erledigt der Ehemann, er traue ihr das Erlernen bei Bedarf zu.") !== -1,
+      detail: un2.text.slice(0, 260) });
     return faelle;
   }
 

@@ -26,7 +26,7 @@ TB.berichtMcTexte = {
   quellePlatzhalter: "Hier den ganzen Text aus der KISIM-Zwischenablage einfügen (Strg+V) …",
   wahlGeschlecht: "Anrede",
   auto: "automatisch (aus dem Text)",
-  patientin: "Patientin", patient: "Patient",
+  patientin: "weiblich", patient: "männlich",
   wahlErscheinen: "Erschienen",
   erschienBegleitung: "in Begleitung", erschienAllein: "alleine",
   begleitPlatzhalter: "z. B. des Ehemanns",
@@ -119,6 +119,9 @@ TB.ansichtBerichtMc = (function () {
     var weiblich = (alles.match(/Patientin/g) || []).length;
     var maennlich = (alles.match(/\bPatient(?!in)/g) || []).length;
     var begleit = alles.match(/in Begleitung\s+([^.\n]{3,60})/);
+    // Sammelrunde 27.9.: Der Unterstützungsbedarf aus dem IADL-Absatz
+    // wandert mit in die Demenz-Scores (bis zum Absatzende).
+    var stuetz = alles.match(/Unterstützungsbedarf:\s*([\s\S]*?)(?=\n\s*\n|$)/);
     var TXW = TX();
     var fehlend = [];
     [["sozial", TXW.ueberschriftSozial], ["schule", TXW.ueberschriftSchule],
@@ -129,7 +132,9 @@ TB.ansichtBerichtMc = (function () {
     });
     return { abschnitte: abschnitte, fehlend: fehlend, scores: scores,
              geschlecht: weiblich >= maennlich ? "w" : "m",
-             begleitung: begleit ? begleit[1].trim() : "" };
+             begleitung: begleit ? begleit[1].trim() : "",
+             unterstuetzung: stuetz
+               ? stuetz[1].replace(/\s+/g, " ").trim() : "" };
   }
 
   // ---- Aus den Teilen die KISIM-Feldinhalte bauen ---------------------
@@ -170,10 +175,10 @@ TB.ansichtBerichtMc = (function () {
     var s = z.scores;
     var zeilen = [
       ["u", "Demenz-Scores vom xx.xx.2026 (Spital Limmattal):"],
-      ["", "IQCODE (Fragebogen zur geistigen Leistungsfähigkeit für ältere Personen): " + (s.iqcode || "x") + " (Cut-off ≤ 3.19)."],
-      ["", "IADL-Skala (instrumental activities of daily living) nach Lawton und Brody: " + (s.iadl || "x/8") + " Punkte."],
-      ["", "ADL-Skala (activities of daily living, Barthel-Index): nicht eingeschränkt."],
-      ["", "CDR-Skala (kognitive und funktionelle Leistung, formal): " + (s.cdr || "x") + "."],
+      ["p", "IQCODE (Fragebogen zur geistigen Leistungsfähigkeit für ältere Personen): " + (s.iqcode || "x") + " (Cut-off ≤ 3.19)."],
+      ["p", "IADL-Skala (instrumental activities of daily living) nach Lawton und Brody: " + (s.iadl || "x/8") + " Punkte." + (z.unterstuetzung ? " Unterstützungsbedarf: " + z.unterstuetzung : "")],
+      ["p", "ADL-Skala (activities of daily living, Barthel-Index): nicht eingeschränkt."],
+      ["p", "CDR-Skala (kognitive und funktionelle Leistung, formal): " + (s.cdr || "x") + "."],
       ["leer", ""],
       ["u", "MRI Schädel vom xx.xx.2026 (Spital Limmattal):"], ["", "xx (in der Eigendurchsicht: xx)."],
       ["leer", ""],
@@ -188,11 +193,17 @@ TB.ansichtBerichtMc = (function () {
       ["u", "Apolipoprotein-Bestimmung vom xx.xx.2026 (Viollier):"], ["", "Ex/Ex."],
       ["leer", ""],
       ["u", "FDG-PET vom xx.xx.2026 (Universitätsspital Zürich):"], ["", "xx."],
+      ["leer", ""],
       ["u", "Amyloid-PET vom xx.xx.2026 (Universitätsspital Zürich):"], ["", "xx."]
     ];
     var html = [], text = [];
     zeilen.forEach(function (paar) {
       if (paar[0] === "leer") { html.push("<p></p>"); text.push(""); return; }
+      if (paar[0] === "p") {   // Aufzählungspunkt (Sammelrunde 27.9.)
+        html.push("<p>\u2022 " + schuetze(paar[1]) + "</p>");
+        text.push("\u2022 " + paar[1]);
+        return;
+      }
       var inhalt = paar[0] === "u"
         ? "<u>" + schuetze(paar[1]) + "</u>" : schuetze(paar[1]);
       html.push("<p>" + inhalt + "</p>");

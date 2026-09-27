@@ -448,3 +448,33 @@ dialog.maske { width: min(720px, 94vw); }
   padding: 10px 12px; margin-top: 8px; max-height: 300px; overflow: auto;
   font-size: 0.85rem; }
 .bmc-vorschau p { margin: 0 0 8px; }
+
+/* ---- Sammelrunde Etappe 9 (27.9.): Sticky-Kopf, Nur-Gewählte, iPhone */
+.status-sticky { position: sticky; top: 0; z-index: 30;
+  background: var(--grund); padding: 6px 0 8px; box-shadow: 0 6px 8px -8px rgba(0,0,0,0.25); }
+.status-suchzeile { display: flex; gap: 8px; align-items: center; }
+.status-suchzeile .status-suche { flex: 1; }
+.status-nurgew { border-radius: 999px; padding: 4px 12px; white-space: nowrap; }
+.status-nurgew.aktiv { background: #2c7a7b; color: #fff; border-color: #2c7a7b; }
+.status-name { cursor: pointer; }
+.status-exportzeile { margin: 4px 0 10px; }
+.uebersicht-zeile { cursor: pointer; }
+.uebersicht-zeile:hover { background: #eef3f3; }
+
+/* iPhone und schmale Fenster: Die App bleibt benutzbar — Navigation
+   umbrechend und kompakt, Status einspaltig, Vorschau darunter. */
+@media (max-width: 760px) {
+  header { flex-wrap: wrap; row-gap: 4px; position: static; }
+  .fassung-marke { flex-basis: 100%; margin-left: 0; }
+  #haupt-nav { flex-wrap: wrap; gap: 4px; }
+  #haupt-nav button { padding: 5px 9px; font-size: 0.82rem; }
+  .status-flaeche { display: block; }
+  .status-rechts { position: static; max-width: none; margin-top: 14px; }
+  .status-vorschau { max-height: 40vh; }
+  .status-teilmengen { overflow-x: auto; flex-wrap: nowrap;
+    padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+  .status-tardoc-zeile { flex-wrap: wrap; }
+  .bmc-wahlen { flex-direction: column; align-items: stretch; }
+  .uebersicht-zeile { grid-template-columns: auto 1fr; }
+  .uebersicht-text { display: none; }
+}

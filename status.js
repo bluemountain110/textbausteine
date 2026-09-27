@@ -49,11 +49,15 @@ TB.statusTexte = {
   vorschauLeer: "(noch nichts angekreuzt)",
   abweichungZurueck: "Auf Normalbefund zurück",
   befundKlickHinweis: "Zum Überschreiben anklicken",
+  nameKlickHinweis: "Klick kreuzt an oder ab",
   tardocFuerAFehlt: "Für %s A fehlen %s Gruppen — am nächsten: %s",
   tardocFuerAFehlt1: "Für %s A fehlt 1 Gruppe — am nächsten: %s",
   tardocErfuellt: "%s A erfüllt (%s Gruppen).",
   tardocKeine: "keine Gruppe begonnen",
-  tardocHinweis: "Zählung nach %s — massgeblich bleibt der Tarif.",
+  tardocHinweis: "Zählung nach %s: B = bis zu 3, A = ab 4 dokumentierte Gruppen. Die Ampel zählt nur Gruppen — ob die Exploration als eigenständige Leistung erbracht wurde (Neurostatus B 23 Min. / A 46 Min., Hirnnerven A 35 Min.), beurteilst Du; massgeblich bleibt der Tarif.",
+  tardocPilleA: "%s: A (%s Gruppen)",
+  tardocPilleB: "%s: B (%s von bis zu 3 Gruppen)",
+  tardocPilleLeer: "%s: –",
   // Pflege
   pflegeTitel: "Status-Pflege",
   pflegeHinweis: "Änderungen wirken sofort und syncen auf alle Geräte. Häufige Untersuchungen stehen offen in der Maske, seltene hinter „Weitere“.",
@@ -83,7 +87,11 @@ TB.statusTexte = {
   abbrechen: "Abbrechen",
   loeschenKnopf: "Löschen",
   gespeichert: "Gespeichert.",
-  hoch: "▲", runter: "▼"
+  hoch: "▲", runter: "▼",
+  nurGewaehlteKnopf: "Nur Gewählte",
+  exportKnopf: "Status als Datei sichern",
+  exportHinweis: "Sichert Gesamtstatus und eigene Status als Datei — zum Aufheben oder zum Schicken an Claude, damit Deine Änderungen in die Grundausstattung einfliessen können.",
+  exportFertig: "Status-Datei erstellt: %s"
 };
 
 TB.status = (function () {
@@ -162,10 +170,17 @@ TB.status = (function () {
         var b = befundVon(u, abweichungen);
         var satzT = u.name + ": " + b.text;
         stueckeT.push(satzT);
-        var satzH = schuetze(u.name) + ": " + schuetze(b.text);
+        var satzH;
         if (b.abweichend) {
-          satzH = "<b><span style=\"color:" + ABWEICHFARBE + "\">" +
-                  satzH + "</span></b>";
+          // Sammelrunde 27.9. (Näd): Der Untersuchungsname bleibt
+          // normal; vom Befund wird nur der wirklich veränderte
+          // Wortbereich fett in Dunkelgrau hervorgehoben.
+          var d = wortUnterschied(u.normal, b.text);
+          satzH = schuetze(u.name) + ": " + schuetze(d.vor) +
+                  "<b><span style=\"color:" + ABWEICHFARBE + "\">" +
+                  schuetze(d.mitte) + "</span></b>" + schuetze(d.nach);
+        } else {
+          satzH = schuetze(u.name) + ": " + schuetze(b.text);
         }
         stueckeH.push(satzH);
       });
@@ -173,6 +188,28 @@ TB.status = (function () {
       text.push(zeileText + stueckeT.join(" "));
     });
     return { html: html.join(""), text: text.join("\n") };
+  }
+
+  // Wort-Unterschied zwischen Normalbefund und überschriebenem Befund:
+  // gemeinsamer Anfang und gemeinsames Ende (auf Wortgrenzen gerundet)
+  // bleiben normal, der Bereich vom ersten bis zum letzten veränderten
+  // Wort wird hervorgehoben. Ist alles anders, ist alles hervorgehoben.
+  function wortUnterschied(normal, abw) {
+    var a = String(normal), b = String(abw);
+    var vorn = 0, hinten = 0;
+    while (vorn < a.length && vorn < b.length &&
+           a.charAt(vorn) === b.charAt(vorn)) vorn++;
+    while (hinten < a.length - vorn && hinten < b.length - vorn &&
+           a.charAt(a.length - 1 - hinten) === b.charAt(b.length - 1 - hinten))
+      hinten++;
+    // Auf Wortgrenzen zurückrunden, damit nie ein halbes Wort
+    // hervorgehoben wird ("8/8" → "4/6" hebt das ganze Stück hervor).
+    while (vorn > 0 && b.charAt(vorn - 1) !== " ") vorn--;
+    while (hinten > 0 && b.charAt(b.length - hinten) !== " ") hinten--;
+    var mitte = b.slice(vorn, b.length - hinten);
+    if (!mitte) { vorn = 0; hinten = 0; mitte = b; }
+    return { vor: b.slice(0, vorn), mitte: mitte,
+             nach: b.slice(b.length - hinten) };
   }
 
   // ---- Tardoc-Zählung --------------------------------------------------
@@ -253,6 +290,30 @@ TB.status = (function () {
     return !da;
   }
 
+  // ---- Export (Sammelrunde 27.9.): Gesamtstatus + eigene Status als
+  // Datei, Dateiname nach der Berichts-Regel (Gerät, Datum, Zeit mit
+  // Sekunden). Enthält NUR Vorlagen — nie einen ausgefüllten Befund.
+  function exportDatei() {
+    var jetzt = new Date();
+    function zwei(n) { return (n < 10 ? "0" : "") + n; }
+    var stempel = jetzt.getFullYear() + "-" + zwei(jetzt.getMonth() + 1) +
+      "-" + zwei(jetzt.getDate()) + "-" + zwei(jetzt.getHours()) +
+      "-" + zwei(jetzt.getMinutes()) + "-" + zwei(jetzt.getSeconds());
+    var name = "Status-Export-" + S().geraet() + "-" + stempel + ".json";
+    var inhalt = JSON.stringify({ art: "textbausteine-status-export",
+      fassung: TB.FASSUNG, erstellt: jetzt.toISOString(),
+      master: master(), teilmengen: teilmengen() }, null, 2);
+    var blob = new Blob([inhalt], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () {
+      URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    return name;
+  }
+
   return { master: master, speichereMaster: speichereMaster,
            teilmengen: teilmengen, speichereTeilmengen: speichereTeilmengen,
            teilmengeSpeichern: teilmengeSpeichern,
@@ -260,5 +321,7 @@ TB.status = (function () {
            untersuchung: untersuchung, jeKategorie: jeKategorie,
            neueUntersuchungsId: neueUntersuchungsId,
            fliesstext: fliesstext, tardoc: tardoc,
-           tardocFehltText: tardocFehltText };
+           tardocFehltText: tardocFehltText,
+           wortUnterschied: wortUnterschied,
+           exportDatei: exportDatei };
 })();

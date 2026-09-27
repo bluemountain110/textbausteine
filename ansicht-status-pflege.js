@@ -61,6 +61,16 @@ TB.ansichtStatusPflege = (function () {
     ziel.appendChild(kopf);
     ziel.appendChild(el("p", "klein-hinweis", TS().pflegeHinweis));
 
+    // Sammelrunde 27.9.: Der ganze Status-Stand als Datei — zum
+    // Aufheben oder um ihn Claude zu schicken (Grundausstattungs-Pflege).
+    var exportK = el("button", "", TS().exportKnopf);
+    exportK.title = TS().exportHinweis;
+    exportK.addEventListener("click", function () {
+      var name = TB.status.exportDatei();
+      melde(TS().exportFertig.replace("%s", name));
+    });
+    ziel.appendChild(el("div", "status-exportzeile")).appendChild(exportK);
+
     TB.status.jeKategorie(m).forEach(function (block, nr, alle) {
       ziel.appendChild(zeichneKategorie(m, block, nr, alle.length));
     });

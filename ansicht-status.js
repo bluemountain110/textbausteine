@@ -24,6 +24,7 @@ TB.ansichtStatus = (function () {
   var abweichungen = {};       // untersuchungs-id -> überschriebener Befund
   var offeneSelten = {};       // kategorie-id -> true
   var suchbegriff = "";
+  var nurGewaehlte = false;   // Schalter „Nur Gewählte" (Sammelrunde 27.9.)
   var bearbeiteId = null;      // Untersuchung, deren Befund gerade offen ist
   var sucheFokus = false;
 
@@ -63,17 +64,21 @@ TB.ansichtStatus = (function () {
     var m = TB.status.master();
     if (!m) { zeichneLeer(wurzel); return; }
 
+    // Sammelrunde 27.9.: Kopfzeile bis Suchfeld kleben beim Scrollen
+    // oben fest, damit Ampeln und Suche immer erreichbar bleiben.
+    var klebt = el("div", "status-sticky");
     var kopf = el("div", "status-kopf");
     kopf.appendChild(el("h2", "", TS().statusTitel));
     var pflege = el("button", "", TS().pflegeKnopf);
     pflege.addEventListener("click", function () {
       TB.ansichtStatusPflege.oeffne(); });
     kopf.appendChild(pflege);
-    wurzel.appendChild(kopf);
+    klebt.appendChild(kopf);
 
-    zeichneTeilmengen(wurzel);
-    zeichneTardoc(wurzel, m);
+    zeichneTeilmengen(klebt);
+    zeichneTardoc(klebt, m);
 
+    var suchzeile = el("div", "status-suchzeile");
     var suche = el("input", "status-suche");
     suche.type = "search";
     suche.placeholder = TS().suchePlatzhalter;
@@ -83,7 +88,15 @@ TB.ansichtStatus = (function () {
       sucheFokus = true;
       neu();
     });
-    wurzel.appendChild(suche);
+    suchzeile.appendChild(suche);
+    var nurG = el("button",
+      "status-nurgew" + (nurGewaehlte ? " aktiv" : ""),
+      TS().nurGewaehlteKnopf);
+    nurG.addEventListener("click", function () {
+      nurGewaehlte = !nurGewaehlte; neu(); });
+    suchzeile.appendChild(nurG);
+    klebt.appendChild(suchzeile);
+    wurzel.appendChild(klebt);
 
     var flaeche = el("div", "status-flaeche");
     var links = el("div", "status-maske");
@@ -136,9 +149,12 @@ TB.ansichtStatus = (function () {
     Object.keys(stand).forEach(function (art) {
       var a = stand[art];
       var zeile = el("div", "status-tardoc-zeile");
+      var wort = a.stufe === "A"
+        ? TS().tardocPilleA : (a.stufe === "B" ? TS().tardocPilleB
+                                               : TS().tardocPilleLeer);
       var pille = el("span", "status-pille" +
         (a.stufe === "A" ? " gut" : (a.stufe === "B" ? " halb" : "")),
-        a.name + ": " + a.stufe);
+        wort.replace("%s", a.name).replace("%s", String(a.erfuellte)));
       zeile.appendChild(pille);
       zeile.appendChild(el("span", "klein-hinweis",
         TB.status.tardocFehltText(a)));
@@ -150,10 +166,14 @@ TB.ansichtStatus = (function () {
   }
 
   function zeichneKategorie(ziel, m, block) {
+    var sichtbar = function (u) {
+      if (nurGewaehlte && !istGewaehlt(u.id)) return false;
+      return passtZurSuche(u);
+    };
     var haeufige = block.untersuchungen.filter(function (u) {
-      return u.haeufig && passtZurSuche(u); });
+      return u.haeufig && sichtbar(u); });
     var seltene = block.untersuchungen.filter(function (u) {
-      return !u.haeufig && passtZurSuche(u); });
+      return !u.haeufig && sichtbar(u); });
     if (!haeufige.length && !seltene.length) return;
 
     var kasten = el("section", "status-kategorie");
@@ -161,13 +181,14 @@ TB.ansichtStatus = (function () {
     haeufige.forEach(function (u) { kasten.appendChild(zeile(u)); });
 
     if (seltene.length) {
-      var offen = !!offeneSelten[block.kategorie.id] || !!suchbegriff;
+      var offen = !!offeneSelten[block.kategorie.id] || !!suchbegriff ||
+                  nurGewaehlte;
       if (offen) {
         seltene.forEach(function (u) {
           var z = zeile(u); z.classList.add("selten");
           kasten.appendChild(z); });
       }
-      if (!suchbegriff) {
+      if (!suchbegriff && !nurGewaehlte) {
         var schalter = el("button", "status-weitere", offen
           ? TS().weitereAuf
           : TS().weitereZu.replace("%s", String(seltene.length)));
@@ -193,6 +214,9 @@ TB.ansichtStatus = (function () {
 
     var inhalt = el("div", "status-zeile-inhalt");
     var name = el("span", "status-name", u.name + ": ");
+    name.title = TS().nameKlickHinweis;
+    name.addEventListener("click", function () {
+      schalte(u.id, !istGewaehlt(u.id)); neu(); });
     inhalt.appendChild(name);
 
     if (bearbeiteId === u.id) {
