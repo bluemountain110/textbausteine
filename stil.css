@@ -526,3 +526,15 @@ dialog.maske { width: min(720px, 94vw); }
 .status-abweichfeld { overflow: hidden; resize: vertical;
   min-height: 44px; }
 @media (max-width: 760px) { .status-lesen-ab { grid-template-columns: 1fr; } }
+
+/* 28.9.: Nachlese als Tabelle (Gruppe × Exploration B | A) */
+.status-lesen-tabelle-huelle { overflow-x: auto; margin: 6px 0 10px; }
+.status-lesen-tabelle { border-collapse: collapse; width: 100%;
+  font-size: .85rem; }
+.status-lesen-tabelle th, .status-lesen-tabelle td { border: 1px solid var(--linie);
+  padding: 6px 8px; vertical-align: top; text-align: left; }
+.status-lesen-tabelle th { background: #f4f7f7; }
+.status-lesen-tabelle th.halb, .status-lesen-tabelle td.halb { background: #fdf6e3; }
+.status-lesen-tabelle th.gut, .status-lesen-tabelle td.gut { background: #e8f4ef; }
+.status-lesen-tabelle th a { color: var(--akzent); }
+.status-lesen-gruppenname { font-weight: 700; white-space: nowrap; }

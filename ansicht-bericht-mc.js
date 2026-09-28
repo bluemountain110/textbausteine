@@ -199,9 +199,11 @@ TB.ansichtBerichtMc = (function () {
     var html = [], text = [];
     zeilen.forEach(function (paar) {
       if (paar[0] === "leer") {
-        // Leerer Absatz trägt ein geschütztes Leerzeichen, sonst geht
-        // die Leerzeile auf dem RTF-Weg nach KISIM verloren (28.9.).
-        html.push("<p>\u00A0</p>"); text.push(""); return;
+        // Leerzeile als Absatz mit Zeilenumbruch (28.9.): KISIMs
+        // Berichtseditor übernimmt die HTML-Fassung und wirft leere
+        // oder nur-Leerzeichen-Absätze weg; <p><br></p> behält jeder
+        // HTML-Editor, und im RTF ergibt es weiterhin \par \par.
+        html.push("<p><br></p>"); text.push(""); return;
       }
       if (paar[0] === "p") {   // Aufzählungspunkt (Sammelrunde 27.9.)
         html.push("<p>\u2022 " + schuetze(paar[1]) + "</p>");

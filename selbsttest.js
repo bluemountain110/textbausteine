@@ -533,7 +533,7 @@ TB.selbsttest = (function () {
       ok: un.text.indexOf("\u2022 IQCODE") !== -1 &&
           un.text.indexOf("\u2022 CDR-Skala") !== -1 &&
           un.text.indexOf("xx.\n\nAmyloid-PET") !== -1 &&
-          un.html.indexOf("<p>\u00A0</p>") !== -1,
+          un.html.indexOf("<p><br></p>") !== -1,
       detail: "" });
     var z2 = TB.ansichtBerichtMc.zerlege("Die IADL-Skala ergab einen Scorewert von 8/8. Gemäss diesen Fragebögen wäre sie auf geringe Fremdhilfe angewiesen. Unterstützungsbedarf: Die Einzahlungen erledigt der Ehemann, er traue ihr das Erlernen bei Bedarf zu.\n\nSozialanamnese\nVerheiratet.");
     var un2 = TB.ansichtBerichtMc.bauUntersuchungen(z2);

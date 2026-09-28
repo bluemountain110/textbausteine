@@ -101,6 +101,8 @@ TB.statusTexte = {
   tardocLesenGruppe: "Gruppe %s · %s — mind. %s: ",
   tardocLesenGruppeMuskeln: "Gruppe %s · %s — mind. %s Muskeln: ",
   tardocLesenZu: "Schliessen",
+  tardocLesenGruppeKopf: "Gruppe — Mindestzahl",
+  tardocLesenGleich: "Was in einer Gruppe dokumentiert sein muss, ist bei B und A laut Tarif identisch (die Zellen sind darum in beiden Spalten gleich). Der Unterschied steht in der Kopfzeile: B verlangt bis zu 3 dieser Gruppen, A verlangt 4 oder mehr — bei entsprechend längerer hinterlegter Dauer.",
   tardocLesenStand: "Stand der Zusammenfassung: 27.09.2026. Massgeblich ist immer der Originaltext des Tarifs.",
   exportKnopf: "Status als Datei sichern",
   exportHinweis: "Sichert Gesamtstatus und eigene Status als Datei — zum Aufheben oder zum Schicken an Claude, damit Deine Änderungen in die Grundausstattung einfliessen können.",

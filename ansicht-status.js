@@ -216,25 +216,33 @@ TB.ansichtStatus = (function () {
     karte.appendChild(el("p", "klein-hinweis", TS().tardocLesenEinleitung));
     TB.status.tardocKriterien().forEach(function (art) {
       karte.appendChild(el("h4", "", art.name));
-      // Näd 28.9.: B und A nebeneinander, damit der Unterschied
-      // (bis zu 3 gegenüber ab 4 Gruppen) sofort ins Auge springt.
-      var ab = el("div", "status-lesen-ab");
+      // Näd 28.9.: Tabelle — jede Zeile eine Gruppe, Spalten
+      // Exploration B und A, in jeder Zelle die Anforderung. Die Zellen
+      // sind laut Tarif in beiden Spalten identisch; der Unterschied
+      // steht in der Kopfzeile (Anzahl Gruppen, Minuten).
+      karte.appendChild(el("p", "klein-hinweis", TS().tardocLesenGleich));
+      var huelle = el("div", "status-lesen-tabelle-huelle");
+      var tab = el("table", "status-lesen-tabelle");
+      var kopfzeile = el("tr");
+      kopfzeile.appendChild(el("th", "", TS().tardocLesenGruppeKopf));
       [["halb", art.zeileB, art.linkB], ["gut", art.zeileA, art.linkA]]
         .forEach(function (p) {
-          var z = el("div", "status-lesen-position " + p[0]);
+          var th = el("th", p[0]);
           var link = el("a", "", p[1]);
           link.href = p[2]; link.target = "_blank"; link.rel = "noopener";
-          z.appendChild(link);
-          ab.appendChild(z);
+          th.appendChild(link);
+          kopfzeile.appendChild(th);
         });
-      karte.appendChild(ab);
+      tab.appendChild(kopfzeile);
       art.gruppen.forEach(function (g) {
-        var z = el("p", "status-lesen-gruppe");
-        var fett = el("b", "", g.kopf);
-        z.appendChild(fett);
-        z.appendChild(document.createTextNode(g.merkmale));
-        karte.appendChild(z);
+        var tr = el("tr");
+        tr.appendChild(el("td", "status-lesen-gruppenname", g.kopf));
+        ["halb", "gut"].forEach(function (k) {
+          tr.appendChild(el("td", k, g.merkmale)); });
+        tab.appendChild(tr);
       });
+      huelle.appendChild(tab);
+      karte.appendChild(huelle);
     });
     karte.appendChild(el("p", "klein-hinweis", TS().tardocLesenStand));
     schleier.appendChild(karte);
