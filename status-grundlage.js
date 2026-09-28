@@ -89,6 +89,9 @@ TB.statusGrundlage = (function () {
     u("kooperation", "allgemein", "Verhalten und Kooperation", "adäquat, kooperativ, freundlich zugewandt.", true, [n(1, ["Kooperationsfähigkeit"]), h(1, ["Kooperationsfähigkeit"])]),
     u("antrieb", "allgemein", "Antrieb", "weder gemindert noch verlangsamt.", true, []),
     u("haendigkeit", "allgemein", "Händigkeit", "rechts.", true, [n(1, ["Händigkeit"]), h(1, ["Händigkeit"])]),
+    u("groessegewicht", "allgemein", "Grösse und Gewicht", "xx cm, xx kg (BMI xx).", false, [n(1, ["Grösse", "Gewicht"])]),
+    u("blutdruckpuls", "allgemein", "Blutdruck und Puls", "xx/xx mmHg, Puls xx/min, regelmässig.", false, [n(1, ["Blutdruck", "Puls"])]),
+    u("karotiden", "allgemein", "Karotiden-Auskultation", "kein Strömungsgeräusch bds.", false, [n(1, ["Gefässauskultation"])]),
     // ---- Stand und Gang ----------------------------------------------
     u("gangbild", "gang", "Stand und Gang", "sicher, unauffälliges Gangbild.", true, [n(3, ["Gangprüfung"])]),
     u("armschwung", "gang", "Mitschwingen der Arme", "nicht vermindert.", true, [n(2, ["Bewegungsmuster"])]),
@@ -104,6 +107,10 @@ TB.statusGrundlage = (function () {
     u("retropulsion", "gang", "Retropulsions-Test", "sicher gestanden mit wenigen Auffangschritten.", true, [n(9, ["Posturale Reflexe"])]),
     u("zweiminuten", "gang", "Two-Minute-Walk-Test (2MWT)", "xx Meter.", false, []),
     u("t25fw", "gang", "Timed-25-Foot-Walk (T25FW, 7.6 m)", "xx Sekunden.", false, []),
+    u("blindgang", "gang", "Blindgang", "sicher, kein Abweichen.", false, [n(9, ["Blindgang"])]),
+    u("einbein", "gang", "Einbeinstand und Einbeinhüpfen", "bds. sicher möglich.", false, [n(9, ["Einbeinstand/-hüpfen"])]),
+    u("freezing", "gang", "Freezing-Provokation", "kein Freezing bei Engstelle, Wendung oder Dual-Task.", false, [n(3, ["Freezing-Provokation"])]),
+    u("gehstrecke", "gang", "Gehstrecke und Gehhilfen", "unbegrenzt, ohne Gehhilfe.", false, []),
     // ---- Kopf und Hirnnerven -----------------------------------------
     u("meningismus", "kopf", "Meningismus", "keiner, freie HWS-Beweglichkeit.", true, [h(3, ["Meningismus", "Beweglichkeit"])]),
     u("temporalis", "kopf", "Aa. temporales", "nicht druckdolent.", false, [h(4, ["Druckschmerz Nervenaustritts-/Gefässpunkte"])]),
@@ -139,6 +146,12 @@ TB.statusGrundlage = (function () {
     u("kopfdrehung", "kopf", "Kopfdrehung (M. sternocleidomastoideus)", "bds. M5.", true, [h(3, ["Paresegradierung motorischer Hirnnerven"])]),
     u("schulterheben", "kopf", "Schulterheben (M. trapezius)", "bds. M5.", true, [h(3, ["Paresegradierung motorischer Hirnnerven"])]),
     u("zunge", "kopf", "Zunge", "Motorik und Trophik unauffällig, keine Faszikulationen.", true, [h(3, ["Zunge"])]),
+    u("masseterreflex", "kopf", "Masseterreflex", "mittellebhaft, nicht gesteigert.", false, [h(3, ["Masseterreflex"])]),
+    u("bell", "kopf", "Bell-Phänomen", "physiologisch bds.", false, [h(3, ["Bell-Phänomen"])]),
+    u("simpson", "kopf", "Simpson-Test", "keine Zunahme der Ptose nach 60 s Aufwärtsblick.", false, [h(3, ["Simpson-Test"])]),
+    u("otoskopie", "kopf", "Otoskopie", "Gehörgang und Trommelfell bds. reizlos.", false, [h(7, ["Otoskopie"])]),
+    u("stereosehen", "kopf", "Stereosehen", "intakt.", false, [h(6, ["Stereosehen"])]),
+    u("chvostek", "kopf", "Chvostek-Zeichen", "negativ.", false, []),
     // ---- Lagerungsproben und Vestibulär ------------------------------
     u("spontannystagmus", "vestibulaer", "Spontannystagmus", "keiner, mit und ohne Frenzelbrille.", true, [h(7, ["Nystagmus"]), h(8, ["Nystagmus"])]),
     u("kopfschuettelnystagmus", "vestibulaer", "Kopfschüttelnystagmus", "keiner.", true, [h(8, ["Kopfschütteltest"])]),
@@ -147,10 +160,16 @@ TB.statusGrundlage = (function () {
     u("skew", "vestibulaer", "Alternierender Abdecktest", "keine Skew-Deviation.", true, [h(5, ["Cover-Test"])]),
     u("dixhallpike", "vestibulaer", "Dix-Hallpike (posteriorer Bogengang)", "bds. ohne objektivierbaren Nystagmus, ohne Schwindelangabe.", true, [h(8, ["Lagerungsproben"])]),
     u("rollmanoever", "vestibulaer", "Supine-Roll-Manöver (horizontaler Bogengang)", "bds. ohne objektivierbaren Nystagmus, ohne Schwindelangabe.", true, [h(8, ["Lagerungsproben"])]),
+    u("fistelzeichen", "vestibulaer", "Fistelzeichen (Tragusdruck)", "kein Nystagmus, kein Schwindel bds.", false, []),
+    u("svv", "vestibulaer", "Subjektive visuelle Vertikale (Eimertest)", "keine Verkippung.", false, []),
     // ---- Wirbelsäule --------------------------------------------------
     u("klopfdolenz", "wirbelsaeule", "Wirbelsäule", "keine Klopfdolenz, kein paravertebraler Hartspann.", true, []),
     u("lasegue", "wirbelsaeule", "Lasègue (re/li)", "-/-; umgekehrter Lasègue -/-.", true, []),
     u("kernig", "wirbelsaeule", "Kernig und Brudzinski", "negativ.", false, []),
+    u("schoberfba", "wirbelsaeule", "Schober und Finger-Boden-Abstand", "Schober xx cm, FBA xx cm.", false, []),
+    u("spurling", "wirbelsaeule", "Spurling-Test", "-/-.", false, []),
+    u("mennell", "wirbelsaeule", "Mennell-Zeichen (ISG)", "-/-.", false, []),
+    u("tineluntere", "wirbelsaeule", "Tinel untere Extremität (re/li)", "Fibulaköpfchen -/-, Tarsaltunnel -/-.", false, []),
     // ---- Sensibilität -------------------------------------------------
     u("beruehrung", "sensibilitaet", "Berührungsempfinden", "an Armen, Händen und Beinen bzw. beiden Körperhälften intakt, keine Differenz von radial zu ulnar.", true, [n(7, ["Berührung"]), n(8, ["Berührung"])]),
     u("struempfe", "sensibilitaet", "Strumpfförmige Sensibilitätsstörung", "keine.", true, [n(8, ["Berührung"])]),
@@ -167,6 +186,8 @@ TB.statusGrundlage = (function () {
     u("tinel", "sensibilitaet", "Tinel-Zeichen (re/li)", "Karpaltunnel -/-, Sulcus n. ulnaris -/-.", true, []),
     u("phalen", "sensibilitaet", "Phalen-Test", "-/-.", true, []),
     u("froment", "sensibilitaet", "Froment-Zeichen", "-/-.", true, []),
+    u("extinktion", "sensibilitaet", "Extinktion bei bilateraler Stimulation", "keine taktile, keine visuelle.", false, [n(7, ["Extinktion"])]),
+    u("allodynie", "sensibilitaet", "Allodynie und Hyperästhesie", "keine.", false, []),
     // ---- Motorik ------------------------------------------------------
     u("trophiktonus", "motorik", "Trophik und Tonus", "normal; keine Spastik (kein Taschenmesser-Phänomen), kein Rigor, keine Hypotonie.", true, [n(2, ["Trophik", "Tonus"]), n(3, ["Trophik", "Tonus"])]),
     u("atrophien", "motorik", "Atrophien", "keine, insbesondere nicht an Thenar oder Hypothenar; M. extensor digitorum brevis bds. nicht atrophiert.", true, [n(2, ["Trophik"]), n(3, ["Trophik"])]),
@@ -182,6 +203,7 @@ TB.statusGrundlage = (function () {
     u("proximal", "motorik", "Proximale Funktionsprüfung", "Aufstehen aus der Hocke ohne Armhilfe (Gowers negativ), Einbeinhüpfen bds. möglich, Trendelenburg-Zeichen negativ.", false, [n(3, ["Aufstehen/Hüpfen", "Trendelenburg"])]),
     u("atemmuskulatur", "motorik", "Atemmuskulatur", "keine paradoxe Atmung, kräftiger Hustenstoss.", false, []),
     u("myotonie", "motorik", "Myotone Zeichen", "keine verlängerte Anspannung nach Faustschluss, keine Perkussionsmyotonie.", false, [n(2, ["Bewegungsmuster"])]),
+    u("belastungstest", "motorik", "Repetitiver Belastungstest", "20× Faustschluss ohne Dekrement, Armvorhalte ohne Ermüdung.", false, [n(4, ["Muskelausdauerbelastung"])]),
     // ---- Reflexe ------------------------------------------------------
     u("merarme", "reflexe", "Muskeleigenreflexe Arme (re/li)", "BSR +/+, TSR +/+, RPR +/+.", true, [n(2, ["Reflexprüfung"])]),
     u("troemner", "reflexe", "Trömner", "-/-.", true, [n(2, ["Reflexprüfung"])]),
@@ -195,6 +217,7 @@ TB.statusGrundlage = (function () {
     u("schnauzreflex", "reflexe", "Schnauz-Reflex", "negativ.", true, [n(12, ["Schnauzreflex"]), h(9, ["Schnauzreflex"])]),
     u("glabella", "reflexe", "Glabella-Reflex", "habituiert.", false, [h(9, ["Glabellareflex"])]),
     u("greifsaugreflex", "reflexe", "Greif- und Saugreflex", "keiner.", false, [n(12, ["Greifreflex"]), h(9, ["Saugreflex"])]),
+    u("cremaster", "reflexe", "Cremasterreflex", "bds. auslösbar.", false, []),
     // ---- Koordination und Bewegungsstörungen -------------------------
     u("fnv", "koordination", "Finger-Nase- und Finger-Finger-Versuch", "bds. zielsicher und metrisch, kein Intentionstremor.", true, [n(9, ["FNV", "Metrie"])]),
     u("khv", "koordination", "Knie-Hacke-Versuch", "bds. zielsicher und metrisch.", true, [n(9, ["KHV"])]),
@@ -207,6 +230,7 @@ TB.statusGrundlage = (function () {
     u("fusstapping", "koordination", "Fuss-Tapping", "kein Dekrement.", true, [n(9, ["Fuss-Tapping"])]),
     u("hyperkinesien", "koordination", "Unwillkürliche Bewegungen", "keine Chorea, Dystonie, Athetose, kein Ballismus, keine Myoklonien, keine Tics.", true, [n(10, ["Unwillkürliche Bewegungen"])]),
     u("schriftprobe", "koordination", "Schriftprobe und Spirale", "unauffällig, keine Mikrographie.", false, [n(10, ["Schriftprobe"])]),
+    u("barany", "koordination", "Bárány-Zeigeversuch", "kein Abweichen bds.", false, [n(9, ["Bárány-Zeigeversuch"])]),
     // ---- Neuropsychologisch ------------------------------------------
     u("orientierung", "neuropsych", "Orientierung", "örtlich, zeitlich, situativ und zur Person voll orientiert.", true, []),
     u("sprache", "neuropsych", "Sprache", "flüssig; Sprachverständnis im Gespräch normal, Nachsprechen und Benennen intakt, mehrschrittige Aufforderungen werden befolgt.", true, [h(2, ["Sprachproduktion", "Sprachverständnis", "Nachsprechen"])]),
@@ -221,12 +245,20 @@ TB.statusGrundlage = (function () {
     u("luria", "neuropsych", "Luria-Handsequenz", "unauffällig, keine Perseverationen.", true, [n(10, ["Luria-Sequenz"])]),
     u("frontalzeichen", "neuropsych", "Weitere Frontalzeichen", "Go-No-Go intakt, keine Echopraxie, kein Utilisationsverhalten, keine motorische Impersistenz.", false, [n(10, ["Alternierende Sequenzen"])]),
     u("kognition", "neuropsych", "Formale Kognitionstestung (MoCA/MMST)", "siehe separater Befund.", false, []),
+    u("aufmerksamkeit", "neuropsych", "Aufmerksamkeit orientierend", "Monate rückwärts flüssig, Serial-7 korrekt.", true, []),
+    u("wortfluessigkeit", "neuropsych", "Wortflüssigkeit orientierend", "Tiere und S-Wörter altersentsprechend flüssig.", false, []),
+    u("abstraktion", "neuropsych", "Abstraktionsvermögen", "Sprichwörter und Gemeinsamkeiten adäquat erklärt.", false, []),
+    u("uhrentest", "neuropsych", "Uhrentest orientierend", "unauffällig (Ziffernblatt, Zeiger, Uhrzeit korrekt).", false, []),
+    u("altgedaechtnis", "neuropsych", "Altgedächtnis orientierend", "biografische Daten korrekt und konsistent.", false, []),
+    u("affekt", "neuropsych", "Affekt und Stimmung", "euthym, affektiv gut schwingungsfähig, kein Hinweis auf Depression.", true, []),
+    u("prosopagnosie", "neuropsych", "Prosopagnosie", "keine, Gesichtererkennen intakt.", false, []),
     // ---- Autonomes Nervensystem --------------------------------------
     u("schellong", "autonom", "Orthostase (Schellong)", "kein relevanter orthostatischer Blutdruckabfall, keine orthostatische Symptomatik.", false, [n(15, ["Orthostase-Belastungstest"])]),
     u("schweiss", "autonom", "Schweisssekretion und Hauttrophik", "seitengleich, keine trophischen Störungen.", false, []),
     u("horner", "autonom", "Horner-Trias", "keine Ptose, keine Miosis, keine Anhidrose.", false, [h(5, ["Pupillomotorik"])]),
     u("blasemastdarm", "autonom", "Blasen-, Mastdarm- und Sexualfunktion", "anamnestisch unauffällig.", false, []),
     u("sialorrhoe", "autonom", "Sialorrhoe", "keine.", false, [h(4, ["Speichelfluss"])]),
+    u("stehtest", "autonom", "Aktiver Stehtest 10 Min (POTS)", "kein anhaltender Pulsanstieg \u2265 30/min, keine orthostatische Symptomatik.", false, [n(15, ["Aktiver Stehtest"])]),
     // ---- Koma ---------------------------------------------------------
     u("bewusstseinslage", "koma", "Quantitative Bewusstseinslage", "wach; GCS 15 (Augenöffnen 4, verbale Antwort 5, motorische Antwort 6).", false, [n(1, ["Vigilanz"]), h(1, ["Vigilanz"])]),
     u("fourscore", "koma", "FOUR-Score", "16 (E4, M4, B4, R4).", false, []),
@@ -242,7 +274,10 @@ TB.statusGrundlage = (function () {
     u("mrs", "scores", "Modified Rankin Scale (mRS)", "0.", false, []),
     u("edss", "scores", "EDSS", "x.x.", false, []),
     u("updrs", "scores", "MDS-UPDRS III", "xx Punkte.", false, []),
-    u("mrcsumme", "scores", "MRC-Summenscore", "60/60.", false, [])
+    u("mrcsumme", "scores", "MRC-Summenscore", "60/60.", false, []),
+    u("hoehnyahr", "scores", "Hoehn & Yahr", "Stadium x.", false, []),
+    u("ashworth", "scores", "Ashworth-Skala (modifiziert)", "0 an allen geprüften Muskelgruppen.", false, []),
+    u("alsfrs", "scores", "ALSFRS-R", "xx/48 Punkte.", false, [])
   ];
 
   var TEILMENGEN = [

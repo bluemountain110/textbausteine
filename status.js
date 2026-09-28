@@ -120,8 +120,37 @@ TB.status = (function () {
     // gespeicherten Katalog sanft nachgezogen. Näds eigene Texte
     // bleiben unberührt: Nur wenn der Normalbefund noch dem der
     // Grundausstattung entspricht, kommen die Merkmale dazu.
-    if (m && migriereMerkmale(m)) speichereMaster(m);
+    if (m) {
+      var a = migriereMerkmale(m);
+      var b = migriereNeue(m);
+      if (a || b) speichereMaster(m);
+    }
     return m;
+  }
+  // Nachziehen (28.9., Katalog-Ausbau): Untersuchungen, die die
+  // Grundausstattung neu bekommt, werden in einen gespeicherten Katalog
+  // eingefügt — an derselben Stelle, hinter dem jeweiligen Vorgänger.
+  // Bestehende Einträge (auch umformulierte) bleiben unberührt.
+  function migriereNeue(m) {
+    var frisch = TB.statusGrundlage.master();
+    var geaendert = false;
+    var liste = m.untersuchungen || (m.untersuchungen = []);
+    function posVon(id) {
+      for (var i = 0; i < liste.length; i++)
+        if (liste[i].id === id) return i;
+      return -1;
+    }
+    frisch.untersuchungen.forEach(function (g, idx) {
+      if (posVon(g.id) !== -1) return;
+      var ziel = liste.length;
+      if (idx > 0) {
+        var vorher = posVon(frisch.untersuchungen[idx - 1].id);
+        if (vorher !== -1) ziel = vorher + 1;
+      }
+      liste.splice(ziel, 0, JSON.parse(JSON.stringify(g)));
+      geaendert = true;
+    });
+    return geaendert;
   }
   function migriereMerkmale(m) {
     var frisch = TB.statusGrundlage.master();
@@ -456,6 +485,7 @@ TB.status = (function () {
            wortUnterschied: wortUnterschied,
            normalVon: normalVon, gewaehlteMerkmale: gewaehlteMerkmale,
            migriereMerkmale: migriereMerkmale,
+           migriereNeue: migriereNeue,
            merkmalAn: merkmalAn,
            tardocKriterien: tardocKriterien,
            exportDatei: exportDatei };

@@ -466,6 +466,18 @@ TB.selbsttest = (function () {
           altKatalog.untersuchungen[0].merkmale.length === 18 &&
           altKatalog.untersuchungen[0].normal === uk.normal,
       detail: altKatalog.untersuchungen[0].normal.slice(0, 60) });
+    var ohneNeue = TB.statusGrundlage.master();
+    ohneNeue.untersuchungen = ohneNeue.untersuchungen.filter(function (x) {
+      return x.id !== "uhrentest" && x.id !== "affekt"; });
+    var nachgezogen = TB.status.migriereNeue(ohneNeue);
+    faelle.push({ name: "Katalog-Ausbau: neue Untersuchungen werden nachgezogen",
+      ok: nachgezogen === true &&
+          ohneNeue.untersuchungen.length ===
+            TB.statusGrundlage.master().untersuchungen.length &&
+          ohneNeue.untersuchungen.some(function (x) {
+            return x.id === "uhrentest"; }) &&
+          TB.status.migriereNeue(ohneNeue) === false,
+      detail: String(ohneNeue.untersuchungen.length) });
     var kr = TB.status.tardocKriterien();
     var alleGruppen = kr[0].gruppen.length === 15 && kr[1].gruppen.length === 10;
     faelle.push({ name: "Tardoc-Nachlese: beide Positionen, alle Gruppen, Original-Links",
