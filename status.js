@@ -89,6 +89,19 @@ TB.statusTexte = {
   gespeichert: "Gespeichert.",
   hoch: "▲", runter: "▼",
   nurGewaehlteKnopf: "Nur Gewählte",
+  muskelnKnopf: "Muskeln (%s/%s)",
+  muskelnHinweis: "Einzelne Muskeln an- und abwählen — der Text nennt nur die gewählten",
+  muskelnKeine: "keine Defizite.",
+  tardocLesenKnopf: "Tardoc-Kriterien nachlesen",
+  tardocLesenTitel: "Tardoc-Kriterien (TARDOC 1.4c)",
+  tardocLesenEinleitung: "Von Claude zusammengefasst, eng am Original — zum Prüfen führt jeder Positions-Titel auf die Original-Seite (kodia.ch, öffnet in neuem Tab).",
+  tardocLesenB: "%s (%s): dokumentierte Untersuchung und Beurteilung von bis zu 3 der untenstehenden Gruppen%s.",
+  tardocLesenA: "%s (%s): dokumentierte Untersuchung und Beurteilung von 4 oder mehr Gruppen%s.",
+  tardocLesenMin: " — hinterlegt mit %s Minuten",
+  tardocLesenGruppe: "Gruppe %s · %s — mind. %s: ",
+  tardocLesenGruppeMuskeln: "Gruppe %s · %s — mind. %s Muskeln: ",
+  tardocLesenZu: "Schliessen",
+  tardocLesenStand: "Stand der Zusammenfassung: 27.09.2026. Massgeblich ist immer der Originaltext des Tarifs.",
   exportKnopf: "Status als Datei sichern",
   exportHinweis: "Sichert Gesamtstatus und eigene Status als Datei — zum Aufheben oder zum Schicken an Claude, damit Deine Änderungen in die Grundausstattung einfliessen können.",
   exportFertig: "Status-Datei erstellt: %s"
@@ -149,15 +162,37 @@ TB.status = (function () {
     if (!s) return s;
     return /[.!?…]$/.test(s) ? s : s + ".";
   }
-  function befundVon(u, abweichungen) {
+  // Motorik-Merkmale (Nachbesserung 27.9.): Bei Untersuchungen mit
+  // Einzelmerkmalen (Einzelkraftprüfung Arme/Beine) wird der
+  // Normalbefund aus den GEWÄHLTEN Merkmalen zusammengesetzt.
+  // merkmalWahl[uid] ist eine Menge ABGEWÄHLTER Merkmal-Kennungen;
+  // fehlt sie, sind alle Merkmale an (Standard).
+  function merkmalAn(merkmalWahl, uid, mid) {
+    return !(merkmalWahl && merkmalWahl[uid] && merkmalWahl[uid][mid]);
+  }
+  function gewaehlteMerkmale(u, merkmalWahl) {
+    if (!u.merkmale) return null;
+    return u.merkmale.filter(function (mk) {
+      return merkmalAn(merkmalWahl, u.id, mk.id); });
+  }
+  function normalVon(u, merkmalWahl) {
+    if (!u.merkmale) return u.normal;
+    var an = gewaehlteMerkmale(u, merkmalWahl);
+    if (!an.length) return TB.statusTexte.muskelnKeine;
+    return "keine Defizite; im Einzelnen: " + an.map(function (mk) {
+      return mk.name + " M5/M5"; }).join(", ") + ".";
+  }
+
+  function befundVon(u, abweichungen, merkmalWahl) {
+    var soll = normalVon(u, merkmalWahl);
     var a = abweichungen && abweichungen[u.id];
     if (a !== undefined && a !== null && String(a).trim() !== "" &&
-        String(a).trim() !== String(u.normal).trim()) {
-      return { text: mitPunkt(a), abweichend: true };
+        String(a).trim() !== String(soll).trim()) {
+      return { text: mitPunkt(a), abweichend: true, normal: soll };
     }
-    return { text: mitPunkt(u.normal), abweichend: false };
+    return { text: mitPunkt(soll), abweichend: false, normal: soll };
   }
-  function fliesstext(m, gewaehlt, abweichungen) {
+  function fliesstext(m, gewaehlt, abweichungen, merkmalWahl) {
     var html = [], text = [];
     jeKategorie(m).forEach(function (block) {
       var teile = block.untersuchungen.filter(function (u) {
@@ -167,7 +202,7 @@ TB.status = (function () {
       var zeileText = block.kategorie.name + ": ";
       var stueckeH = [], stueckeT = [];
       teile.forEach(function (u) {
-        var b = befundVon(u, abweichungen);
+        var b = befundVon(u, abweichungen, merkmalWahl);
         var satzT = u.name + ": " + b.text;
         stueckeT.push(satzT);
         var satzH;
@@ -175,7 +210,7 @@ TB.status = (function () {
           // Sammelrunde 27.9. (Näd): Der Untersuchungsname bleibt
           // normal; vom Befund wird nur der wirklich veränderte
           // Wortbereich fett in Dunkelgrau hervorgehoben.
-          var d = wortUnterschied(u.normal, b.text);
+          var d = wortUnterschied(b.normal, b.text);
           satzH = schuetze(u.name) + ": " + schuetze(d.vor) +
                   "<b><span style=\"color:" + ABWEICHFARBE + "\">" +
                   schuetze(d.mitte) + "</span></b>" + schuetze(d.nach);
@@ -207,6 +242,20 @@ TB.status = (function () {
     while (vorn > 0 && b.charAt(vorn - 1) !== " ") vorn--;
     while (hinten > 0 && b.charAt(b.length - hinten) !== " ") hinten--;
     var mitte = b.slice(vorn, b.length - hinten);
+    // Messwort mitnehmen (Näd 27.9.): Beginnt der veränderte Bereich
+    // mit einem Wert (Ziffern, /, +, −), wird das Wort davor — die
+    // Bezeichnung der Messstelle — mit hervorgehoben:
+    // „malleolär 4/6" statt nur „4/6".
+    if (mitte && vorn > 0) {
+      var erstes = mitte.split(" ")[0];
+      if (/[0-9\/+−-]/.test(erstes)) {
+        var davor = b.lastIndexOf(" ", vorn - 2);
+        if (davor >= 0 && /[A-Za-zÄÖÜäöü]/.test(b.charAt(davor + 1))) {
+          vorn = davor + 1;
+          mitte = b.slice(vorn, b.length - hinten);
+        }
+      }
+    }
     if (!mitte) { vorn = 0; hinten = 0; mitte = b; }
     return { vor: b.slice(0, vorn), mitte: mitte,
              nach: b.slice(b.length - hinten) };
@@ -217,7 +266,7 @@ TB.status = (function () {
   // angekreuzten Untersuchungen gezählt (Muskeln als Anzahl). Eine
   // Gruppe ist erfüllt, wenn ihre Mindestzahl erreicht ist; A verlangt
   // mindestens 4 erfüllte Gruppen.
-  function tardoc(m, gewaehlt) {
+  function tardoc(m, gewaehlt, merkmalWahl) {
     var daten = TB.tardocDaten.arten;
     var stand = {};
     Object.keys(daten).forEach(function (art) { stand[art] = {}; });
@@ -228,7 +277,11 @@ TB.status = (function () {
         var z = stand[e.a][e.g] ||
                 (stand[e.a][e.g] = { namen: {}, muskeln: 0 });
         (e.m || []).forEach(function (name) { z.namen[name] = true; });
-        if (e.muskeln) z.muskeln += e.muskeln;
+        if (e.muskeln) {
+          var anzahl = u.merkmale
+            ? gewaehlteMerkmale(u, merkmalWahl).length : e.muskeln;
+          z.muskeln += anzahl;
+        }
       });
     });
     var ergebnis = {};
@@ -277,17 +330,48 @@ TB.status = (function () {
   }
 
   // ---- Teilmengen ------------------------------------------------------
-  function teilmengeSpeichern(name, punkte) {
+  function teilmengeSpeichern(name, punkte, merkmalAb) {
     var liste = teilmengen();
     var da = liste.find(function (t) {
       return t.name.toLowerCase() === String(name).toLowerCase(); });
-    if (da) { da.punkte = punkte.slice(); }
+    if (da) { da.punkte = punkte.slice();
+              if (merkmalAb) da.merkmalAb = merkmalAb; }
     else {
-      liste.push({ id: "t" + Date.now().toString(36), name: String(name),
-                   punkte: punkte.slice() });
+      var eintrag = { id: "t" + Date.now().toString(36),
+                      name: String(name), punkte: punkte.slice() };
+      if (merkmalAb) eintrag.merkmalAb = merkmalAb;
+      liste.push(eintrag);
     }
     speichereTeilmengen(liste);
     return !da;
+  }
+
+  // ---- Tardoc-Nachlese (Näds Wunsch 27.9.): Die Kriterien beider
+  // Statusarten als lesbare Struktur — Zusammenfassung aus
+  // tardoc-daten.js, mit Original-Links zum Prüfen.
+  function tardocKriterien() {
+    var T = TB.statusTexte;
+    var daten = TB.tardocDaten.arten;
+    return Object.keys(daten).map(function (art) {
+      var d = daten[art];
+      var minB = d.dauerB ? T.tardocLesenMin.replace("%s", d.dauerB) : "";
+      var minA = d.dauerA ? T.tardocLesenMin.replace("%s", d.dauerA) : "";
+      var gruppen = Object.keys(d.gruppen).map(function (nr) {
+        var g = d.gruppen[nr];
+        var vorlage = g.einheit === "Muskeln"
+          ? T.tardocLesenGruppeMuskeln : T.tardocLesenGruppe;
+        return { nr: nr,
+          kopf: vorlage.replace("%s", nr).replace("%s", g.name)
+                       .replace("%s", g.min),
+          merkmale: g.merkmale || "" };
+      });
+      return { art: art, name: d.name,
+        zeileB: T.tardocLesenB.replace("%s", d.titelB)
+          .replace("%s", d.positionB).replace("%s", minB),
+        zeileA: T.tardocLesenA.replace("%s", d.titelA)
+          .replace("%s", d.positionA).replace("%s", minA),
+        linkA: d.linkA, linkB: d.linkB, gruppen: gruppen };
+    });
   }
 
   // ---- Export (Sammelrunde 27.9.): Gesamtstatus + eigene Status als
@@ -302,6 +386,11 @@ TB.status = (function () {
     var name = "Status-Export-" + S().geraet() + "-" + stempel + ".json";
     var inhalt = JSON.stringify({ art: "textbausteine-status-export",
       fassung: TB.FASSUNG, erstellt: jetzt.toISOString(),
+      kiAnleitung: {
+        zweck: "Status-Werk der Textbausteine-App (Näd, Neurologe). master = Gesamtkatalog der Untersuchungen (id, kategorie, name, normal, haeufig, tardoc-Etiketten, bei Einzelkraftprüfungen merkmale mit Untergruppen). teilmengen = Näds eigene Status-Vorlagen (punkte = Untersuchungs-ids, merkmalAb = je Untersuchung abgewählte Merkmal-ids).",
+        fuerDich: "Vergleiche diesen Stand mit der von Claude gelieferten Grundausstattung (status-grundlage.js der genannten App-Fassung): Abweichungen in master sind Näds bewusste Anpassungen — übernehmen statt überschreiben. Neue Untersuchungen brauchen eindeutige id, Kategorie aus KATEGORIEN, Normalbefund mit Punkt am Ende und wo passend Tardoc-Etiketten n(gruppe,[merkmale]) bzw. h(...).",
+        geliefertMit: "App " + TB.FASSUNG
+      },
       master: master(), teilmengen: teilmengen() }, null, 2);
     var blob = new Blob([inhalt], { type: "application/json" });
     var a = document.createElement("a");
@@ -323,5 +412,8 @@ TB.status = (function () {
            fliesstext: fliesstext, tardoc: tardoc,
            tardocFehltText: tardocFehltText,
            wortUnterschied: wortUnterschied,
+           normalVon: normalVon, gewaehlteMerkmale: gewaehlteMerkmale,
+           merkmalAn: merkmalAn,
+           tardocKriterien: tardocKriterien,
            exportDatei: exportDatei };
 })();

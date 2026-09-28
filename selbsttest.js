@@ -419,13 +419,55 @@ TB.selbsttest = (function () {
     var teilB = "radial 8/8, patellär 8/8, malleolär 4/6, Grosszehengrundgelenk 8/8.";
     var d = TB.status.wortUnterschied(teilA, teilB);
     faelle.push({ name: "Teil-Hervorhebung: nur der veränderte Wortbereich",
-      ok: d.mitte === "4/6," && d.vor.indexOf("malleolär ") !== -1 &&
+      ok: d.mitte === "malleolär 4/6," && d.vor.indexOf("patellär") !== -1 &&
           d.nach.indexOf("Grosszehengrundgelenk") !== -1,
       detail: JSON.stringify(d.mitte) });
     var fT = TB.status.fliesstext(m, { pallaesthesie: true },
       { pallaesthesie: teilB });
+    var uk = m.untersuchungen.find(function (x) {
+      return x.id === "kraftarme"; });
+    var wahlAb = { kraftarme: { pect: true, daumopp: true } };
+    var nv = TB.status.normalVon(uk, wahlAb);
+    faelle.push({ name: "Einzelmuskeln: Text nennt nur die Gewählten",
+      ok: nv.indexOf("Mm. pectorales") === -1 &&
+          nv.indexOf("Daumenopposition") === -1 &&
+          nv.indexOf("Arminnenrotation M5/M5") !== -1 &&
+          nv.indexOf("keine Defizite; im Einzelnen:") === 0,
+      detail: nv.slice(0, 90) });
+    faelle.push({ name: "Einzelmuskeln: alle an ergibt den unveränderten Volltext",
+      ok: TB.status.normalVon(uk, {}) === uk.normal, detail: "" });
+    var alleAb = {}; uk.merkmale.forEach(function (mk) { alleAb[mk.id] = true; });
+    faelle.push({ name: "Einzelmuskeln: alle ab ergibt kurzen Normalbefund",
+      ok: TB.status.normalVon(uk, { kraftarme: alleAb }) === "keine Defizite.",
+      detail: "" });
+    var abBis3 = {}; uk.merkmale.forEach(function (mk, i) {
+      if (i >= 3) abBis3[mk.id] = true; });
+    var td3 = TB.status.tardoc(m, { kraftarme: true },
+      { kraftarme: abBis3 });
+    faelle.push({ name: "Einzelmuskeln: Tardoc zählt nur die Gewählten",
+      ok: td3.neuro.gruppen[3].ist === 3 && !td3.neuro.gruppen[3].erfuellt,
+      detail: JSON.stringify(td3.neuro.gruppen[3]) });
+    var vorher = JSON.parse(JSON.stringify(TB.status.teilmengen()));
+    TB.status.teilmengeSpeichern("Selbsttest-Muskeln", ["kraftarme"],
+      { kraftarme: ["pect", "daumopp"] });
+    var ts2 = TB.status.teilmengen().find(function (t) {
+      return t.name === "Selbsttest-Muskeln"; });
+    faelle.push({ name: "Eigener Status trägt die Muskel-Auswahl",
+      ok: !!ts2 && !!ts2.merkmalAb &&
+          ts2.merkmalAb.kraftarme.join(",") === "pect,daumopp",
+      detail: JSON.stringify(ts2 && ts2.merkmalAb) });
+    TB.status.speichereTeilmengen(vorher);
+    var kr = TB.status.tardocKriterien();
+    var alleGruppen = kr[0].gruppen.length === 15 && kr[1].gruppen.length === 10;
+    faelle.push({ name: "Tardoc-Nachlese: beide Positionen, alle Gruppen, Original-Links",
+      ok: kr.length === 2 && alleGruppen &&
+          kr[0].zeileB.indexOf("bis zu 3") !== -1 &&
+          kr[0].zeileA.indexOf("MP.00.0040") !== -1 &&
+          kr[0].linkB.indexOf("kodia.ch/de/tardoc/MP.00.0020") !== -1 &&
+          kr[1].gruppen[9].merkmale.indexOf("Synophrys") !== -1,
+      detail: JSON.stringify([kr[0].gruppen.length, kr[1].gruppen.length]) });
     faelle.push({ name: "Teil-Hervorhebung im Fliesstext: Name bleibt normal",
-      ok: fT.html.indexOf("color:#444444\">4/6,</span></b>") !== -1 &&
+      ok: fT.html.indexOf("color:#444444\">malleolär 4/6,</span></b>") !== -1 &&
           fT.html.indexOf("Pallästhesie") <
           fT.html.indexOf("<b><span"),
       detail: fT.html.slice(0, 200) });
@@ -481,7 +523,7 @@ TB.selbsttest = (function () {
     faelle.push({ name: "Demenz-Scores als Aufzählung, Lücke vor Amyloid-PET",
       ok: un.text.indexOf("\u2022 IQCODE") !== -1 &&
           un.text.indexOf("\u2022 CDR-Skala") !== -1 &&
-          un.text.indexOf("Zürich): xx.\n\nAmyloid-PET") !== -1,
+          un.text.indexOf("xx.\n\nAmyloid-PET") !== -1,
       detail: "" });
     var z2 = TB.ansichtBerichtMc.zerlege("Die IADL-Skala ergab einen Scorewert von 8/8. Gemäss diesen Fragebögen wäre sie auf geringe Fremdhilfe angewiesen. Unterstützungsbedarf: Die Einzahlungen erledigt der Ehemann, er traue ihr das Erlernen bei Bedarf zu.\n\nSozialanamnese\nVerheiratet.");
     var un2 = TB.ansichtBerichtMc.bauUntersuchungen(z2);

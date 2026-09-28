@@ -17,15 +17,54 @@ window.TB = window.TB || {};
 
 TB.statusGrundlage = (function () {
   // Kurzschreiber, damit die Liste lesbar bleibt.
-  function u(id, kat, name, normal, haeufig, tardoc) {
-    return { id: id, kategorie: kat, name: name, normal: normal,
-             haeufig: !!haeufig, tardoc: tardoc || [] };
+  function u(id, kat, name, normal, haeufig, tardoc, merkmale) {
+    var e = { id: id, kategorie: kat, name: name, normal: normal,
+              haeufig: !!haeufig, tardoc: tardoc || [] };
+    if (merkmale) e.merkmale = merkmale;   // Einzelmerkmale (27.9.)
+    return e;
   }
   function n(g, m, muskeln) {
     var e = { a: "neuro", g: g };
     if (m) e.m = m; if (muskeln) e.muskeln = muskeln; return e;
   }
   function h(g, m) { var e = { a: "hirn", g: g }; if (m) e.m = m; return e; }
+
+  // Einzelmerkmale der Kraftprüfungen (Nachbesserung 27.9., Näd):
+  // an-/abwählbar; der Text nennt nur die Gewählten, die Untergruppen
+  // (gruppe) sind reine Zwischentitel in der Auswahl.
+  var MERKARME = [
+      { id: "pect", name: "Mm. pectorales", gruppe: "Schultergürtel" },
+      { id: "innenrot", name: "Arminnenrotation", gruppe: "Schultergürtel" },
+      { id: "aussenrot", name: "Armaussenrotation", gruppe: "Schultergürtel" },
+      { id: "addukt", name: "Armadduktion", gruppe: "Schultergürtel" },
+      { id: "abd0", name: "Armabduktion aus Nullstellung", gruppe: "Schultergürtel" },
+      { id: "abd90", name: "Armabduktion aus 90-Grad-Stellung", gruppe: "Schultergürtel" },
+      { id: "streck", name: "Armstreckung", gruppe: "Ellbogen" },
+      { id: "beug", name: "Armbeugung", gruppe: "Ellbogen" },
+      { id: "hgstreck", name: "Handgelenksstreckung", gruppe: "Hand und Finger" },
+      { id: "hgbeug", name: "Handgelenkbeugung", gruppe: "Hand und Finger" },
+      { id: "fistreck", name: "Fingerstreckung", gruppe: "Hand und Finger" },
+      { id: "fibeug23", name: "Fingerbeugung im Endglied (Dig. II/III)", gruppe: "Hand und Finger" },
+      { id: "fibeug45", name: "Fingerbeugung im Endglied (Dig. IV/V)", gruppe: "Hand und Finger" },
+      { id: "zeigeabsp", name: "Zeigefingerabspreizung", gruppe: "Hand und Finger" },
+      { id: "kleinabsp", name: "Kleinfingerabspreizung", gruppe: "Hand und Finger" },
+      { id: "daumadd", name: "Daumenadduktion", gruppe: "Hand und Finger" },
+      { id: "daumabd", name: "Daumenabduktion", gruppe: "Hand und Finger" },
+      { id: "daumopp", name: "Daumenopposition", gruppe: "Hand und Finger" }
+    ];
+  var MERKBEINE = [
+      { id: "hueftbeug", name: "Hüftbeugung", gruppe: "Hüfte" },
+      { id: "hueftstreck", name: "Hüftstreckung", gruppe: "Hüfte" },
+      { id: "osabd", name: "Oberschenkelabduktion", gruppe: "Hüfte" },
+      { id: "osadd", name: "Oberschenkeladduktion", gruppe: "Hüfte" },
+      { id: "kniestreck", name: "Kniestreckung", gruppe: "Knie" },
+      { id: "kniebeug", name: "Kniebeugung", gruppe: "Knie" },
+      { id: "fussheb", name: "Fusshebung", gruppe: "Fuss" },
+      { id: "fusssenk", name: "Fusssenkung", gruppe: "Fuss" },
+      { id: "gzheb", name: "Grosszehenhebung", gruppe: "Fuss" },
+      { id: "eversion", name: "Eversion", gruppe: "Fuss" },
+      { id: "inversion", name: "Inversion", gruppe: "Fuss" }
+    ];
 
   var KATEGORIEN = [
     { id: "allgemein", name: "Allgemein" },
@@ -136,8 +175,8 @@ TB.statusGrundlage = (function () {
     u("armhalteversuch", "motorik", "Armhalteversuch", "kein Absinken, keine Pronation.", true, [n(2, ["Rohkraft"])]),
     u("beinhalteversuch", "motorik", "Beinhalteversuch", "kein Absinken.", true, [n(3, ["Rohkraft"])]),
     u("fingerspiel", "motorik", "Fingerspiel", "bds. normal.", true, [n(2, ["Bewegungsmuster"])]),
-    u("kraftarme", "motorik", "Einzelkraftprüfung Arme (re/li)", "keine Defizite; im Einzelnen: Mm. pectorales M5/M5, Arminnenrotation M5/M5, Armaussenrotation M5/M5, Armadduktion M5/M5, Armabduktion aus Nullstellung M5/M5, Armabduktion aus 90-Grad-Stellung M5/M5, Armstreckung M5/M5, Armbeugung M5/M5, Handgelenksstreckung M5/M5, Handgelenkbeugung M5/M5, Fingerstreckung M5/M5, Fingerbeugung im Endglied (Dig. II/III) M5/M5, Fingerbeugung im Endglied (Dig. IV/V) M5/M5, Zeigefingerabspreizung M5/M5, Kleinfingerabspreizung M5/M5, Daumenadduktion M5/M5, Daumenabduktion M5/M5, Daumenopposition M5/M5.", true, [n(4, null, 18)]),
-    u("kraftbeine", "motorik", "Einzelkraftprüfung Beine (re/li)", "keine Defizite; im Einzelnen: Hüftbeugung M5/M5, Hüftstreckung M5/M5, Oberschenkelabduktion M5/M5, Oberschenkeladduktion M5/M5, Kniestreckung M5/M5, Kniebeugung M5/M5, Fusshebung M5/M5, Fusssenkung M5/M5, Grosszehenhebung M5/M5, Eversion M5/M5, Inversion M5/M5.", true, [n(5, null, 11)]),
+    u("kraftarme", "motorik", "Einzelkraftprüfung Arme (re/li)", "keine Defizite; im Einzelnen: Mm. pectorales M5/M5, Arminnenrotation M5/M5, Armaussenrotation M5/M5, Armadduktion M5/M5, Armabduktion aus Nullstellung M5/M5, Armabduktion aus 90-Grad-Stellung M5/M5, Armstreckung M5/M5, Armbeugung M5/M5, Handgelenksstreckung M5/M5, Handgelenkbeugung M5/M5, Fingerstreckung M5/M5, Fingerbeugung im Endglied (Dig. II/III) M5/M5, Fingerbeugung im Endglied (Dig. IV/V) M5/M5, Zeigefingerabspreizung M5/M5, Kleinfingerabspreizung M5/M5, Daumenadduktion M5/M5, Daumenabduktion M5/M5, Daumenopposition M5/M5.", true, [n(4, null, 18)], MERKARME),
+    u("kraftbeine", "motorik", "Einzelkraftprüfung Beine (re/li)", "keine Defizite; im Einzelnen: Hüftbeugung M5/M5, Hüftstreckung M5/M5, Oberschenkelabduktion M5/M5, Oberschenkeladduktion M5/M5, Kniestreckung M5/M5, Kniebeugung M5/M5, Fusshebung M5/M5, Fusssenkung M5/M5, Grosszehenhebung M5/M5, Eversion M5/M5, Inversion M5/M5.", true, [n(5, null, 11)], MERKBEINE),
     u("nackenmuskulatur", "motorik", "Nackenbeuger und -strecker", "bds. M5.", false, [h(3, ["Paresegradierung motorischer Hirnnerven"])]),
     u("rumpfmuskulatur", "motorik", "Rumpfmuskulatur", "Aufrichten aus Rückenlage möglich, Bauchhautpresse seitengleich.", false, [n(6, ["Rohkraft Rumpf"])]),
     u("proximal", "motorik", "Proximale Funktionsprüfung", "Aufstehen aus der Hocke ohne Armhilfe (Gowers negativ), Einbeinhüpfen bds. möglich, Trendelenburg-Zeichen negativ.", false, [n(3, ["Aufstehen/Hüpfen", "Trendelenburg"])]),

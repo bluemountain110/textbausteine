@@ -26,6 +26,8 @@ TB.ansichtStatus = (function () {
   var suchbegriff = "";
   var nurGewaehlte = false;   // Schalter „Nur Gewählte" (Sammelrunde 27.9.)
   var bearbeiteId = null;      // Untersuchung, deren Befund gerade offen ist
+  var merkmalWahl = {};        // uid -> { merkmal-id: true = ABgewählt }
+  var offeneMerkmale = {};     // uid -> true (Muskel-Auswahl aufgeklappt)
   var sucheFokus = false;
 
   function inTeilmenge(id) {
@@ -51,6 +53,7 @@ TB.ansichtStatus = (function () {
   function allesLeeren() {
     aktiveTeilmengen = {}; manuellAn = {}; manuellAb = {};
     abweichungen = {}; bearbeiteId = null;
+    merkmalWahl = {}; offeneMerkmale = {};
   }
   function passtZurSuche(u) {
     if (!suchbegriff) return true;
@@ -96,15 +99,25 @@ TB.ansichtStatus = (function () {
       nurGewaehlte = !nurGewaehlte; neu(); });
     suchzeile.appendChild(nurG);
     klebt.appendChild(suchzeile);
-    wurzel.appendChild(klebt);
 
+    // Nachbesserung 27.9.: Der klebende Kopf lebt in der LINKEN Spalte,
+    // damit die rechte Spalte (Vorschau, Kopieren) ihr eigenes Kleben
+    // behält und nicht darunter verschwindet.
     var flaeche = el("div", "status-flaeche");
+    var linksSpalte = el("div", "status-linksspalte");
+    linksSpalte.appendChild(klebt);
     var links = el("div", "status-maske");
     TB.status.jeKategorie(m).forEach(function (block) {
       zeichneKategorie(links, m, block); });
-    flaeche.appendChild(links);
+    linksSpalte.appendChild(links);
+    flaeche.appendChild(linksSpalte);
     flaeche.appendChild(zeichneRechts(m));
     wurzel.appendChild(flaeche);
+    // Höhe der App-Kopfzeile als CSS-Mass, damit beide klebenden Teile
+    // exakt darunter andocken (am Handy ist die Kopfzeile nicht klebend).
+    var kopfzeile = document.querySelector("header");
+    document.documentElement.style.setProperty("--kopf-h",
+      (kopfzeile ? kopfzeile.offsetHeight : 0) + "px");
 
     if (sucheFokus) {
       sucheFokus = false;
@@ -135,7 +148,15 @@ TB.ansichtStatus = (function () {
         "status-chip" + (aktiveTeilmengen[t.id] ? " aktiv" : ""), t.name);
       k.addEventListener("click", function () {
         if (aktiveTeilmengen[t.id]) delete aktiveTeilmengen[t.id];
-        else aktiveTeilmengen[t.id] = true;
+        else {
+          aktiveTeilmengen[t.id] = true;
+          // Gespeicherte Muskel-Auswahl dieses Status anwenden (27.9.)
+          Object.keys(t.merkmalAb || {}).forEach(function (uid) {
+            var ab = {};
+            t.merkmalAb[uid].forEach(function (mid) { ab[mid] = true; });
+            merkmalWahl[uid] = ab;
+          });
+        }
         neu();
       });
       zeile.appendChild(k);
@@ -144,7 +165,7 @@ TB.ansichtStatus = (function () {
   }
 
   function zeichneTardoc(wurzel, m) {
-    var stand = TB.status.tardoc(m, gewaehltAlsMenge(m));
+    var stand = TB.status.tardoc(m, gewaehltAlsMenge(m), merkmalWahl);
     var kasten = el("div", "status-tardoc");
     Object.keys(stand).forEach(function (art) {
       var a = stand[art];
@@ -156,13 +177,57 @@ TB.ansichtStatus = (function () {
         (a.stufe === "A" ? " gut" : (a.stufe === "B" ? " halb" : "")),
         wort.replace("%s", a.name).replace("%s", String(a.erfuellte)));
       zeile.appendChild(pille);
-      zeile.appendChild(el("span", "klein-hinweis",
-        TB.status.tardocFehltText(a)));
+      var hinweisText = TB.status.tardocFehltText(a);
+      var hinweis = el("span", "klein-hinweis status-tardoc-hinweis",
+        hinweisText);
+      hinweis.title = hinweisText;
+      zeile.appendChild(hinweis);
       kasten.appendChild(zeile);
     });
-    kasten.appendChild(el("div", "status-tardoc-fuss",
-      TS().tardocHinweis.replace("%s", TB.tardocDaten.fassung)));
+    var fuss = el("div", "status-tardoc-fuss",
+      TS().tardocHinweis.replace("%s", TB.tardocDaten.fassung));
+    var lesen = el("button", "status-tardoc-lesen", TS().tardocLesenKnopf);
+    lesen.addEventListener("click", zeigeKriterien);
+    fuss.appendChild(lesen);
+    kasten.appendChild(fuss);
     wurzel.appendChild(kasten);
+  }
+
+  // Das Nachlese-Fenster (Näds Wunsch 27.9.): beide Positionen mit
+  // Gruppenliste — Zusammenfassung, jeder Titel verlinkt aufs Original.
+  function zeigeKriterien() {
+    var schleier = el("div", "status-schleier");
+    schleier.addEventListener("click", function (e) {
+      if (e.target === schleier) schleier.remove(); });
+    var karte = el("div", "status-lesen-karte");
+    var kopf = el("div", "status-kopf");
+    kopf.appendChild(el("h3", "", TS().tardocLesenTitel));
+    var zu = el("button", "", TS().tardocLesenZu);
+    zu.addEventListener("click", function () { schleier.remove(); });
+    kopf.appendChild(zu);
+    karte.appendChild(kopf);
+    karte.appendChild(el("p", "klein-hinweis", TS().tardocLesenEinleitung));
+    TB.status.tardocKriterien().forEach(function (art) {
+      karte.appendChild(el("h4", "", art.name));
+      [["B", art.zeileB, art.linkB], ["A", art.zeileA, art.linkA]]
+        .forEach(function (p) {
+          var z = el("p", "status-lesen-position");
+          var link = el("a", "", p[1]);
+          link.href = p[2]; link.target = "_blank"; link.rel = "noopener";
+          z.appendChild(link);
+          karte.appendChild(z);
+        });
+      art.gruppen.forEach(function (g) {
+        var z = el("p", "status-lesen-gruppe");
+        var fett = el("b", "", g.kopf);
+        z.appendChild(fett);
+        z.appendChild(document.createTextNode(g.merkmale));
+        karte.appendChild(z);
+      });
+    });
+    karte.appendChild(el("p", "klein-hinweis", TS().tardocLesenStand));
+    schleier.appendChild(karte);
+    document.body.appendChild(schleier);
   }
 
   function zeichneKategorie(ziel, m, block) {
@@ -219,14 +284,15 @@ TB.ansichtStatus = (function () {
       schalte(u.id, !istGewaehlt(u.id)); neu(); });
     inhalt.appendChild(name);
 
+    var soll = TB.status.normalVon(u, merkmalWahl);
     if (bearbeiteId === u.id) {
       var feld = el("textarea", "status-abweichfeld");
       feld.rows = 2;
       feld.value = (abweichungen[u.id] !== undefined)
-        ? abweichungen[u.id] : u.normal;
+        ? abweichungen[u.id] : soll;
       function schliesse() {
         var wert = feld.value.trim();
-        if (!wert || wert === u.normal.trim()) delete abweichungen[u.id];
+        if (!wert || wert === soll.trim()) delete abweichungen[u.id];
         else { abweichungen[u.id] = wert; schalte(u.id, true); }
         bearbeiteId = null; neu();
       }
@@ -240,9 +306,18 @@ TB.ansichtStatus = (function () {
       setTimeout(function () { feld.focus(); feld.select(); }, 0);
     } else {
       var abweichend = abweichungen[u.id] !== undefined;
-      var text = el("span",
-        "status-befund" + (abweichend ? " abweichend" : ""),
-        abweichend ? abweichungen[u.id] : u.normal);
+      var text = el("span", "status-befund");
+      if (abweichend) {
+        // Teil-Hervorhebung auch hier links (27.9.): nur der veränderte
+        // Bereich samt Messwort erscheint fett in Dunkelgrau.
+        var d = TB.status.wortUnterschied(soll, abweichungen[u.id]);
+        text.appendChild(document.createTextNode(d.vor));
+        var fett = el("b", "abweichend-teil", d.mitte);
+        text.appendChild(fett);
+        text.appendChild(document.createTextNode(d.nach));
+      } else {
+        text.textContent = soll;
+      }
       text.title = TS().befundKlickHinweis;
       text.addEventListener("click", function () {
         bearbeiteId = u.id; neu(); });
@@ -256,7 +331,50 @@ TB.ansichtStatus = (function () {
       }
     }
     z.appendChild(inhalt);
+    if (u.merkmale) z.appendChild(merkmalBereich(u));
     return z;
+  }
+
+  // Einzelmuskeln an- und abwählen (Nachbesserung 27.9., Näd): Knopf
+  // „Muskeln (x/y)" klappt die Liste mit Untergruppen-Zwischentiteln
+  // auf; der Befundtext nennt nur die Gewählten.
+  function merkmalBereich(u) {
+    var huelle = el("div", "status-merkmale");
+    var an = TB.status.gewaehlteMerkmale(u, merkmalWahl).length;
+    var knopf = el("button", "status-merkmal-knopf",
+      TS().muskelnKnopf.replace("%s", an).replace("%s", u.merkmale.length));
+    knopf.title = TS().muskelnHinweis;
+    knopf.addEventListener("click", function () {
+      if (offeneMerkmale[u.id]) delete offeneMerkmale[u.id];
+      else offeneMerkmale[u.id] = true;
+      neu();
+    });
+    huelle.appendChild(knopf);
+    if (!offeneMerkmale[u.id]) return huelle;
+    var feld = el("div", "status-merkmal-feld");
+    var letzteGruppe = "";
+    u.merkmale.forEach(function (mk) {
+      if (mk.gruppe !== letzteGruppe) {
+        letzteGruppe = mk.gruppe;
+        feld.appendChild(el("div", "status-merkmal-titel", mk.gruppe));
+      }
+      var zeile = el("label", "status-merkmal-zeile");
+      var kreuz = el("input");
+      kreuz.type = "checkbox";
+      kreuz.checked = TB.status.merkmalAn(merkmalWahl, u.id, mk.id);
+      kreuz.addEventListener("change", function () {
+        var ab = merkmalWahl[u.id] || (merkmalWahl[u.id] = {});
+        if (kreuz.checked) delete ab[mk.id];
+        else ab[mk.id] = true;
+        delete abweichungen[u.id];   // Auswahl schlägt Überschriebenes
+        neu();
+      });
+      zeile.appendChild(kreuz);
+      zeile.appendChild(el("span", "", mk.name));
+      feld.appendChild(zeile);
+    });
+    huelle.appendChild(feld);
+    return huelle;
   }
 
   function zeichneRechts(m) {
@@ -270,7 +388,7 @@ TB.ansichtStatus = (function () {
     var kopieren = el("button", "status-kopieren", TS().kopierenKnopf);
     kopieren.addEventListener("click", function () {
       if (!anzahl) { melde(TS().nichtsGewaehlt, true); return; }
-      var f = TB.status.fliesstext(m, menge, abweichungen);
+      var f = TB.status.fliesstext(m, menge, abweichungen, merkmalWahl);
       TB.ui.kopiereFassungen(f.html, f.text, function (ok, wie) {
         if (!ok) { melde(TS().kopierenFehl, true); return; }
         TB.speicher.zaehleFunktion("statusKopiert");
@@ -297,7 +415,12 @@ TB.ansichtStatus = (function () {
           !confirm(TS().alsStatusErsetzen.replace("%s", name))) return;
       var punkte = m.untersuchungen.filter(function (u) {
         return menge[u.id]; }).map(function (u) { return u.id; });
-      TB.status.teilmengeSpeichern(name, punkte);
+      var merkmalAb = {};
+      punkte.forEach(function (id) {
+        var ab = merkmalWahl[id];
+        if (ab && Object.keys(ab).length) merkmalAb[id] = Object.keys(ab);
+      });
+      TB.status.teilmengeSpeichern(name, punkte, merkmalAb);
       melde(TS().alsStatusFertig.replace("%s", name));
       neu();
     });
@@ -314,7 +437,7 @@ TB.ansichtStatus = (function () {
     if (!anzahl) {
       inhalt.appendChild(el("p", "klein-hinweis", TS().vorschauLeer));
     } else {
-      var f = TB.status.fliesstext(m, menge, abweichungen);
+      var f = TB.status.fliesstext(m, menge, abweichungen, merkmalWahl);
       inhalt.innerHTML = f.html;   // eigener, geschützter HTML-Aufbau
     }
     vorschau.appendChild(inhalt);

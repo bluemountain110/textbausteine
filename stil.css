@@ -369,7 +369,7 @@ dialog.maske { width: min(720px, 94vw); }
 .status-flaeche { display: grid; grid-template-columns: minmax(0, 1fr) 340px;
   gap: 16px; align-items: start; }
 @media (max-width: 900px) { .status-flaeche { grid-template-columns: 1fr; } }
-.status-rechts { position: sticky; top: 10px; }
+.status-rechts { position: sticky; top: calc(var(--kopf-h, 0px) + 10px); }
 .status-knoepfe { display: flex; flex-wrap: wrap; gap: 6px; }
 .status-kopieren { font-weight: 700; }
 .status-vorschau { margin-top: 8px; max-height: 62vh; overflow: auto; }
@@ -450,7 +450,7 @@ dialog.maske { width: min(720px, 94vw); }
 .bmc-vorschau p { margin: 0 0 8px; }
 
 /* ---- Sammelrunde Etappe 9 (27.9.): Sticky-Kopf, Nur-Gewählte, iPhone */
-.status-sticky { position: sticky; top: 0; z-index: 30;
+.status-sticky { position: sticky; top: var(--kopf-h, 0px); z-index: 4;
   background: var(--grund); padding: 6px 0 8px; box-shadow: 0 6px 8px -8px rgba(0,0,0,0.25); }
 .status-suchzeile { display: flex; gap: 8px; align-items: center; }
 .status-suchzeile .status-suche { flex: 1; }
@@ -465,6 +465,7 @@ dialog.maske { width: min(720px, 94vw); }
    umbrechend und kompakt, Status einspaltig, Vorschau darunter. */
 @media (max-width: 760px) {
   header { flex-wrap: wrap; row-gap: 4px; position: static; }
+  .status-sticky { top: 0; }
   .fassung-marke { flex-basis: 100%; margin-left: 0; }
   #haupt-nav { flex-wrap: wrap; gap: 4px; }
   #haupt-nav button { padding: 5px 9px; font-size: 0.82rem; }
@@ -478,3 +479,36 @@ dialog.maske { width: min(720px, 94vw); }
   .uebersicht-zeile { grid-template-columns: auto 1fr; }
   .uebersicht-text { display: none; }
 }
+
+/* Tardoc-Nachlese-Fenster (27.9.) */
+.status-tardoc-lesen { margin-left: 10px; font-size: .8rem;
+  border-radius: 999px; padding: 2px 10px; }
+.status-schleier { position: fixed; inset: 0; z-index: 60;
+  background: rgba(20, 35, 38, 0.45); display: flex;
+  align-items: flex-start; justify-content: center; padding: 4vh 12px; }
+.status-lesen-karte { background: var(--karte); border-radius: 12px;
+  max-width: 760px; width: 100%; max-height: 88vh; overflow-y: auto;
+  padding: 16px 20px; box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+.status-lesen-karte h4 { margin: 14px 0 4px; }
+.status-lesen-position { margin: 4px 0; }
+.status-lesen-position a { color: var(--akzent); }
+.status-lesen-gruppe { margin: 3px 0 3px 10px; font-size: .88rem; }
+
+/* Nachbesserung 27.9.: Ampel-Zeile springt nicht mehr (eine Zeile,
+   Überlauf mit …, voller Text als Tooltip); Muskel-Auswahl. */
+.status-tardoc-zeile { flex-wrap: nowrap; min-height: 26px; }
+.status-tardoc-hinweis { flex: 1; min-width: 0; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+.status-befund .abweichend-teil { color: #444444; }
+.status-merkmale { margin: 2px 0 4px 26px; }
+.status-merkmal-knopf { font-size: .78rem; border-radius: 999px;
+  padding: 2px 10px; }
+.status-merkmal-feld { margin-top: 6px; padding: 8px 10px;
+  background: #eef3f3; border-radius: 8px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 2px 14px; }
+.status-merkmal-titel { grid-column: 1 / -1; font-weight: 700;
+  font-size: .8rem; margin-top: 6px; }
+.status-merkmal-titel:first-child { margin-top: 0; }
+.status-merkmal-zeile { display: flex; gap: 6px; align-items: center;
+  font-size: .85rem; cursor: pointer; }
