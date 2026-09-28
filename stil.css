@@ -512,3 +512,17 @@ dialog.maske { width: min(720px, 94vw); }
 .status-merkmal-titel:first-child { margin-top: 0; }
 .status-merkmal-zeile { display: flex; gap: 6px; align-items: center;
   font-size: .85rem; cursor: pointer; }
+
+/* 28.9.: Abdeckung über dem klebenden Kopf (Windows-Loch), B|A-Spalten
+   im Nachlese-Fenster, wachsendes Überschreiben-Feld */
+.status-sticky::before { content: ""; position: absolute; left: 0;
+  right: 0; bottom: 100%; height: 140px; background: var(--grund); }
+.status-lesen-ab { display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; margin: 6px 0 10px; }
+.status-lesen-ab .status-lesen-position { margin: 0; padding: 8px 10px;
+  border-radius: 8px; border: 1px solid var(--linie); }
+.status-lesen-ab .halb { background: #fdf6e3; border-color: #e5d9a8; }
+.status-lesen-ab .gut { background: #e8f4ef; border-color: #b7dcc9; }
+.status-abweichfeld { overflow: hidden; resize: vertical;
+  min-height: 44px; }
+@media (max-width: 760px) { .status-lesen-ab { grid-template-columns: 1fr; } }

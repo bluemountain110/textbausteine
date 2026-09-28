@@ -128,8 +128,23 @@ TB.status = (function () {
       if (u.merkmale) return;
       var g = frisch.untersuchungen.find(function (x) {
         return x.id === u.id; });
-      if (g && g.merkmale && u.normal === g.normal) {
+      if (g && g.merkmale &&
+          (u.normal === g.normal ||
+           u.normal === "keine Defizite; im Einzelnen: " + g.normal)) {
         u.merkmale = g.merkmale;
+        u.normal = g.normal;
+        geaendert = true;
+      }
+    });
+    // Zweiter Nachzieh-Schritt (28.9.): Wo die Merkmale schon da sind,
+    // aber noch der alte Vorspann-Text steht, wird er auf die reine
+    // Liste gehoben.
+    (m.untersuchungen || []).forEach(function (u) {
+      if (!u.merkmale) return;
+      var g = frisch.untersuchungen.find(function (x) {
+        return x.id === u.id; });
+      if (g && u.normal === "keine Defizite; im Einzelnen: " + g.normal) {
+        u.normal = g.normal;
         geaendert = true;
       }
     });
@@ -198,11 +213,13 @@ TB.status = (function () {
     return u.merkmale.filter(function (mk) {
       return merkmalAn(merkmalWahl, u.id, mk.id); });
   }
+  // Näd 28.9.: ohne "keine Defizite"-Vorspann — sonst müsste man bei
+  // einem Defizit zwei Stellen ändern. Der Befund ist die reine Liste.
   function normalVon(u, merkmalWahl) {
     if (!u.merkmale) return u.normal;
     var an = gewaehlteMerkmale(u, merkmalWahl);
-    if (!an.length) return TB.statusTexte.muskelnKeine;
-    return "keine Defizite; im Einzelnen: " + an.map(function (mk) {
+    if (!an.length) return "xx.";
+    return an.map(function (mk) {
       return mk.name + " M5/M5"; }).join(", ") + ".";
   }
 

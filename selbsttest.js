@@ -431,14 +431,13 @@ TB.selbsttest = (function () {
     faelle.push({ name: "Einzelmuskeln: Text nennt nur die Gewählten",
       ok: nv.indexOf("Mm. pectorales") === -1 &&
           nv.indexOf("Daumenopposition") === -1 &&
-          nv.indexOf("Arminnenrotation M5/M5") !== -1 &&
-          nv.indexOf("keine Defizite; im Einzelnen:") === 0,
+          nv.indexOf("Arminnenrotation M5/M5") === 0,
       detail: nv.slice(0, 90) });
     faelle.push({ name: "Einzelmuskeln: alle an ergibt den unveränderten Volltext",
       ok: TB.status.normalVon(uk, {}) === uk.normal, detail: "" });
     var alleAb = {}; uk.merkmale.forEach(function (mk) { alleAb[mk.id] = true; });
-    faelle.push({ name: "Einzelmuskeln: alle ab ergibt kurzen Normalbefund",
-      ok: TB.status.normalVon(uk, { kraftarme: alleAb }) === "keine Defizite.",
+    faelle.push({ name: "Einzelmuskeln: alle ab ergibt xx.",
+      ok: TB.status.normalVon(uk, { kraftarme: alleAb }) === "xx.",
       detail: "" });
     var abBis3 = {}; uk.merkmale.forEach(function (mk, i) {
       if (i >= 3) abBis3[mk.id] = true; });
@@ -458,13 +457,15 @@ TB.selbsttest = (function () {
       detail: JSON.stringify(ts2 && ts2.merkmalAb) });
     TB.status.speichereTeilmengen(vorher);
     var altKatalog = { untersuchungen: [
-      { id: "kraftarme", kategorie: "motorik",
-        name: uk.name, normal: uk.normal, haeufig: true, tardoc: [] }] };
+      { id: "kraftarme", kategorie: "motorik", name: uk.name,
+        normal: "keine Defizite; im Einzelnen: " + uk.normal,
+        haeufig: true, tardoc: [] }] };
     var migriert = TB.status.migriereMerkmale(altKatalog);
-    faelle.push({ name: "Alter Katalog bekommt die Einzelmuskeln nachgezogen",
+    faelle.push({ name: "Alter Katalog: Einzelmuskeln und neuer Text nachgezogen",
       ok: migriert === true &&
-          altKatalog.untersuchungen[0].merkmale.length === 18,
-      detail: JSON.stringify(migriert) });
+          altKatalog.untersuchungen[0].merkmale.length === 18 &&
+          altKatalog.untersuchungen[0].normal === uk.normal,
+      detail: altKatalog.untersuchungen[0].normal.slice(0, 60) });
     var kr = TB.status.tardocKriterien();
     var alleGruppen = kr[0].gruppen.length === 15 && kr[1].gruppen.length === 10;
     faelle.push({ name: "Tardoc-Nachlese: beide Positionen, alle Gruppen, Original-Links",
@@ -531,7 +532,8 @@ TB.selbsttest = (function () {
     faelle.push({ name: "Demenz-Scores als Aufzählung, Lücke vor Amyloid-PET",
       ok: un.text.indexOf("\u2022 IQCODE") !== -1 &&
           un.text.indexOf("\u2022 CDR-Skala") !== -1 &&
-          un.text.indexOf("xx.\n\nAmyloid-PET") !== -1,
+          un.text.indexOf("xx.\n\nAmyloid-PET") !== -1 &&
+          un.html.indexOf("<p>\u00A0</p>") !== -1,
       detail: "" });
     var z2 = TB.ansichtBerichtMc.zerlege("Die IADL-Skala ergab einen Scorewert von 8/8. Gemäss diesen Fragebögen wäre sie auf geringe Fremdhilfe angewiesen. Unterstützungsbedarf: Die Einzahlungen erledigt der Ehemann, er traue ihr das Erlernen bei Bedarf zu.\n\nSozialanamnese\nVerheiratet.");
     var un2 = TB.ansichtBerichtMc.bauUntersuchungen(z2);

@@ -115,9 +115,16 @@ TB.ansichtStatus = (function () {
     wurzel.appendChild(flaeche);
     // Höhe der App-Kopfzeile als CSS-Mass, damit beide klebenden Teile
     // exakt darunter andocken (am Handy ist die Kopfzeile nicht klebend).
-    var kopfzeile = document.querySelector("header");
-    document.documentElement.style.setProperty("--kopf-h",
-      (kopfzeile ? kopfzeile.offsetHeight : 0) + "px");
+    function messeKopf() {
+      var kz = document.querySelector("header");
+      var h = kz ? Math.ceil(kz.getBoundingClientRect().height) : 0;
+      document.documentElement.style.setProperty("--kopf-h", h + "px");
+    }
+    messeKopf();
+    if (!window.__statusKopfMesser) {
+      window.__statusKopfMesser = true;
+      window.addEventListener("resize", messeKopf);
+    }
 
     if (sucheFokus) {
       sucheFokus = false;
@@ -209,14 +216,18 @@ TB.ansichtStatus = (function () {
     karte.appendChild(el("p", "klein-hinweis", TS().tardocLesenEinleitung));
     TB.status.tardocKriterien().forEach(function (art) {
       karte.appendChild(el("h4", "", art.name));
-      [["B", art.zeileB, art.linkB], ["A", art.zeileA, art.linkA]]
+      // Näd 28.9.: B und A nebeneinander, damit der Unterschied
+      // (bis zu 3 gegenüber ab 4 Gruppen) sofort ins Auge springt.
+      var ab = el("div", "status-lesen-ab");
+      [["halb", art.zeileB, art.linkB], ["gut", art.zeileA, art.linkA]]
         .forEach(function (p) {
-          var z = el("p", "status-lesen-position");
+          var z = el("div", "status-lesen-position " + p[0]);
           var link = el("a", "", p[1]);
           link.href = p[2]; link.target = "_blank"; link.rel = "noopener";
           z.appendChild(link);
-          karte.appendChild(z);
+          ab.appendChild(z);
         });
+      karte.appendChild(ab);
       art.gruppen.forEach(function (g) {
         var z = el("p", "status-lesen-gruppe");
         var fett = el("b", "", g.kopf);
@@ -290,6 +301,12 @@ TB.ansichtStatus = (function () {
       feld.rows = 2;
       feld.value = (abweichungen[u.id] !== undefined)
         ? abweichungen[u.id] : soll;
+      function wachse() {
+        feld.style.height = "auto";
+        feld.style.height = (feld.scrollHeight + 4) + "px";
+      }
+      feld.addEventListener("input", wachse);
+      setTimeout(wachse, 0);
       function schliesse() {
         var wert = feld.value.trim();
         if (!wert || wert === soll.trim()) delete abweichungen[u.id];
