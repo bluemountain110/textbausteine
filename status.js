@@ -111,7 +111,30 @@ TB.status = (function () {
   var S = function () { return TB.speicher; };
 
   // ---- Ablage: Einstellungs-Werte, sie syncen wie alle Einstellungen --
-  function master() { return S().einstellung("statusMaster", null); }
+  function master() {
+    var m = S().einstellung("statusMaster", null);
+    // Nachzieh-Migration (28.9.): Neuerungen der Grundausstattung —
+    // aktuell die Einzelmuskel-Merkmale — werden in einen früher
+    // gespeicherten Katalog sanft nachgezogen. Näds eigene Texte
+    // bleiben unberührt: Nur wenn der Normalbefund noch dem der
+    // Grundausstattung entspricht, kommen die Merkmale dazu.
+    if (m && migriereMerkmale(m)) speichereMaster(m);
+    return m;
+  }
+  function migriereMerkmale(m) {
+    var frisch = TB.statusGrundlage.master();
+    var geaendert = false;
+    (m.untersuchungen || []).forEach(function (u) {
+      if (u.merkmale) return;
+      var g = frisch.untersuchungen.find(function (x) {
+        return x.id === u.id; });
+      if (g && g.merkmale && u.normal === g.normal) {
+        u.merkmale = g.merkmale;
+        geaendert = true;
+      }
+    });
+    return geaendert;
+  }
   function speichereMaster(m) {
     S().setzeEinstellung("statusMaster", m);
     if (TB.abgleich) TB.abgleich.anstossen();
@@ -413,6 +436,7 @@ TB.status = (function () {
            tardocFehltText: tardocFehltText,
            wortUnterschied: wortUnterschied,
            normalVon: normalVon, gewaehlteMerkmale: gewaehlteMerkmale,
+           migriereMerkmale: migriereMerkmale,
            merkmalAn: merkmalAn,
            tardocKriterien: tardocKriterien,
            exportDatei: exportDatei };

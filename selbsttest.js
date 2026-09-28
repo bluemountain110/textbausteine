@@ -457,6 +457,14 @@ TB.selbsttest = (function () {
           ts2.merkmalAb.kraftarme.join(",") === "pect,daumopp",
       detail: JSON.stringify(ts2 && ts2.merkmalAb) });
     TB.status.speichereTeilmengen(vorher);
+    var altKatalog = { untersuchungen: [
+      { id: "kraftarme", kategorie: "motorik",
+        name: uk.name, normal: uk.normal, haeufig: true, tardoc: [] }] };
+    var migriert = TB.status.migriereMerkmale(altKatalog);
+    faelle.push({ name: "Alter Katalog bekommt die Einzelmuskeln nachgezogen",
+      ok: migriert === true &&
+          altKatalog.untersuchungen[0].merkmale.length === 18,
+      detail: JSON.stringify(migriert) });
     var kr = TB.status.tardocKriterien();
     var alleGruppen = kr[0].gruppen.length === 15 && kr[1].gruppen.length === 10;
     faelle.push({ name: "Tardoc-Nachlese: beide Positionen, alle Gruppen, Original-Links",
@@ -534,7 +542,7 @@ TB.selbsttest = (function () {
   }
 
   function alleTests() {
-    return [].concat(
+    return mitErgebniszeile([].concat(
       pruefeRechnen().map(function (f) { f.gruppe = "Rechnen"; return f; }),
       pruefeBestand().map(function (f) { f.gruppe = "Datenbestand"; return f; }),
       pruefeRundreise().map(function (f) { f.gruppe = "Rundreise"; return f; }),
@@ -544,7 +552,18 @@ TB.selbsttest = (function () {
       pruefeMasken().map(function (f) { f.gruppe = "Masken"; return f; }),
       pruefeStatus().map(function (f) { f.gruppe = "Status-Werk"; return f; }),
       pruefeBerichtMc().map(function (f) { f.gruppe = "Bericht Memory Clinic"; return f; })
-    );
+    ));
+  }
+
+  // Ergebniszeile am Ende der Bildschirm-Liste (Näd 28.9.) — färbt sich
+  // selbst grün oder rot; der PDF-Bericht filtert sie heraus, weil er
+  // seine eigene Schlusszeile schreibt.
+  function mitErgebniszeile(faelle) {
+    var rotZahl = faelle.filter(function (f) { return !f.ok; }).length;
+    faelle.push({ name: "Ergebnis: " + (faelle.length - rotZahl) +
+      " grün, " + rotZahl + " rot.", ok: rotZahl === 0, detail: "",
+      istSumme: true });
+    return faelle;
   }
 
   function bericht(ergebnisse) {
@@ -562,6 +581,7 @@ TB.selbsttest = (function () {
       if (f.gruppe !== gruppe) { gruppe = f.gruppe; zeilen.push("— " + gruppe + " —"); }
       zeilen.push((f.ok ? "GRÜN  " : "ROT   ") + f.name + (f.detail ? "  [" + f.detail + "]" : ""));
     });
+    ergebnisse = ergebnisse.filter(function (f) { return !f.istSumme; });
     var rot = ergebnisse.filter(function (f) { return !f.ok; }).length;
     zeilen.push("");
     zeilen.push("Ergebnis: " + (ergebnisse.length - rot) + " grün, " + rot + " rot.");
