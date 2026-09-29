@@ -3,13 +3,15 @@
 // Zweck: Die Tardoc-Kriterien als reine DATEN, getrennt von der Logik.
 //        Wird der Tarif revidiert, wird nur diese Datei ersetzt —
 //        keine Zeile Logik ändert sich. Stand: TARDOC 1.4c
-//        (Quelle: OAAT-Tarifbrowser / kodia.ch, 26.09.2026).
+//        (Quelle: LKAAT-Browser browser.tartools.ch — massgeblich lt. Näd 28.9.;
+//        Grenzen dort am 28.9.2026 gegengeprüft: 0020 B "bis zu 3"/23 Min,
+//        0040 A "4+"/46 Min, 0060 A 35 Min).
 //        Je Gruppe: Name und Mindestzahl der dokumentierten Merkmale
 //        (bei den Muskelstatus-Gruppen 4/5 zählen Einzelmuskeln).
 //        A verlangt mindestens 4 erfüllte Gruppen, sonst B.
 //        Neu 27.9. (Näds Wunsch): je Gruppe die MERKMALE als von
 //        Claude gestraffte, eng am Original gehaltene Zusammenfassung
-//        plus die Original-Links (kodia.ch) — für das Nachlese-Fenster.
+//        plus die Original-Links (LKAAT) — für das Nachlese-Fenster.
 
 "use strict";
 window.TB = window.TB || {};
@@ -22,8 +24,8 @@ TB.tardocDaten = {
       positionA: "MP.00.0040", positionB: "MP.00.0020",
       titelA: "Neurologische Exploration A", titelB: "Neurologische Exploration B",
       dauerA: 46, dauerB: 23,
-      linkA: "https://kodia.ch/de/tardoc/MP.00.0040/",
-      linkB: "https://kodia.ch/de/tardoc/MP.00.0020/",
+      linkA: "https://browser.tartools.ch/de/lkaat/data/K/MP.00.0040",
+      linkB: "https://browser.tartools.ch/de/lkaat/data/K/MP.00.0020",
       minGruppenA: 4,
       gruppen: {
         1: { name: "Allgemeiner Status", min: 4, merkmale: "Allgemeinzustand, Vigilanz, Kooperationsfähigkeit, Hand-/Fussdominanz, Grösse, Gewicht, Blutdruck, Puls, Gefässpulsatilität (A. carotis/temporalis), Gefässauskultation" },
@@ -48,8 +50,8 @@ TB.tardocDaten = {
       positionA: "MP.00.0060", positionB: "MP.00.0050",
       titelA: "Exploration der Hirnnerven A", titelB: "Exploration der Hirnnerven B",
       dauerA: 35, dauerB: 0,
-      linkA: "https://kodia.ch/de/tardoc/MP.00.0060/",
-      linkB: "https://kodia.ch/de/tardoc/MP.00.0050/",
+      linkA: "https://browser.tartools.ch/de/lkaat/data/K/MP.00.0060",
+      linkB: "https://browser.tartools.ch/de/lkaat/data/K/MP.00.0050",
       minGruppenA: 4,
       gruppen: {
         1: { name: "Allgemeiner Status", min: 3, merkmale: "Allgemeinzustand, Vigilanz, Kooperationsfähigkeit, Hand-/Fussdominanz, Grösse, Gewicht, Blutdruck, Puls, Gefässpulsatilität, Gefässauskultation" },

@@ -541,12 +541,46 @@ TB.selbsttest = (function () {
       ok: un.text.indexOf("Lawton und Brody: 8/8 Punkte.") !== -1 &&
           un.text.indexOf(": 3.12 (Cut-off") !== -1,
       detail: "" });
-    faelle.push({ name: "Demenz-Scores als Aufzählung, Lücke vor Amyloid-PET",
+    faelle.push({ name: "Demenz-Scores als ECHTE Liste (4 li), Lücke vor Amyloid-PET",
       ok: un.text.indexOf("\u2022 IQCODE") !== -1 &&
           un.text.indexOf("\u2022 CDR-Skala") !== -1 &&
+          (un.html.match(/<li>/g) || []).length === 4 &&
+          un.html.indexOf("<ul>") !== -1 &&
           un.text.indexOf("xx.\n\nAmyloid-PET") !== -1 &&
-          un.html.indexOf("<p><br></p>") !== -1,
+          un.html.indexOf("<p><br></p>") !== -1 &&
+          un.html.indexOf(")</u>:") !== -1 &&
+          un.html.indexOf(":</u") === -1,
       detail: "" });
+    var medTab = "Aktuelle Medikation\nMedikamentennameWirkstoff\t*\tMo\tMi\tAb\tNa\tEinheit\tAnw.Art\tBemerkung\t\n" +
+      "ALDACTONE Tabl 50 mgSpironolacton 50 mg\t\t1\t\t\t\tStk\tp.o.\t\t\n" +
+      "BISOPROLOL Mepha Tabl 2.5 mg 30 StkBisoprolol fumarat 2.5 mg\t\t\u00bd\t\t\t\tStk\tp.o.\t\t\n" +
+      "TORASEMID Sandoz eco Tabl 10 mgTorasemid 10 mg\t\t1\t\u00bd\t\t\tStk\tp.o.\tPausiert.\t";
+    var zM = TB.ansichtBerichtMc.zerlege("Sozialanamnese\nlebt allein.\n" + medTab);
+    faelle.push({ name: "Medikamente: KISIM-Tabelle wird kompakte Zeile (Stärke, pausiert)",
+      ok: TB.ansichtBerichtMc.medisFormat(zM.abschnitte.medis) ===
+          "Aldactone 50 mg 1-0-0, Bisoprolol 2.5 mg 0.5-0-0, Torasemid 10 mg 1-0.5-0 (pausiert)",
+      detail: TB.ansichtBerichtMc.medisFormat(zM.abschnitte.medis) });
+    var pEeg = TB.ansichtBerichtMc.parseZusatz(
+      "Schlieren, 28. August 2026\nZusatzuntersuchung EEG vom 28.08.2026\n\nBeurteilung \nNormale Grundaktivität. \nFreundliche Grüsse");
+    faelle.push({ name: "Einlesen: EEG-Brief (Datum, Ort, Beurteilung)",
+      ok: !!pEeg && pEeg.ziel === "eeg" && pEeg.datum === "28.08.2026" &&
+          pEeg.ort === "Spital Limmattal" &&
+          pEeg.beurteilung === "Normale Grundaktivität.",
+      detail: JSON.stringify(pEeg) });
+    var pMri = TB.ansichtBerichtMc.parseZusatz(
+      "Study:\nMR HYPOPHYSE\nContent Date/Time: 2026-06-03 14:22\nBeurteilung\n- Kein Adenom.\n- Keine Raumforderung.\n____\nVisum");
+    faelle.push({ name: "Einlesen: Radiologie-Report (MR → MRI-Schädel-Zeile, ISO-Datum)",
+      ok: !!pMri && pMri.ziel === "mri" && pMri.datum === "03.06.2026" &&
+          pMri.beurteilung === "Kein Adenom. Keine Raumforderung.",
+      detail: JSON.stringify(pMri) });
+    var unC = TB.ansichtBerichtMc.bauUntersuchungen(z, [pEeg, pMri]);
+    var iM = unC.text.indexOf("MRI Schädel vom 03.06.2026");
+    var iE = unC.text.indexOf("Standard-EEG vom 28.08.2026");
+    var iF = unC.text.indexOf("FDG-PET vom xx.xx.2026");
+    faelle.push({ name: "Zusatzuntersuchungen chronologisch (MRI Juni vor EEG August, undatiert am Schluss)",
+      ok: iM !== -1 && iE !== -1 && iF !== -1 && iM < iE && iE < iF &&
+          unC.text.indexOf("Kein Adenom. Keine Raumforderung.") !== -1,
+      detail: iM + "/" + iE + "/" + iF });
     var z2 = TB.ansichtBerichtMc.zerlege("Die IADL-Skala ergab einen Scorewert von 8/8. Gemäss diesen Fragebögen wäre sie auf geringe Fremdhilfe angewiesen. Unterstützungsbedarf: Die Einzahlungen erledigt der Ehemann, er traue ihr das Erlernen bei Bedarf zu.\n\nSozialanamnese\nVerheiratet.");
     var un2 = TB.ansichtBerichtMc.bauUntersuchungen(z2);
     faelle.push({ name: "IADL: Unterstützungsbedarf wandert mit",
