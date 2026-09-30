@@ -484,7 +484,8 @@ TB.selbsttest = (function () {
       ok: kr.length === 2 && alleGruppen &&
           kr[0].zeileB.indexOf("bis zu 3") !== -1 &&
           kr[0].zeileA.indexOf("MP.00.0040") !== -1 &&
-          kr[0].linkB.indexOf("kodia.ch/de/tardoc/MP.00.0020") !== -1 &&
+          kr[0].linkB.indexOf("browser.tartools.ch/de/lkaat") !== -1 &&
+          kr[0].linkB.indexOf("MP.00.0020") !== -1 &&
           kr[1].gruppen[9].merkmale.indexOf("Synophrys") !== -1,
       detail: JSON.stringify([kr[0].gruppen.length, kr[1].gruppen.length]) });
     faelle.push({ name: "Teil-Hervorhebung im Fliesstext: Name bleibt normal",
@@ -531,24 +532,26 @@ TB.selbsttest = (function () {
       detail: JSON.stringify(z.scores) });
     var an = TB.ansichtBerichtMc.bauAnamnese(z,
       { geschlecht: "w", erscheinen: "allein", begleitText: "", kompetenz: 1 });
-    faelle.push({ name: "Anamnese-Feld: Überschriften unterstrichen, Lücken als xx",
+    faelle.push({ name: "Anamnese-Feld: Überschriften unterstrichen, fehlende Abschnitte weggelassen, Abstände dazwischen",
       ok: an.html.indexOf("<u>Persönliche Anamnese</u>") !== -1 &&
-          an.html.indexOf("<u>Familienanamnese</u> <i>") !== -1 &&
-          an.text.indexOf("Familienanamnese (übernommen aus neuropsychologischem Vorbericht)\nxx") !== -1,
+          an.html.indexOf("Familienanamnese") === -1 &&
+          (an.html.match(/<p><br><\/p>/g) || []).length >= 3,
       detail: "" });
     var un = TB.ansichtBerichtMc.bauUntersuchungen(z);
     faelle.push({ name: "Untersuchungen-Feld: Scores eingesetzt",
       ok: un.text.indexOf("Lawton und Brody: 8/8 Punkte.") !== -1 &&
           un.text.indexOf(": 3.12 (Cut-off") !== -1,
       detail: "" });
-    faelle.push({ name: "Demenz-Scores als ECHTE Liste (4 li), Lücke vor Amyloid-PET",
+    faelle.push({ name: "Demenz-Scores als ECHTE Liste (4 li); leere Zeilen weggelassen; Befund einzeilig, Ort nicht unterstrichen",
       ok: un.text.indexOf("\u2022 IQCODE") !== -1 &&
           un.text.indexOf("\u2022 CDR-Skala") !== -1 &&
           (un.html.match(/<li>/g) || []).length === 4 &&
           un.html.indexOf("<ul>") !== -1 &&
-          un.text.indexOf("xx.\n\nAmyloid-PET") !== -1 &&
+          un.html.indexOf("Amyloid-PET") === -1 &&
+          un.html.indexOf("FDG-PET") === -1 &&
+          un.html.indexOf("Standard-EEG") === -1 &&
           un.html.indexOf("<p><br></p>") !== -1 &&
-          un.html.indexOf(")</u>:") !== -1 &&
+          un.html.indexOf("</u> (Spital Limmattal und Viollier): Unauffällig") !== -1 &&
           un.html.indexOf(":</u") === -1,
       detail: "" });
     var medTab = "Aktuelle Medikation\nMedikamentennameWirkstoff\t*\tMo\tMi\tAb\tNa\tEinheit\tAnw.Art\tBemerkung\t\n" +
@@ -576,11 +579,29 @@ TB.selbsttest = (function () {
     var unC = TB.ansichtBerichtMc.bauUntersuchungen(z, [pEeg, pMri]);
     var iM = unC.text.indexOf("MRI Schädel vom 03.06.2026");
     var iE = unC.text.indexOf("Standard-EEG vom 28.08.2026");
-    var iF = unC.text.indexOf("FDG-PET vom xx.xx.2026");
-    faelle.push({ name: "Zusatzuntersuchungen chronologisch (MRI Juni vor EEG August, undatiert am Schluss)",
+    var iF = unC.text.indexOf("Lumbalpunktion mit Demenzmarkern vom xx.xx.2026");
+    faelle.push({ name: "Zusatzuntersuchungen chronologisch (MRI Juni vor EEG August, undatierte Vorlage am Schluss)",
       ok: iM !== -1 && iE !== -1 && iF !== -1 && iM < iE && iE < iF &&
-          unC.text.indexOf("Kein Adenom. Keine Raumforderung.") !== -1,
+          unC.text.indexOf("(Spital Limmattal): Kein Adenom. Keine Raumforderung. (in der Eigendurchsicht: xx.)") !== -1,
       detail: iM + "/" + iE + "/" + iF });
+    var probeA = "Neuropsychologische Untersuchung, Bericht vom 22.09.2026\n\nAktuell\nSie sei seit sechs Monaten vergesslich.\n\nFremdanamnese (Gespräch von Frau Muster mit dem Ehemann)\nHerr X berichtet von Veränderungen.\n\nSozialanamnese\nVerheiratet.";
+    var zA = TB.ansichtBerichtMc.zerlege(probeA);
+    var anA = TB.ansichtBerichtMc.bauAnamnese(zA,
+      { geschlecht: "w", erscheinen: "allein", begleitText: "", kompetenz: 1 });
+    faelle.push({ name: "Anamnese vom [Berichtsdatum] + Fremdanamnese ohne Mitarbeiterin",
+      ok: zA.neuroDatum === "22.09.2026" &&
+          anA.html.indexOf("<u>Anamnese vom 22.09.2026</u>") !== -1 &&
+          anA.html.indexOf("Fremdanamnese (Gespräch mit dem Ehemann)") !== -1 &&
+          anA.html.indexOf("Muster") === -1,
+      detail: (zA.neuroDatum || "kein Datum") });
+    var pVio = TB.ansichtBerichtMc.parseZusatz("VIOLLIER\nEntnahmedatum 03.08.2026 09.09.2026\nDemenzmarker\nAmyloid-beta 1-42 274 ng/L\nAmyloid-beta 1-40 2988 ng/L\nAmyloid 42/40 Quotient 0.092\nTau-Protein 155 ng/L\nPhospho-Tau-Protein 17.9 ng/L");
+    var pPkt = TB.ansichtBerichtMc.parseZusatz("PUNKTATE/LIQUOR\nZellzahl (WBC) < 5 1 /µL\nTotalprotein Liquor 150 - 450 271 mg/l");
+    var unL = TB.ansichtBerichtMc.bauUntersuchungen(zA, [pVio, pPkt]);
+    faelle.push({ name: "LP: Viollier-Werte + Punktat füllen die Zeile, Ort bleibt Viollier, A/T/N gelb",
+      ok: !!pVio && pVio.datum === "09.09.2026" && !!pPkt &&
+          unL.text.indexOf("Lumbalpunktion mit Demenzmarkern vom 09.09.2026 (Viollier): Liquor klar, Zellzahl 1 /µl") !== -1 &&
+          unL.text.indexOf("Amyloid-42/40-Quotient: 0.092 (> 0.062), Tau-Protein: 155 ng/l (< 404), Phospho-Tau-Protein: 17.9 ng/l (< 56.5) — A x, T x, N x.") !== -1,
+      detail: JSON.stringify(pVio) });
     var z2 = TB.ansichtBerichtMc.zerlege("Die IADL-Skala ergab einen Scorewert von 8/8. Gemäss diesen Fragebögen wäre sie auf geringe Fremdhilfe angewiesen. Unterstützungsbedarf: Die Einzahlungen erledigt der Ehemann, er traue ihr das Erlernen bei Bedarf zu.\n\nSozialanamnese\nVerheiratet.");
     var un2 = TB.ansichtBerichtMc.bauUntersuchungen(z2);
     faelle.push({ name: "IADL: Unterstützungsbedarf wandert mit",

@@ -58,7 +58,9 @@ TB.berichtMcTexte = {
   zusatzPlatzhalter: "Einen Zusatzuntersuchungs-Bericht einfügen (Strg+V) …",
   zusatzKnopf: "Einlesen",
   zusatzUnbekannt: "Format nicht erkannt — schick mir dieses Beispiel (anonymisiert), ich baue es ein.",
-  zusatzLeer: "Zuerst einen Befundtext in das Zusatz-Feld einfügen."
+  zusatzLeer: "Zuerst einen Befundtext in das Zusatz-Feld einfügen.",
+  anamneseVom: "Anamnese vom",
+  fremdTitel: "Fremdanamnese"
 };
 
 TB.ansichtBerichtMc = (function () {
@@ -87,6 +89,8 @@ TB.ansichtBerichtMc = (function () {
   }
   function zielVon(kopf) {
     var z = kopf.trim().replace(/:\s*$/, "").toLowerCase();
+    if (z === "aktuell") return "aktuell";
+    if (z.indexOf("fremdanamnese") === 0) return "fremd";
     if (z === "sozialanamnese") return "sozial";
     if (z.indexOf("schul-") === 0) return "schule";
     if (z === "familienanamnese") return "familie";
@@ -104,8 +108,13 @@ TB.ansichtBerichtMc = (function () {
       }
       offenZiel = null; sammel = [];
     }
+    var fremdKopf = "";
     zeilen.forEach(function (zeile) {
-      if (istKopf(zeile)) { abschluss(); offenZiel = zielVon(zeile); return; }
+      if (istKopf(zeile)) {
+        abschluss(); offenZiel = zielVon(zeile);
+        if (offenZiel === "fremd" && !fremdKopf) fremdKopf = zeile.trim();
+        return;
+      }
       if (offenZiel) sammel.push(zeile);
     });
     abschluss();
@@ -128,6 +137,16 @@ TB.ansichtBerichtMc = (function () {
     // Sammelrunde 27.9.: Der Unterstützungsbedarf aus dem IADL-Absatz
     // wandert mit in die Demenz-Scores (bis zum Absatzende).
     var stuetz = alles.match(/Unterstützungsbedarf:\s*([\s\S]*?)(?=\n\s*\n|$)/);
+    // Datum des neuropsychologischen Berichts (29.9.): nur im KOPF des
+    // Vorberichts suchen (erste 8 Zeilen), damit alte Fremd-Daten aus dem
+    // Anamnesetext ("Untersuchung vom 05.05.2025") nicht greifen. Nicht
+    // gefunden = gelb, das ist so gewollt.
+    var neuroDatum = null;
+    zeilen.slice(0, 8).some(function (zl) {
+      var m = /(untersuchung|datum|bericht)[^\d]{0,30}(\d{2}\.\d{2}\.\d{4})/i.exec(zl);
+      if (m) { neuroDatum = m[2]; return true; }
+      return false;
+    });
     var TXW = TX();
     var fehlend = [];
     [["sozial", TXW.ueberschriftSozial], ["schule", TXW.ueberschriftSchule],
@@ -140,7 +159,8 @@ TB.ansichtBerichtMc = (function () {
              geschlecht: weiblich >= maennlich ? "w" : "m",
              begleitung: begleit ? begleit[1].trim() : "",
              unterstuetzung: stuetz
-               ? stuetz[1].replace(/\s+/g, " ").trim() : "" };
+               ? stuetz[1].replace(/\s+/g, " ").trim() : "",
+             fremdKopf: fremdKopf, neuroDatum: neuroDatum };
   }
 
   // ---- Aus den Teilen die KISIM-Feldinhalte bauen ---------------------
@@ -254,6 +274,41 @@ TB.ansichtBerichtMc = (function () {
   }
   function parseZusatz(text) {
     var t = String(text || "").replace(/\r\n?/g, "\n");
+    // Viollier-Demenzmarker (29.9.): Werte fuer die LP-Zeile; A/T/N
+    // bleibt IMMER gelb (aerztliche Wertung).
+    if (/Amyloid.?beta\s*1.42/i.test(t)) {
+      var w = {};
+      var m;
+      if ((m = t.match(/Amyloid.?beta\s*1.42\D{0,20}?(\d+)/i))) w.ab42 = m[1];
+      if ((m = t.match(/Amyloid.?beta\s*1.40\D{0,20}?(\d+)/i))) w.ab40 = m[1];
+      if ((m = t.match(/42\/40\s*Quotient\D{0,20}?(0[.,]\d+)/i)))
+        w.quotient = m[1].replace(",", ".");
+      if ((m = t.match(/(?:^|[^o-])Tau.Protein\D{0,20}?(\d+(?:[.,]\d+)?)/i)))
+        w.tau = m[1].replace(",", ".");
+      if ((m = t.match(/Phospho.Tau.Protein\D{0,20}?(\d+(?:[.,]\d+)?)/i)))
+        w.ptau = m[1].replace(",", ".");
+      var datumLp = "";
+      var ez = t.match(/Entnahmedatum([^\n]*)/i);
+      if (ez) {
+        var alle = ez[1].match(/\d{2}\.\d{2}\.\d{4}/g);
+        if (alle) datumLp = alle[alle.length - 1];
+      }
+      if (!Object.keys(w).length) return null;
+      return { ziel: "lp", name: "Lumbalpunktion mit Demenzmarkern",
+               datum: datumLp, ort: "Viollier", werte: w };
+    }
+    // Hausinternes LP-Punktat als Klebetext (29.9.).
+    if (/PUNKTATE\/LIQUOR|Zellzahl\s*\(WBC\)/i.test(t)) {
+      var w2 = {};
+      var m2;
+      if ((m2 = t.match(/Zellzahl\s*\(WBC\)\s*<\s*5\s*(\d+(?:[.,]\d+)?)/i)))
+        w2.zellzahl = m2[1].replace(",", ".");
+      if ((m2 = t.match(/Totalprotein\s*Liquor\s*150\s*-\s*450\s*(\d+(?:[.,]\d+)?)/i)))
+        w2.protein = m2[1].replace(",", ".");
+      if (!Object.keys(w2).length) return null;
+      return { ziel: "lp", name: "Lumbalpunktion mit Demenzmarkern",
+               datum: "", ort: "Spital Limmattal", werte: w2 };
+    }
     var beu = t.match(/\nBeurteilung[ \t]*:?[ \t]*\n([\s\S]*?)(?=\n_{4,}|\n\s*Visum|\n\s*Freundliche|$)/);
     if (!beu) return null;
     var inhalt = beu[1].split("\n").map(function (z) {
@@ -289,27 +344,59 @@ TB.ansichtBerichtMc = (function () {
         : wahl.kompetenz === 2
           ? "nur partiell gegeben, sodass relevante Aspekte mit den Angehörigen erfolgt sind."
           : "vollumfänglich gegeben.");
-    var html = ["<p>" + schuetze(satz1) + " " + schuetze(satz2) + "</p>",
-                "<p>" + schuetze(TXW.vorlageSatz) + "</p>"];
-    var text = [satz1 + " " + satz2, "", TXW.vorlageSatz, ""];
+    // Seit 15.15 (Naed 29.9.): Leerzeile zwischen den Abschnitten (bei
+    // Strg+V in KISIM fehlten die Abstaende), "Aktuell" wird zu
+    // "Anamnese vom [Berichtsdatum]", die Fremdanamnese kommt mit
+    // (Klammerinhalt ohne die Mitarbeiterin) mit, und Abschnitte, die im
+    // Vorbericht fehlen, werden ganz weggelassen statt gelb gefuellt.
+    var html = ["<p>" + schuetze(satz1) + " " + schuetze(satz2) + "</p>"];
+    var text = [satz1 + " " + satz2];
+    function abstand() { html.push("<p><br></p>"); text.push(""); }
+    abstand();
+    html.push("<p>" + schuetze(TXW.vorlageSatz) + "</p>");
+    text.push(TXW.vorlageSatz);
+    function block(titelH, titelT, inhaltHtml, inhaltText) {
+      abstand();
+      html.push("<p>" + titelH + " <i>" + schuetze(TXW.uebernommen) +
+        "</i><br>" + inhaltHtml + "</p>");
+      text.push(titelT + " " + TXW.uebernommen, inhaltText);
+    }
+    if (z.abschnitte.aktuell) {
+      var ndH = z.neuroDatum ? schuetze(z.neuroDatum) : gelbH("xx.xx.2026");
+      var ndT = z.neuroDatum || "xx.xx.2026";
+      block("<u>" + schuetze(TXW.anamneseVom) + " " + ndH + "</u>",
+        TXW.anamneseVom + " " + ndT,
+        absatzHtml(z.abschnitte.aktuell), z.abschnitte.aktuell);
+    }
+    if (z.abschnitte.fremd) {
+      var klammer = /\(([^)]*)\)/.exec(z.fremdKopf || "");
+      var innen = klammer ? klammer[1] : "";
+      // Die Mitarbeiterin faellt raus: "Gespraech von Frau X mit dem
+      // Ehemann" wird zu "Gespraech mit dem Ehemann".
+      innen = innen.replace(/Gespräch\s+von\s+(?:Frau|Herrn?)\s+\S+\s+(?:\S+\s+)?mit/i,
+        "Gespräch mit").trim();
+      var ft = TXW.fremdTitel + (innen ? " (" + innen + ")" : "");
+      block("<u>" + schuetze(ft) + "</u>", ft,
+        absatzHtml(z.abschnitte.fremd), z.abschnitte.fremd);
+    }
     [[TXW.ueberschriftSozial, "sozial"], [TXW.ueberschriftSchule, "schule"],
      [TXW.ueberschriftFamilie, "familie"],
      [TXW.ueberschriftPersoenlich, "persoenlich"],
      [TXW.ueberschriftSystem, "system"], [TXW.ueberschriftMedis, "medis"]
     ].forEach(function (paar) {
       var roh = z.abschnitte[paar[1]] || "";
+      if (!roh) return;
       var inhaltHtml, inhaltText;
       if (paar[1] === "medis") {
         var fm = medisFormat(roh);
-        inhaltText = fm || roh || "xx";
-        inhaltHtml = fm ? schuetze(fm) : (roh ? absatzHtml(roh) : gelbH("xx"));
+        inhaltText = fm || roh;
+        inhaltHtml = fm ? schuetze(fm) : absatzHtml(roh);
       } else {
-        inhaltText = roh || "xx";
-        inhaltHtml = roh ? absatzHtml(roh) : gelbH("xx");
+        inhaltText = roh;
+        inhaltHtml = absatzHtml(roh);
       }
-      html.push("<p><u>" + schuetze(paar[0]) + "</u> <i>" +
-        schuetze(TXW.uebernommen) + "</i><br>" + inhaltHtml + "</p>");
-      text.push(paar[0] + " " + TXW.uebernommen, inhaltText, "");
+      block("<u>" + schuetze(paar[0]) + "</u>", paar[0],
+        inhaltHtml, inhaltText);
     });
     return { html: html.join(""), text: text.join("\n").trim() };
   }
@@ -339,12 +426,18 @@ TB.ansichtBerichtMc = (function () {
     // danach chronologische Ordnung (Scores fix zuerst, undatierte am
     // Schluss in Gerüst-Reihenfolge). Demenzlabor NEU ohne Homocystein
     // ("nehmen wir nicht ab", Näd 28.9.); Laborwerte füllt Näd selbst.
+    // Seit 15.15 (Naed 29.9.): Demenzlabor und Lumbalpunktion stehen
+    // IMMER als Vorlage da (Naed traegt die Werte von Hand ein, Labor-
+    // Einlesen kommt spaeter); alle anderen Zeilen erscheinen NUR, wenn
+    // ein eingelesener Zusatzbefund sie fuellt.
     var geruest = [
       { id: "mri", titel: "MRI Schädel", ort: "Spital Limmattal", eigen: true },
       { id: "labor", titel: "Demenzlabor", ort: "Spital Limmattal und Viollier",
+        pflicht: true,
         inhalt: "Unauffällig (Hämatologie, Elektrolyte, Nieren- und Leberwerte, Glukose, HbA1c, Lipide, INR, CRP, TSH, Vitamin B12, Folsäure, BSR, Treponema pallidum)." },
       { id: "eeg", titel: "Standard-EEG", ort: "Spital Limmattal" },
       { id: "lp", titel: "Lumbalpunktion mit Demenzmarkern", ort: "Viollier",
+        pflicht: true, werte: {},
         inhalt: "Liquor klar, Zellzahl x /µl (Norm < 5 /µl), Totalprotein x mg/l (Norm 150-450 mg/l), Amyloid-beta 1-42: xx ng/l (> 599), Amyloid-beta 1-40: xx ng/l, Amyloid-42/40-Quotient: xx (> 0.062), Tau-Protein: xx ng/l (< 404), Phospho-Tau-Protein: xx ng/l (< 56.5) — A x, T x, N x." },
       { id: "apo", titel: "Apolipoprotein-Bestimmung", ort: "Viollier",
         inhalt: "Ex/Ex." },
@@ -358,8 +451,14 @@ TB.ansichtBerichtMc = (function () {
         return false;
       });
       if (ziel) {
-        ziel.datum = zu.datum; ziel.beurteilung = zu.beurteilung;
-        if (zu.ort) ziel.ort = zu.ort;
+        if (zu.datum) ziel.datum = zu.datum;
+        if (zu.beurteilung) ziel.beurteilung = zu.beurteilung;
+        if (zu.ort && ziel.id !== "lp") ziel.ort = zu.ort;
+        if (zu.werte && ziel.werte) {
+          Object.keys(zu.werte).forEach(function (k) {
+            ziel.werte[k] = zu.werte[k];
+          });
+        }
       } else {
         geruest.push({ id: "eigen" + geruest.length, titel: zu.name,
           ort: zu.ort, datum: zu.datum, beurteilung: zu.beurteilung });
@@ -379,37 +478,60 @@ TB.ansichtBerichtMc = (function () {
       }).map(function (p) { return p[0]; });
     var html = [], text = [];
     function leer() { html.push("<p><br></p>"); text.push(""); }
-    function titelzeile(titel, datum, ort) {
+    // Naeds Format fuer ALLE internen Befunde (29.9.): Titel und Datum
+    // unterstrichen, der Ort in Klammern NICHT, Doppelpunkt, und die
+    // Beurteilung UNMITTELBAR auf derselben Zeile.
+    function kopfteile(titel, datum, ort) {
       var dH = datum ? schuetze(datum) : gelbH("xx.xx.2026");
       var dT = datum || "xx.xx.2026";
       var oH = ort ? schuetze(ort) : gelbH("xx");
       var oT = ort || "xx";
-      html.push("<p><u>" + schuetze(titel) + " vom " + dH + " (" + oH +
-        ")</u>:</p>");
-      text.push(titel + " vom " + dT + " (" + oT + "):");
+      return { h: "<u>" + schuetze(titel) + " vom " + dH + "</u> (" + oH + "):",
+               t: titel + " vom " + dT + " (" + oT + "):" };
     }
-    titelzeile("Demenz-Scores", null, "Spital Limmattal");
+    var sk = kopfteile("Demenz-Scores", z.neuroDatum, "Spital Limmattal");
+    html.push("<p>" + sk.h + "</p>");
+    text.push(sk.t);
     html.push("<ul>" + lis.map(function (l) {
       return "<li>" + l.h + "</li>"; }).join("") + "</ul>");
     lis.forEach(function (l) { text.push("\u2022 " + l.t); });
     sortiert.forEach(function (a) {
+      var hatWerte = a.werte && Object.keys(a.werte).length > 0;
+      if (!a.pflicht && !a.beurteilung && !a.datum && !hatWerte) return;
       leer();
-      titelzeile(a.titel, a.datum, a.ort);
-      if (a.beurteilung) {
-        html.push("<p>" + absatzHtml(a.beurteilung) + "</p>");
-        text.push(a.beurteilung);
-      } else if (a.inhalt) {
-        html.push("<p>" + schuetze(a.inhalt) + "</p>");
-        text.push(a.inhalt);
-      } else {
-        html.push("<p>" + gelbH("xx.") + "</p>");
-        text.push("xx.");
+      var k = kopfteile(a.titel, a.datum, a.ort);
+      var iH, iT;
+      if (a.id === "lp" && !a.beurteilung) {
+        function lw(k, ersatz) {
+          var v = a.werte ? a.werte[k] : null;
+          return { h: v ? schuetze(v) : gelbH(ersatz), t: v || ersatz };
+        }
+        var zz = lw("zellzahl", "x"), tp = lw("protein", "x"),
+            a42 = lw("ab42", "xx"), a40 = lw("ab40", "xx"),
+            qo = lw("quotient", "xx"), ta = lw("tau", "xx"),
+            pt = lw("ptau", "xx");
+        iH = "Liquor klar, Zellzahl " + zz.h + " /µl (Norm < 5 /µl), Totalprotein " +
+          tp.h + " mg/l (Norm 150-450 mg/l), Amyloid-beta 1-42: " + a42.h +
+          " ng/l (> 599), Amyloid-beta 1-40: " + a40.h +
+          " ng/l, Amyloid-42/40-Quotient: " + qo.h + " (> 0.062), Tau-Protein: " +
+          ta.h + " ng/l (< 404), Phospho-Tau-Protein: " + pt.h +
+          " ng/l (< 56.5) — A " + gelbH("x") + ", T " + gelbH("x") + ", N " + gelbH("x") + ".";
+        iT = "Liquor klar, Zellzahl " + zz.t + " /µl (Norm < 5 /µl), Totalprotein " +
+          tp.t + " mg/l (Norm 150-450 mg/l), Amyloid-beta 1-42: " + a42.t +
+          " ng/l (> 599), Amyloid-beta 1-40: " + a40.t +
+          " ng/l, Amyloid-42/40-Quotient: " + qo.t + " (> 0.062), Tau-Protein: " +
+          ta.t + " ng/l (< 404), Phospho-Tau-Protein: " + pt.t +
+          " ng/l (< 56.5) — A x, T x, N x.";
       }
+      else if (a.beurteilung) { iH = absatzHtml(a.beurteilung); iT = a.beurteilung; }
+      else if (a.inhalt) { iH = schuetze(a.inhalt); iT = a.inhalt; }
+      else { iH = gelbH("xx."); iT = "xx."; }
       if (a.eigen) {
-        html.push("<p><i>(In der Eigendurchsicht: " + gelbH("xx") +
-          ".)</i></p>");
-        text.push("(In der Eigendurchsicht: xx.)");
+        iH += " <i>(in der Eigendurchsicht: " + gelbH("xx") + ".)</i>";
+        iT += " (in der Eigendurchsicht: xx.)";
       }
+      html.push("<p>" + k.h + " " + iH + "</p>");
+      text.push(k.t + " " + iT);
     });
     return { html: html.join(""), text: text.join("\n") };
   }
