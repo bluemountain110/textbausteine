@@ -125,7 +125,13 @@ TB.hilfe = (function () {
         ["Wo sie nicht wirkt",
          "Nur in Chrome: Im Outlook-Programm, in Word oder KISIM kann sie nicht tippen — dort gilt am Spital das Windows-Hilfsprogramm, in der Praxis das App-Fenster mit Strg+V (das Hilfsprogramm lässt der dortige Windows-Schutz „Smart App Control“ nicht zu). Kommt ein Baustein in einem exotischen Feld nicht an, legt sie ihn in die Zwischenablage und sagt es: dann Strg+V. Bearbeitet werden Bausteine nur in der App; die Erweiterung schreibt nie in Deine Bausteine, sie zählt nur die Statistik."],
         ["Zwei Fassungen",
-         "Wie die App: die DEV-Fassung (rotes Symbol, Testwelt) gehört nur auf den Mac, die normale (blaugrünes Symbol) in die Praxis. Sind beide auf derselben Seite aktiv, schweigt die DEV-Fassung."]
+         "Wie die App: die DEV-Fassung (rotes Symbol, Testwelt) gehört nur auf den Mac, die normale (blaugrünes Symbol) in die Praxis. Sind beide auf derselben Seite aktiv, schweigt die DEV-Fassung."],
+        ["MRI-Anmeldung (nur Praxis)",
+         "Das ausgefüllte Anmeldeformular in Axenita markieren (Strg+A) und kopieren (Strg+C), dann ;;mri in einem Feld tippen oder im Symbol-Fenster der Erweiterung „MRI-Anmeldung“ klicken. Erkannt werden Medizinisch Radiologisches Institut, RNR, Hirslanden und RIMED; das Menü zeigt nur die Adressen des erkannten Formulars, das passende ist vorgewählt (RIMED: Altstetten). Herr oder Frau wählst Du immer selbst. Der Knopf öffnet die fertige Mail im klassischen Outlook mit Signatur; das PDF ziehst Du hinein, gesendet wird von Hand."],
+        ["Patienten-Kette für die Excel-Liste (nur Praxis)",
+         "In Axenita die Patienteninformation markieren und kopieren, dann in irgendein Feld ;;pat tippen: Die Zeile „Name, Geburtsdatum, Strasse, PLZ Ort“ liegt danach in der Zwischenablage — ins Feld wird nichts geschrieben. In der Patientenliste mit Strg+V einsetzen."],
+        ["Nach einem Update der Erweiterung",
+         "Nach dem Aktualisieren-Pfeil in chrome://extensions die offenen Axenita-Reiter mit F5 neu laden — sonst arbeitet dort noch die alte Fassung."]
       ]],
       ["Kürzel in Windows-Programmen — das kleine Hilfsprogramm", [
         ["Was es ist",
@@ -187,6 +193,36 @@ TB.hilfe = (function () {
         ["Wenn Du nicht weiterkommst",
          "Komplexe Masken sind Bau-Arbeit — auch die grossen kommerziellen Programme lösen das mit denselben Marken und Fenstern. Du musst sie nicht selbst bauen können: Beschreibe im Bau-Chat, was der Bericht können soll, und lass Dir die Maske bauen; ändern kannst Du danach jederzeit Sätze über die Kärtchen. Ein Frage-Assistent, der neue Masken aus Antworten zusammenbaut, steht im Ideen-Speicher."]
       ]],
+      ["Das Status-Werk — der Neurostatus aus einem Gesamtkatalog", [
+        ["Die Idee",
+         "Im Hintergrund liegt EIN Gesamtstatus mit allen Untersuchungen, je mit Normalbefund, nach Kategorien geordnet (Allgemein, Stand und Gang, Kopf und Hirnnerven …). Deine einzelnen Status (CTS, Parkinson, Stroke …) sind Auswahlen daraus: Ein Klick auf den Status-Knopf oben kreuzt seine Untersuchungen an. Rechts entsteht laufend der fertige Fliesstext, nach Kategorien gegliedert, mit „Kopieren“ für KISIM, Axenita oder Word."],
+        ["Einen Status benutzen",
+         "Bereich „Status“ öffnen, oben einen oder mehrere Status anklicken. Die Ansicht zeigt dann nur noch die gewählten Untersuchungen und die Zusätze (Knopf „Nur Gewählte und Zusätze“ — ausschalten zeigt wieder alles). Weitere Untersuchungen kreuzt Du einfach an; häufige stehen offen da, seltene klappst Du je Kategorie mit „weitere …“ auf; das Suchfeld findet jede Untersuchung sofort."],
+        ["Pathologisches überschreiben",
+         "Ein Klick auf den Befundtext einer Untersuchung öffnet ihn zum Bearbeiten. Was Du änderst, erscheint im fertigen Text FETT und dunkelgrau — nur der veränderte Teil, damit Pathologisches sofort ins Auge springt. Der kleine Pfeil ↺ stellt den Normalbefund wieder her. Bei der Einzelkraftprüfung klappt „Muskeln (x/y)“ die einzelnen Muskeln auf; „alle abwählen“ und dann nur die geprüften anhaken — der Text nennt nur die gewählten."],
+        ["Eigene Status speichern — mit Zusätzen",
+         "Hast Du eine Auswahl beisammen, sichert „Als eigenen Status speichern“ sie unter einem Namen (gleicher Name ersetzt den alten). ZUSÄTZE: Mit dem Stern ☆ rechts merkst Du Untersuchungen vor, die Du bei diesem Status MANCHMAL machst — sie werden gelb und erscheinen beim nächsten Laden des Status sichtbar, aber NICHT angekreuzt, damit Du sie nicht suchen musst. Dasselbe gibt es in der Muskelliste: Ein Stern bei einem Muskel zeigt ihn beim Laden gelb und nicht angehakt, und die Liste steht dann gleich offen."],
+        ["Die Tardoc-Anzeige",
+         "Oben zeigt die Ampel laufend, ob Deine Auswahl für Neurostatus A oder B und Hirnnervenstatus A oder B reicht (A = mindestens vier erfüllte Gruppen), und nennt, was für A am nächsten fehlt. Gezählt werden Gruppen nach TARDOC — ob die Exploration als eigenständige Leistung erbracht wurde, beurteilst Du. „Tardoc-Kriterien nachlesen“ zeigt alle Gruppen mit ihren Merkmalen; jeder Positions-Titel führt direkt zur Position im LKAAT-Browser."],
+        ["Den Gesamtkatalog pflegen",
+         "„Status-Pflege“ oben rechts: Untersuchungen ändern (Name, Normalbefund, häufig/selten), neue anlegen, Kategorien umbenennen und ordnen. Verschieben geht mit der Maus: Zeile am Griff ⠇ packen und dort loslassen, wo sie hin soll — auch in eine andere Kategorie (die blaue Linie zeigt die Stelle). Die Pfeile gehen weiterhin. „Status als Datei sichern“ legt den ganzen Katalog samt Deinen Status als Datei ab — so bringst Du Änderungswünsche in den Bau-Chat."]
+      ]],
+      ["Bericht Memory Clinic — der KISIM-Bericht aus dem Vorbericht", [
+        ["Was er tut",
+         "Er übernimmt aus dem neuropsychologischen Vorbericht die Anamnese-Abschnitte und die Demenz-Scores (IQCODE, IADL, CDR) und baut daraus die Felder Anamnese und Untersuchungen des KISIM-Berichts — mit Leerzeilen, Unterstreichungen und der Medikamentenliste als Fliesstext („Name Stärke x-x-x“). Was die App nicht findet, steht gelb markiert da."],
+        ["Am Spital in KISIM (der Hauptweg)",
+         "Im KISIM-Bericht ins erste Feld klicken, ;;bermc und Leertaste. Im Fenster den Vorbericht einfügen, Anrede und Begleitung prüfen, die Zusatzbefunde einlesen (siehe unten) und „Ganzen KISIM-Bericht ausfüllen“ drücken: Das Skript ersetzt das erste Feld durch den Dank-Satz, springt mit Strg+Tab ins Anamnese-Feld, füllt es, springt weiter zu den Untersuchungen und füllt auch diese."],
+        ["Zusatzbefunde einlesen",
+         "Ins Feld „Zusatzbefunde“ kommt, was Du hast: ein EEG-Brief, ein Radiologie-Bericht (auch der „Radiology Report“), die Viollier-Demenzmarker, das LP-Punktat — oder gleich der GANZE übernommene Untersuchungsblock aus KISIM auf einmal. Jeder Befund wird zu einer Zeile „Name vom Datum (Ort): Befund“, unterstrichen bis und mit der Klammer, nach Datum geordnet (ältestes zuoberst). „Zusatzuntersuchung“ und „Neurologie“ fallen weg, das EEG heisst Standard-EEG, Striche verschwinden, echte Aufzählungspunkte bleiben, eine Unterschrift wird abgeschnitten. Jedes MR Schädel bekommt „(in der Eigendurchsicht: xx.)“."],
+        ["Was immer und was nur bei Bedarf erscheint",
+         "Immer: die Demenz-Scores (mit dem Datum der Neuropsychologie — nie das Geburtsdatum; findet die App keines, steht es gelb) und das Demenzlabor als Vorlage. Alles andere, auch die Lumbalpunktion, erscheint nur, wenn Du es eingelesen hast. A, T und N der Lumbalpunktion bleiben immer gelb — das ist Deine ärztliche Wertung."],
+        ["Über die App statt das Skript",
+         "Derselbe Bericht geht auch in der App (Bereich „Bericht MC“): einlesen, „Kopieren“, in KISIM Strg+V. Das funktioniert nur direkt am Spital-Rechner, nicht über die Fernsitzung vom Mac (deren Zwischenablage trägt nur reinen Text). Auf diesem Weg ist die Einrückung der Score-Liste noch nicht perfekt — der Weg über ;;bermc ist der vollständige."]
+      ]],
+      ["Die Bausteine-Übersicht", [
+        ["Spickzettel und Inventar",
+         "Bereich „Übersicht“: alle fertigen Bausteine als Liste, sortierbar nach Kategorie, Titel, Kürzel oder „zuletzt benutzt“, mit der ersten Textzeile — und als PDF ausgebbar, zum Ausdrucken neben KISIM oder zum Aufräumen."]
+      ]],
       ["Tastatur und Bedienung", [
         ["Tastenkürzel in der App",
          "Strg+F (⌘F) springt ins Suchfeld, Strg+N (⌘N) öffnet „Neu“, Esc schliesst jedes Fenster ohne zu speichern, die Eingabetaste übernimmt. Wichtig: Diese Kürzel wirken nur, solange das App-Fenster vorne ist — die ;;kürzel auf Webseiten kommen von der Chrome-Erweiterung, die windowsweiten von Etappe 4."],
@@ -199,7 +235,7 @@ TB.hilfe = (function () {
       ]],
       ["Was noch kommt", [
         ["Die nächsten Etappen",
-         "Die Masken sind da — als Nächstes kommt das Status-Werk: ein hinterlegter Gesamtstatus, aus dem einzelne Stati (CTS, Parkinson, Stroke …) als vorangekreuzte Teilmengen entstehen, mit überschreibbaren Normalbefunden (Überschriebenes erscheint fett) und einer Anzeige, ob die Auswahl die Tardoc-Kriterien für Neurostatus A oder B und Hirnnervenstatus A oder B erfüllt. Danach: Diagnoselisten (hineinkopieren, ordnen, einheitlich formatiert ausgeben), die Medikamenteneingabe für Praxis und Spital, EEG-, ENMG- und SEP-Berichte, die Formular-Abläufe und die Kürzel auf dem Mac. Kleinere Runden dazwischen: eine sortierbare Übersicht aller Bausteine mit PDF-Ausgabe, eine Statistik mit mehr Aussagekraft, eine Gestaltungsrunde."],
+         "Das Status-Werk und der Bericht Memory Clinic sind da. Als Nächstes überarbeitest Du Deine einzelnen Status (mit Zusätzen), dann folgen der EEG-Befund und die ENMG-Berichte (mehrstufig, mit Normwerten nach Alter und Geschlecht). Danach je nach Wunsch: Medikamenteneingabe für Praxis und Spital, Diagnoselisten, SEP-Befund, Formular-Abläufe, KI-Gegenlesen, die Kürzel auf dem Mac, die iPhone-Darstellung und eine Statistik mit mehr Aussagekraft."],
         ["Was noch nicht bewiesen ist",
          "Ob das Diktat die Marken anspringt, und ob die Zählung der Erweiterung in der Statistik der App als eigenes Gerät auftaucht. Beides zeigt sich erst im Alltag."]
       ]]
