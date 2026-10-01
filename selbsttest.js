@@ -463,9 +463,45 @@ TB.selbsttest = (function () {
     var migriert = TB.status.migriereMerkmale(altKatalog);
     faelle.push({ name: "Alter Katalog: Einzelmuskeln und neuer Text nachgezogen",
       ok: migriert === true &&
-          altKatalog.untersuchungen[0].merkmale.length === 18 &&
+          altKatalog.untersuchungen[0].merkmale.length === uk.merkmale.length &&
           altKatalog.untersuchungen[0].normal === uk.normal,
       detail: altKatalog.untersuchungen[0].normal.slice(0, 60) });
+    // ---- Sammelrunde 15.16: Näds Katalog-Wünsche und Tardoc-Prüfung ----
+    var ids16 = {}; m.untersuchungen.forEach(function (x) { ids16[x.id] = x; });
+    faelle.push({ name: "Katalog 30.9.: Aufteilungen da (Weber/Rinne, Würgereflex, Lasègue, Kernig/Brudzinski, Proximale Prüfung, FNV, Sprache)",
+      ok: !!(ids16.weber && ids16.rinne && ids16.wuergreflex && ids16.lasegueumgekehrt &&
+             ids16.brudzinski && ids16.aufstehenhocke && ids16.einbeinhuepfen &&
+             ids16.trendelenburg && ids16.ffv && ids16.fnfv && ids16.nachsprechen &&
+             ids16.aufforderungen && ids16.mer) &&
+          !ids16.weberrinne && !ids16.proximal && !ids16.merarme && !ids16.merbeine &&
+          ids16.aufstehenhocke.kategorie === "gang" &&
+          ids16.mer.normal.indexOf("BSR") < ids16.mer.normal.indexOf("PSR"),
+      detail: "" });
+    faelle.push({ name: "Kraftprüfung: Kleinfingeropposition am Schluss; Zehen II–V und Zehenflexion vor Eversion/Inversion",
+      ok: ids16.kraftarme.merkmale[ids16.kraftarme.merkmale.length - 1].name === "Kleinfingeropposition" &&
+          ids16.kraftbeine.merkmale.map(function (x) { return x.id; }).slice(-5).join(",") === "gzheb,zehheb,zehflex,eversion,inversion",
+      detail: ids16.kraftbeine.merkmale.map(function (x) { return x.id; }).join(",") });
+    var tdB = TB.status.tardoc(m, { mer: true, babinski: true, kloni: true });
+    faelle.push({ name: "Tardoc: Babinski/Kloni zählen nicht als zweites Reflex-Merkmal",
+      ok: tdB.neuro.gruppen[2].ist === 1 && !tdB.neuro.gruppen[2].erfuellt,
+      detail: JSON.stringify(tdB.neuro.gruppen[2]) });
+    var tdR = TB.status.tardoc(m, { belastungstest: true });
+    faelle.push({ name: "Tardoc: eine Muskelausdauerbelastung erfüllt den Muskelstatus allein",
+      ok: tdR.neuro.gruppen[3].erfuellt === true, detail: JSON.stringify(tdR.neuro.gruppen[3]) });
+    var tdH = TB.status.tardoc(m, { groessegewicht: true, blutdruckpuls: true });
+    faelle.push({ name: "Tardoc: Grösse/Gewicht und Blutdruck/Puls zählen auch beim Hirnnerven-Allgemeinstatus",
+      ok: tdH.hirn.gruppen[0].erfuellt === true, detail: JSON.stringify(tdH.hirn.gruppen[0]) });
+    var tdS = TB.status.tardoc(m, { schnauzreflex: true, palmomental: true });
+    faelle.push({ name: "Tardoc: Schnauzreflex nur bei den Hirnnerven, nicht bei Neuro-Primitivreflexen",
+      ok: tdS.neuro.gruppen[11].ist === 1, detail: JSON.stringify(tdS.neuro.gruppen[11]) });
+    var tmTest = [{ id: "x", name: "x", punkte: ["weberrinne", "merarme", "merbeine", "az"],
+                    merkmalAb: { weberrinne: ["a"] } }];
+    var um = TB.status.umschluessle(tmTest);
+    faelle.push({ name: "Umstellung: eigene Status zeigen danach auf die aufgeteilten Untersuchungen",
+      ok: um === true && tmTest[0].punkte.join(",") === "weber,rinne,mer,az" && !tmTest[0].merkmalAb.weberrinne,
+      detail: tmTest[0].punkte.join(",") });
+    faelle.push({ name: "Grundausstattung trägt die Katalog-Kennung (Umstellung greift nur einmal)",
+      ok: m.stand === TB.statusGrundlage.KATALOG_STAND, detail: String(m.stand) });
     var ohneNeue = TB.statusGrundlage.master();
     ohneNeue.untersuchungen = ohneNeue.untersuchungen.filter(function (x) {
       return x.id !== "uhrentest" && x.id !== "affekt"; });
@@ -484,7 +520,7 @@ TB.selbsttest = (function () {
       ok: kr.length === 2 && alleGruppen &&
           kr[0].zeileB.indexOf("bis zu 3") !== -1 &&
           kr[0].zeileA.indexOf("MP.00.0040") !== -1 &&
-          kr[0].linkB.indexOf("browser.tartools.ch/de/lkaat") !== -1 &&
+          kr[0].linkB.indexOf("browser.tartools.ch/de/lkaat/data/L/MP.00.0020") !== -1 &&
           kr[0].linkB.indexOf("MP.00.0020") !== -1 &&
           kr[1].gruppen[9].merkmale.indexOf("Synophrys") !== -1,
       detail: JSON.stringify([kr[0].gruppen.length, kr[1].gruppen.length]) });
@@ -542,7 +578,7 @@ TB.selbsttest = (function () {
       ok: un.text.indexOf("Lawton und Brody: 8/8 Punkte.") !== -1 &&
           un.text.indexOf(": 3.12 (Cut-off") !== -1,
       detail: "" });
-    faelle.push({ name: "Demenz-Scores als ECHTE Liste (4 li); leere Zeilen weggelassen; Befund einzeilig, Ort nicht unterstrichen",
+    faelle.push({ name: "Demenz-Scores als ECHTE Liste (4 li); leere Zeilen und LP weggelassen; unterstrichen bis und mit Ort-Klammer",
       ok: un.text.indexOf("\u2022 IQCODE") !== -1 &&
           un.text.indexOf("\u2022 CDR-Skala") !== -1 &&
           (un.html.match(/<li>/g) || []).length === 4 &&
@@ -551,7 +587,8 @@ TB.selbsttest = (function () {
           un.html.indexOf("FDG-PET") === -1 &&
           un.html.indexOf("Standard-EEG") === -1 &&
           un.html.indexOf("<p><br></p>") !== -1 &&
-          un.html.indexOf("</u> (Spital Limmattal und Viollier): Unauffällig") !== -1 &&
+          un.html.indexOf(" (Spital Limmattal und Viollier)</u>: Unauffällig") !== -1 &&
+          un.html.indexOf("Lumbalpunktion") === -1 &&
           un.html.indexOf(":</u") === -1,
       detail: "" });
     var medTab = "Aktuelle Medikation\nMedikamentennameWirkstoff\t*\tMo\tMi\tAb\tNa\tEinheit\tAnw.Art\tBemerkung\t\n" +
@@ -577,10 +614,10 @@ TB.selbsttest = (function () {
           pMri.beurteilung === "Kein Adenom. Keine Raumforderung.",
       detail: JSON.stringify(pMri) });
     var unC = TB.ansichtBerichtMc.bauUntersuchungen(z, [pEeg, pMri]);
-    var iM = unC.text.indexOf("MRI Schädel vom 03.06.2026");
+    var iM = unC.text.indexOf("MR HYPOPHYSE vom 03.06.2026");
     var iE = unC.text.indexOf("Standard-EEG vom 28.08.2026");
-    var iF = unC.text.indexOf("Lumbalpunktion mit Demenzmarkern vom xx.xx.2026");
-    faelle.push({ name: "Zusatzuntersuchungen chronologisch (MRI Juni vor EEG August, undatierte Vorlage am Schluss)",
+    var iF = unC.text.indexOf("Demenzlabor vom xx.xx.2026");
+    faelle.push({ name: "Zusatzuntersuchungen chronologisch (MR Juni vor EEG August, undatierte Vorlage am Schluss; MR trägt seinen eigenen Namen)",
       ok: iM !== -1 && iE !== -1 && iF !== -1 && iM < iE && iE < iF &&
           unC.text.indexOf("(Spital Limmattal): Kein Adenom. Keine Raumforderung. (in der Eigendurchsicht: xx.)") !== -1,
       detail: iM + "/" + iE + "/" + iF });
@@ -607,6 +644,28 @@ TB.selbsttest = (function () {
     faelle.push({ name: "IADL: Unterstützungsbedarf wandert mit",
       ok: un2.text.indexOf("8/8 Punkte. Unterstützungsbedarf: Die Einzahlungen erledigt der Ehemann, er traue ihr das Erlernen bei Bedarf zu.") !== -1,
       detail: un2.text.slice(0, 260) });
+    // ---- Sammelrunde 15.16 (Befunde Spital 30.9.) ---------------------
+    var langerScore = "Fremdanamnese (Gespräch mit dem Ehemann)\nEr berichte von Vergesslichkeit.\nIQCODE (Fragebogen zur geistigen Leistungsfähigkeit für ältere Personen): Der IQCODE-Score beträgt 3.40, was oberhalb des Cut-offs von 3.19 liegt.\nDie IADL-Skala (instrumental activities of daily living) nach Lawton und Brody zur Erfassung der Alltagskompetenz ergab einen Scorewert von 6/8.\n\nSozialanamnese\nVerwitwet.";
+    var zL = TB.ansichtBerichtMc.zerlege(langerScore);
+    faelle.push({ name: "Scores (lange Zeilen) bleiben aus der Fremdanamnese draussen",
+      ok: zL.abschnitte.fremd === "Er berichte von Vergesslichkeit." && zL.scores.iqcode === "3.40",
+      detail: JSON.stringify(zL.abschnitte.fremd) });
+    var zG = TB.ansichtBerichtMc.zerlege("Frau Muster, Geburtsdatum 08.10.1944\nNeuropsychologische Untersuchung vom 12.09.2026\n\nAktuell\nVergesslich.");
+    faelle.push({ name: "Datum der Neuropsychologie: nie das Geburtsdatum",
+      ok: zG.neuroDatum === "12.09.2026", detail: String(zG.neuroDatum) });
+    var rr = "Radiology Report\nConcept Modifier: Language = German\nBefund:\nMeier Petra\n___________________________\n03.06.2026 / ef\n___________________________\nKlinische Befunde oder Diagnosen\nHbA1c vom 14.05.2026: 6.0%\nCT Schädel vom 13.05.2026: Altersentsprechender Normalbefund.\n___________________________\nFragestellung\nHypophysenadenom?\n___________________________\nUntersuchung\nMR Hypophyse vom 03.06.2026\n___________________________\nBefund\nMittelständige Hypophyse.\n___________________________\nBeurteilung\n- Kein Nachweis eines Hypophysenmikroadenoms, kein Hypophysen Makroadenom.\n-\n___________________________\nVisum\nDr. med. Edgar Felix\nLA Radiologie, T 044 736 8269";
+    var pRR = TB.ansichtBerichtMc.parseZusatz(rr);
+    faelle.push({ name: "Einlesen: Radiology Report (nur Block „Untersuchung“ zählt, Ort Limmattal)",
+      ok: !!pRR && pRR.name === "MR Hypophyse" && pRR.datum === "03.06.2026" &&
+          pRR.ort === "Spital Limmattal" &&
+          pRR.beurteilung === "Kein Nachweis eines Hypophysenmikroadenoms, kein Hypophysen Makroadenom.",
+      detail: JSON.stringify(pRR) });
+    var unR = TB.ansichtBerichtMc.bauUntersuchungen(zG, [pRR]);
+    faelle.push({ name: "Untersuchungen: MR Hypophyse als eigene Zeile, bis Klammer unterstrichen, Scores vom Neuropsych-Datum",
+      ok: unR.html.indexOf("<u>MR Hypophyse vom 03.06.2026 (Spital Limmattal)</u>: Kein Nachweis") !== -1 &&
+          unR.html.indexOf("<u>Demenz-Scores vom 12.09.2026 (Spital Limmattal)</u>:") !== -1 &&
+          unR.text.indexOf("MRI Schädel") === -1,
+      detail: unR.html.slice(0, 200) });
     return faelle;
   }
 

@@ -29,6 +29,9 @@ TB.ansichtStatus = (function () {
   var merkmalWahl = {};        // uid -> { merkmal-id: true = ABgewählt }
   var offeneMerkmale = {};     // uid -> true (Muskel-Auswahl aufgeklappt)
   var sucheFokus = false;
+  // Zusätze (Näd 30.9.): sichtbar, aber nicht angewählt — kommen aus
+  // geladenen eigenen Status oder werden mit dem ☆ vorgemerkt.
+  var angeheftet = {};         // uid -> true
 
   function inTeilmenge(id) {
     return TB.status.teilmengen().some(function (t) {
@@ -54,6 +57,7 @@ TB.ansichtStatus = (function () {
     aktiveTeilmengen = {}; manuellAn = {}; manuellAb = {};
     abweichungen = {}; bearbeiteId = null;
     merkmalWahl = {}; offeneMerkmale = {};
+    angeheftet = {};
   }
   function passtZurSuche(u) {
     if (!suchbegriff) return true;
@@ -154,9 +158,21 @@ TB.ansichtStatus = (function () {
       var k = el("button",
         "status-chip" + (aktiveTeilmengen[t.id] ? " aktiv" : ""), t.name);
       k.addEventListener("click", function () {
-        if (aktiveTeilmengen[t.id]) delete aktiveTeilmengen[t.id];
+        if (aktiveTeilmengen[t.id]) {
+          delete aktiveTeilmengen[t.id];
+          (t.zusatz || []).forEach(function (id) {
+            var nochAndersWo = liste.some(function (x) {
+              return x.id !== t.id && aktiveTeilmengen[x.id] &&
+                (x.zusatz || []).indexOf(id) !== -1; });
+            if (!nochAndersWo) delete angeheftet[id];
+          });
+        }
         else {
           aktiveTeilmengen[t.id] = true;
+          // Zusätze dieses Status: sichtbar, nicht angewählt; die Ansicht
+          // zeigt dann nur Standard und Zusätze (Schalter oben hebt das auf).
+          (t.zusatz || []).forEach(function (id) { angeheftet[id] = true; });
+          nurGewaehlte = true;
           // Gespeicherte Muskel-Auswahl dieses Status anwenden (27.9.)
           Object.keys(t.merkmalAb || {}).forEach(function (uid) {
             var ab = {};
@@ -251,13 +267,17 @@ TB.ansichtStatus = (function () {
 
   function zeichneKategorie(ziel, m, block) {
     var sichtbar = function (u) {
-      if (nurGewaehlte && !istGewaehlt(u.id)) return false;
+      if (nurGewaehlte && !istGewaehlt(u.id) && !angeheftet[u.id]) return false;
       return passtZurSuche(u);
     };
+    // Gewählte und Zusätze stehen immer offen da, auch wenn sie „selten“
+    // sind — sonst müsste man sie erst aufklappen und heraussuchen.
+    var vorne = function (u) {
+      return u.haeufig || istGewaehlt(u.id) || !!angeheftet[u.id]; };
     var haeufige = block.untersuchungen.filter(function (u) {
-      return u.haeufig && sichtbar(u); });
+      return vorne(u) && sichtbar(u); });
     var seltene = block.untersuchungen.filter(function (u) {
-      return !u.haeufig && sichtbar(u); });
+      return !vorne(u) && sichtbar(u); });
     if (!haeufige.length && !seltene.length) return;
 
     var kasten = el("section", "status-kategorie");
@@ -288,7 +308,8 @@ TB.ansichtStatus = (function () {
   }
 
   function zeile(u) {
-    var z = el("div", "status-zeile");
+    var z = el("div", "status-zeile" +
+      (angeheftet[u.id] && !istGewaehlt(u.id) ? " ist-zusatz" : ""));
     var kreuz = el("input");
     kreuz.type = "checkbox";
     kreuz.checked = istGewaehlt(u.id);
@@ -357,6 +378,15 @@ TB.ansichtStatus = (function () {
     }
     z.appendChild(inhalt);
     if (u.merkmale) z.appendChild(merkmalBereich(u));
+    var stern = el("button", "status-zusatz" + (angeheftet[u.id] ? " an" : ""),
+      angeheftet[u.id] ? "\u2605" : "\u2606");
+    stern.title = angeheftet[u.id] ? TS().zusatzAn : TS().zusatzAus;
+    stern.addEventListener("click", function () {
+      if (angeheftet[u.id]) delete angeheftet[u.id];
+      else angeheftet[u.id] = true;
+      neu();
+    });
+    z.appendChild(stern);
     return z;
   }
 
@@ -377,6 +407,22 @@ TB.ansichtStatus = (function () {
     huelle.appendChild(knopf);
     if (!offeneMerkmale[u.id]) return huelle;
     var feld = el("div", "status-merkmal-feld");
+    // Näd 30.9.: alle auf einmal an- oder abwählen — für spezielle Status
+    // nur einzelne Muskeln wählen, ohne jeden einzeln abzuhaken.
+    var alleZeile = el("div", "status-merkmal-alle");
+    [[TS().merkmaleAlleAn, false], [TS().merkmaleAlleAb, true]].forEach(function (p) {
+      var k = el("button", "status-merkmal-alleknopf", p[0]);
+      k.type = "button";
+      k.addEventListener("click", function () {
+        var ab = {};
+        if (p[1]) u.merkmale.forEach(function (mk) { ab[mk.id] = true; });
+        merkmalWahl[u.id] = ab;
+        delete abweichungen[u.id];
+        neu();
+      });
+      alleZeile.appendChild(k);
+    });
+    feld.appendChild(alleZeile);
     var letzteGruppe = "";
     u.merkmale.forEach(function (mk) {
       if (mk.gruppe !== letzteGruppe) {
@@ -445,7 +491,9 @@ TB.ansichtStatus = (function () {
         var ab = merkmalWahl[id];
         if (ab && Object.keys(ab).length) merkmalAb[id] = Object.keys(ab);
       });
-      TB.status.teilmengeSpeichern(name, punkte, merkmalAb);
+      var zusatz = m.untersuchungen.filter(function (u) {
+        return angeheftet[u.id] && !menge[u.id]; }).map(function (u) { return u.id; });
+      TB.status.teilmengeSpeichern(name, punkte, merkmalAb, zusatz);
       melde(TS().alsStatusFertig.replace("%s", name));
       neu();
     });

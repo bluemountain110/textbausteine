@@ -81,8 +81,15 @@ TB.ansichtBerichtMc = (function () {
     "kognitive und funktionelle leistung", "schul-",
     "aktuelle medikation", "aktuelle medikamente",
     "testpsychologische", "empfehlungen"];
+  // Score-Absätze (IQCODE, IADL, BADL, CDR) schliessen den laufenden
+  // Abschnitt IMMER, auch als lange Zeile — sonst rutschten sie in die
+  // Fremdanamnese (Befund Spital 30.9.). Sie gehören nur zu den
+  // Untersuchungen.
+  var SCORE_ANFANG = ["iqcode", "die iadl", "iadl-skala", "die badl", "badl",
+    "kognitive und funktionelle leistung"];
   function istKopf(zeile) {
     var z = zeile.trim().replace(/:\s*$/, "").toLowerCase();
+    if (z && SCORE_ANFANG.some(function (a) { return z.indexOf(a) === 0; })) return true;
     if (!z || z.length > 100) return false;
     if (GENAU.indexOf(z) !== -1) return true;
     return ANFANG.some(function (a) { return z.indexOf(a) === 0; });
@@ -143,6 +150,9 @@ TB.ansichtBerichtMc = (function () {
     // gefunden = gelb, das ist so gewollt.
     var neuroDatum = null;
     zeilen.slice(0, 8).some(function (zl) {
+      // Zeilen mit dem Geburtsdatum überspringen („Geburtsdatum" enthält
+      // „datum" — Befund 30.9.: Demenz-Scores standen „vom 08.10.1944").
+      if (/geb/i.test(zl)) return false;
       var m = /(untersuchung|datum|bericht)[^\d]{0,30}(\d{2}\.\d{2}\.\d{4})/i.exec(zl);
       if (m) { neuroDatum = m[2]; return true; }
       return false;
@@ -259,7 +269,7 @@ TB.ansichtBerichtMc = (function () {
   // ---- Zusatzuntersuchungen: Datum + Beurteilung herausholen ----------
   function ortAus(t) {
     if (/Universitätsspital|USZ/.test(t)) return "Universitätsspital Zürich";
-    if (/Limmattal|Schlieren/.test(t)) return "Spital Limmattal";
+    if (/Limmattal|Schlieren|LA Radiologie|044 736/.test(t)) return "Spital Limmattal";
     return "";
   }
   function zielAus(name) {
@@ -316,9 +326,14 @@ TB.ansichtBerichtMc = (function () {
     }).filter(function (z) { return z; }).join(" ");
     if (!inhalt) return null;
     var name = "", datum = "";
+    // „Radiology Report" (30.9.): Blöcke durch ____-Linien getrennt; nur
+    // der Block „Untersuchung" nennt die Untersuchung — im Block
+    // „Klinische Befunde" stehen fremde Daten (CT vom …), die nicht zählen.
+    var rr = t.match(/\n_{4,}[ \t]*\nUntersuchung[ \t]*:?[ \t]*\n\s*(.+?)\s+vom\s+(\d{2}\.\d{2}\.\d{4})/);
     var stud = t.match(/^Study:\s*\n?\s*(.+)$/m);
     var brief = t.match(/Zusatzuntersuchung\s+(.+?)\s+vom\s+(\d{2}\.\d{2}\.\d{4})/);
-    if (brief) { name = brief[1].trim(); datum = brief[2]; }
+    if (rr) { name = rr[1].trim(); datum = rr[2]; }
+    else if (brief) { name = brief[1].trim(); datum = brief[2]; }
     else if (stud) {
       name = stud[1].trim();
       var cdt = t.match(/Content Date\/Time:\s*(\d{4})-(\d{2})-(\d{2})/);
@@ -426,10 +441,10 @@ TB.ansichtBerichtMc = (function () {
     // danach chronologische Ordnung (Scores fix zuerst, undatierte am
     // Schluss in Gerüst-Reihenfolge). Demenzlabor NEU ohne Homocystein
     // ("nehmen wir nicht ab", Näd 28.9.); Laborwerte füllt Näd selbst.
-    // Seit 15.15 (Naed 29.9.): Demenzlabor und Lumbalpunktion stehen
-    // IMMER als Vorlage da (Naed traegt die Werte von Hand ein, Labor-
-    // Einlesen kommt spaeter); alle anderen Zeilen erscheinen NUR, wenn
-    // ein eingelesener Zusatzbefund sie fuellt.
+    // Seit 15.16 (Naed 30.9.): Nur das Demenzlabor steht IMMER als
+    // Vorlage da (wird immer gemacht); alle anderen Zeilen — auch die
+    // Lumbalpunktion — erscheinen NUR, wenn ein eingelesener Befund sie
+    // fuellt.
     var geruest = [
       { id: "mri", titel: "MRI Schädel", ort: "Spital Limmattal", eigen: true },
       { id: "labor", titel: "Demenzlabor", ort: "Spital Limmattal und Viollier",
@@ -437,7 +452,7 @@ TB.ansichtBerichtMc = (function () {
         inhalt: "Unauffällig (Hämatologie, Elektrolyte, Nieren- und Leberwerte, Glukose, HbA1c, Lipide, INR, CRP, TSH, Vitamin B12, Folsäure, BSR, Treponema pallidum)." },
       { id: "eeg", titel: "Standard-EEG", ort: "Spital Limmattal" },
       { id: "lp", titel: "Lumbalpunktion mit Demenzmarkern", ort: "Viollier",
-        pflicht: true, werte: {},
+        werte: {},
         inhalt: "Liquor klar, Zellzahl x /µl (Norm < 5 /µl), Totalprotein x mg/l (Norm 150-450 mg/l), Amyloid-beta 1-42: xx ng/l (> 599), Amyloid-beta 1-40: xx ng/l, Amyloid-42/40-Quotient: xx (> 0.062), Tau-Protein: xx ng/l (< 404), Phospho-Tau-Protein: xx ng/l (< 56.5) — A x, T x, N x." },
       { id: "apo", titel: "Apolipoprotein-Bestimmung", ort: "Viollier",
         inhalt: "Ex/Ex." },
@@ -451,6 +466,7 @@ TB.ansichtBerichtMc = (function () {
         return false;
       });
       if (ziel) {
+        if (ziel.id === "mri" && zu.name) ziel.titel = zu.name;
         if (zu.datum) ziel.datum = zu.datum;
         if (zu.beurteilung) ziel.beurteilung = zu.beurteilung;
         if (zu.ort && ziel.id !== "lp") ziel.ort = zu.ort;
@@ -478,15 +494,15 @@ TB.ansichtBerichtMc = (function () {
       }).map(function (p) { return p[0]; });
     var html = [], text = [];
     function leer() { html.push("<p><br></p>"); text.push(""); }
-    // Naeds Format fuer ALLE internen Befunde (29.9.): Titel und Datum
-    // unterstrichen, der Ort in Klammern NICHT, Doppelpunkt, und die
+    // Naeds Format fuer ALLE Befunde (30.9.): unterstrichen bis und mit
+    // der schliessenden Klammer nach dem Ort, dann Doppelpunkt, und die
     // Beurteilung UNMITTELBAR auf derselben Zeile.
     function kopfteile(titel, datum, ort) {
       var dH = datum ? schuetze(datum) : gelbH("xx.xx.2026");
       var dT = datum || "xx.xx.2026";
       var oH = ort ? schuetze(ort) : gelbH("xx");
       var oT = ort || "xx";
-      return { h: "<u>" + schuetze(titel) + " vom " + dH + "</u> (" + oH + "):",
+      return { h: "<u>" + schuetze(titel) + " vom " + dH + " (" + oH + ")</u>:",
                t: titel + " vom " + dT + " (" + oT + "):" };
     }
     var sk = kopfteile("Demenz-Scores", z.neuroDatum, "Spital Limmattal");

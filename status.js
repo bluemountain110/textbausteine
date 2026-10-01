@@ -88,13 +88,18 @@ TB.statusTexte = {
   loeschenKnopf: "Löschen",
   gespeichert: "Gespeichert.",
   hoch: "▲", runter: "▼",
-  nurGewaehlteKnopf: "Nur Gewählte",
+  nurGewaehlteKnopf: "Nur Gewählte und Zusätze",
+  ziehenHinweis: "Zum Verschieben an diesem Griff (oder der ganzen Zeile) ziehen und an der gewünschten Stelle loslassen — auch in eine andere Kategorie",
+  zusatzAn: "Zusatz dieses Status: erscheint beim Laden sichtbar, aber nicht angewählt — Klick nimmt ihn wieder raus",
+  zusatzAus: "Als Zusatz vormerken: wird mit „Als eigenen Status speichern“ dem Status mitgegeben und erscheint dann beim Laden sichtbar, aber nicht angewählt",
   muskelnKnopf: "Muskeln (%s/%s)",
   muskelnHinweis: "Einzelne Muskeln an- und abwählen — der Text nennt nur die gewählten",
   muskelnKeine: "keine Defizite.",
+  merkmaleAlleAn: "alle wählen",
+  merkmaleAlleAb: "alle abwählen",
   tardocLesenKnopf: "Tardoc-Kriterien nachlesen",
   tardocLesenTitel: "Tardoc-Kriterien (TARDOC 1.4c)",
-  tardocLesenEinleitung: "Von Claude zusammengefasst, eng am Original — zum Prüfen führt jeder Positions-Titel auf die Original-Seite (kodia.ch, öffnet in neuem Tab).",
+  tardocLesenEinleitung: "Von Claude zusammengefasst, eng am Original — zum Prüfen führt jeder Positions-Titel direkt auf die Position im LKAAT-Browser (öffnet in neuem Tab).",
   tardocLesenB: "%s (%s): dokumentierte Untersuchung und Beurteilung von bis zu 3 der untenstehenden Gruppen%s.",
   tardocLesenA: "%s (%s): dokumentierte Untersuchung und Beurteilung von 4 oder mehr Gruppen%s.",
   tardocLesenMin: " — hinterlegt mit %s Minuten",
@@ -103,7 +108,7 @@ TB.statusTexte = {
   tardocLesenZu: "Schliessen",
   tardocLesenGruppeKopf: "Gruppe — Mindestzahl",
   tardocLesenGleich: "Was in einer Gruppe dokumentiert sein muss, ist bei B und A laut Tarif identisch (die Zellen sind darum in beiden Spalten gleich). Der Unterschied steht in der Kopfzeile: B verlangt bis zu 3 dieser Gruppen, A verlangt 4 oder mehr — bei entsprechend längerer hinterlegter Dauer.",
-  tardocLesenStand: "Stand der Zusammenfassung: 27.09.2026. Massgeblich ist immer der Originaltext des Tarifs.",
+  tardocLesenStand: "Stand der Zusammenfassung: 27.09.2026, Links 30.09.2026. Massgeblich ist immer der Originaltext des Tarifs.",
   exportKnopf: "Status als Datei sichern",
   exportHinweis: "Sichert Gesamtstatus und eigene Status als Datei — zum Aufheben oder zum Schicken an Claude, damit Deine Änderungen in die Grundausstattung einfliessen können.",
   exportFertig: "Status-Datei erstellt: %s"
@@ -120,12 +125,58 @@ TB.status = (function () {
     // gespeicherten Katalog sanft nachgezogen. Näds eigene Texte
     // bleiben unberührt: Nur wenn der Normalbefund noch dem der
     // Grundausstattung entspricht, kommen die Merkmale dazu.
+    if (m && m.stand !== TB.statusGrundlage.KATALOG_STAND) {
+      m = umstellen();
+    }
     if (m) {
       var a = migriereMerkmale(m);
       var b = migriereNeue(m);
       if (a || b) speichereMaster(m);
     }
     return m;
+  }
+  // Einmalige Umstellung (Sammelrunde 30.9.): Die neue Grundausstattung
+  // wurde AUS Näds eigenem Status-Export gebaut (seine Texte, häufig/
+  // selten, Reihenfolge) und enthält zusätzlich seine Aufteilungen und
+  // die geprüften Tardoc-Etiketten. Darum ersetzt sie den gespeicherten
+  // Katalog einmal ganz. Seine eigenen Status-Muster bleiben erhalten;
+  // ihre Verweise auf aufgeteilte Untersuchungen werden umgeschlüsselt
+  // (z. B. „Weber und Rinne" -> „Weber" + „Rinne").
+  function umstellen() {
+    var neu = TB.statusGrundlage.master();
+    speichereMaster(neu);
+    var liste = teilmengen();
+    if (umschluessle(liste)) speichereTeilmengen(liste);
+    return neu;
+  }
+  // Reine Hilfe (auch für den Selbsttest, ohne Speicher): Verweise der
+  // Status-Muster auf aufgeteilte Untersuchungen umschlüsseln.
+  function umschluessle(liste) {
+    var umschl = TB.statusGrundlage.UMSCHLUESSEL || {};
+    var geaendert = false;
+    liste.forEach(function (t) {
+      var aus = [];
+      (t.punkte || []).forEach(function (p) {
+        var ziel = umschl[p] || [p];
+        if (umschl[p]) geaendert = true;
+        ziel.forEach(function (x) { if (aus.indexOf(x) === -1) aus.push(x); });
+      });
+      t.punkte = aus;
+      if (t.zusatz) {
+        var auz = [];
+        t.zusatz.forEach(function (p) {
+          (umschl[p] || [p]).forEach(function (x) {
+            if (auz.indexOf(x) === -1 && aus.indexOf(x) === -1) auz.push(x); });
+        });
+        t.zusatz = auz;
+      }
+      if (t.merkmalAb) {
+        Object.keys(t.merkmalAb).forEach(function (uid) {
+          if (umschl[uid]) { delete t.merkmalAb[uid]; geaendert = true; }
+        });
+      }
+    });
+    return geaendert;
   }
   // Nachziehen (28.9., Katalog-Ausbau): Untersuchungen, die die
   // Grundausstattung neu bekommt, werden in einen gespeicherten Katalog
@@ -363,6 +414,9 @@ TB.status = (function () {
         var soll = d.gruppen[g].min;
         var z = stand[art][g];
         var ist = z ? Object.keys(z.namen).length + z.muskeln : 0;
+        // Tarif (Gruppen 4/5): EINE Muskelausdauerbelastung erfüllt die
+        // Gruppe allein — als Alternative zu den Einzelmuskeln (30.9.).
+        if (z && d.gruppen[g].einheit && z.namen["Muskelausdauerbelastung"]) ist = soll;
         if (ist > soll) ist = soll;   // Anzeige nie über dem Soll
         var voll = ist >= soll;
         if (voll) erfuellte += 1;
@@ -401,16 +455,22 @@ TB.status = (function () {
   }
 
   // ---- Teilmengen ------------------------------------------------------
-  function teilmengeSpeichern(name, punkte, merkmalAb) {
+  // zusatz (30.9.): Untersuchungen, die bei diesem Status manchmal
+  // dazukommen — sie erscheinen beim Laden sichtbar, aber NICHT angewählt.
+  function teilmengeSpeichern(name, punkte, merkmalAb, zusatz) {
     var liste = teilmengen();
     var da = liste.find(function (t) {
       return t.name.toLowerCase() === String(name).toLowerCase(); });
+    var zu = (zusatz || []).filter(function (id) {
+      return punkte.indexOf(id) === -1; });
     if (da) { da.punkte = punkte.slice();
-              if (merkmalAb) da.merkmalAb = merkmalAb; }
+              if (merkmalAb) da.merkmalAb = merkmalAb;
+              if (zu.length) da.zusatz = zu; else delete da.zusatz; }
     else {
       var eintrag = { id: "t" + Date.now().toString(36),
                       name: String(name), punkte: punkte.slice() };
       if (merkmalAb) eintrag.merkmalAb = merkmalAb;
+      if (zu.length) eintrag.zusatz = zu;
       liste.push(eintrag);
     }
     speichereTeilmengen(liste);
@@ -488,5 +548,6 @@ TB.status = (function () {
            migriereNeue: migriereNeue,
            merkmalAn: merkmalAn,
            tardocKriterien: tardocKriterien,
+           umschluessle: umschluessle,
            exportDatei: exportDatei };
 })();

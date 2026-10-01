@@ -24,8 +24,8 @@ TB.tardocDaten = {
       positionA: "MP.00.0040", positionB: "MP.00.0020",
       titelA: "Neurologische Exploration A", titelB: "Neurologische Exploration B",
       dauerA: 46, dauerB: 23,
-      linkA: "https://browser.tartools.ch/de/lkaat/data/K/MP.00.0040",
-      linkB: "https://browser.tartools.ch/de/lkaat/data/K/MP.00.0020",
+      linkA: "https://browser.tartools.ch/de/lkaat/data/L/MP.00.0040",
+      linkB: "https://browser.tartools.ch/de/lkaat/data/L/MP.00.0020",
       minGruppenA: 4,
       gruppen: {
         1: { name: "Allgemeiner Status", min: 4, merkmale: "Allgemeinzustand, Vigilanz, Kooperationsfähigkeit, Hand-/Fussdominanz, Grösse, Gewicht, Blutdruck, Puls, Gefässpulsatilität (A. carotis/temporalis), Gefässauskultation" },
@@ -50,8 +50,8 @@ TB.tardocDaten = {
       positionA: "MP.00.0060", positionB: "MP.00.0050",
       titelA: "Exploration der Hirnnerven A", titelB: "Exploration der Hirnnerven B",
       dauerA: 35, dauerB: 0,
-      linkA: "https://browser.tartools.ch/de/lkaat/data/K/MP.00.0060",
-      linkB: "https://browser.tartools.ch/de/lkaat/data/K/MP.00.0050",
+      linkA: "https://browser.tartools.ch/de/lkaat/data/L/MP.00.0060",
+      linkB: "https://browser.tartools.ch/de/lkaat/data/L/MP.00.0050",
       minGruppenA: 4,
       gruppen: {
         1: { name: "Allgemeiner Status", min: 3, merkmale: "Allgemeinzustand, Vigilanz, Kooperationsfähigkeit, Hand-/Fussdominanz, Grösse, Gewicht, Blutdruck, Puls, Gefässpulsatilität, Gefässauskultation" },

@@ -36,6 +36,54 @@ TB.ansichtStatusPflege = (function () {
       m.untersuchungen.indexOf(u), m.untersuchungen.indexOf(nachbar));
     speichere(m); neu();
   }
+  // Ziehen und Ablegen (Näd 30.9.): eine Untersuchung mit der Maus an
+  // jede beliebige Stelle ziehen — auch in eine andere Kategorie. Sie
+  // landet vor bzw. hinter der Zeile, über der sie losgelassen wird
+  // (obere/untere Hälfte). Reine Hilfe, ohne Bildschirm testbar.
+  function zieheNach(m, id, zielId, dahinter) {
+    if (id === zielId) return false;
+    var u = TB.status.untersuchung(m, id);
+    var ziel = TB.status.untersuchung(m, zielId);
+    if (!u || !ziel) return false;
+    m.untersuchungen.splice(m.untersuchungen.indexOf(u), 1);
+    u.kategorie = ziel.kategorie;
+    var stelle = m.untersuchungen.indexOf(ziel) + (dahinter ? 1 : 0);
+    m.untersuchungen.splice(stelle, 0, u);
+    return true;
+  }
+  var gezogenId = null;
+  function ziehbar(m, z, u) {
+    z.draggable = true;
+    z.addEventListener("dragstart", function (ev) {
+      gezogenId = u.id;
+      z.classList.add("wird-gezogen");
+      try { ev.dataTransfer.setData("text/plain", u.id); } catch (e) { }
+      ev.dataTransfer.effectAllowed = "move";
+    });
+    z.addEventListener("dragend", function () {
+      gezogenId = null; z.classList.remove("wird-gezogen");
+    });
+    function haelfte(ev) {
+      var r = z.getBoundingClientRect();
+      return (ev.clientY - r.top) > r.height / 2;
+    }
+    z.addEventListener("dragover", function (ev) {
+      if (!gezogenId || gezogenId === u.id) return;
+      ev.preventDefault();
+      var unten = haelfte(ev);
+      z.classList.toggle("ablage-oben", !unten);
+      z.classList.toggle("ablage-unten", unten);
+    });
+    z.addEventListener("dragleave", function () {
+      z.classList.remove("ablage-oben", "ablage-unten");
+    });
+    z.addEventListener("drop", function (ev) {
+      ev.preventDefault();
+      z.classList.remove("ablage-oben", "ablage-unten");
+      if (zieheNach(m, gezogenId, u.id, haelfte(ev))) { speichere(m); neu(); }
+      gezogenId = null;
+    });
+  }
   function inKategorie(m, u, katId) {
     // Ans Ende der Ziel-Kategorie stellen, damit die Reihenfolge
     // vorhersehbar bleibt.
@@ -147,6 +195,10 @@ TB.ansichtStatusPflege = (function () {
 
   function zeichneUntersuchung(m, u, i, anzahl) {
     var z = el("div", "status-pflege-zeile");
+    var griff = el("span", "status-griff", "\u2807");
+    griff.title = TS().ziehenHinweis;
+    z.appendChild(griff);
+    ziehbar(m, z, u);
     z.appendChild(pfeil(TS().hoch, i === 0, function () {
       verschiebeUntersuchung(m, u.id, -1); }));
     z.appendChild(pfeil(TS().runter, i === anzahl - 1, function () {
@@ -355,5 +407,5 @@ TB.ansichtStatusPflege = (function () {
   }
 
   function oeffne() { zeichne(wurzel()); }
-  return { oeffne: oeffne, zeichne: zeichne };
+  return { oeffne: oeffne, zeichne: zeichne, zieheNach: zieheNach };
 })();
