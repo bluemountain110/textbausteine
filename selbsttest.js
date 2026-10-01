@@ -666,6 +666,25 @@ TB.selbsttest = (function () {
           unR.html.indexOf("<u>Demenz-Scores vom 12.09.2026 (Spital Limmattal)</u>:") !== -1 &&
           unR.text.indexOf("MRI Schädel") === -1,
       detail: unR.html.slice(0, 200) });
+    // ---- 15.17 (Befunde 1.10.) ---------------------------------------
+    var blk = TB.ansichtBerichtMc.parseZusatzAlle("Zusatzuntersuchung EEG Neurologie vom 02.09.2026\nLeichte Allgemeinveränderung (7/s).\n\nMR LWS vom 14.07.2026\nBefund/Beurteilung\n- Spinalkanalstenose LWK 3/4.\n-\n\nMR Schädel vom 10.09.2026\nBeurteilung\n- Konstant Fazekas Grad 1.\n- MTA normal.\n-");
+    var unB = TB.ansichtBerichtMc.bauUntersuchungen(zG, blk);
+    faelle.push({ name: "KISIM-Untersuchungsblock: alle Befunde, gekürzte Namen, Striche weg, chronologisch, Eigendurchsicht nur beim MR Schädel",
+      ok: blk.length === 3 && blk[0].ort === "Spital Limmattal" &&
+          unB.text.indexOf("MR LWS vom 14.07.2026 (Spital Limmattal): Spinalkanalstenose LWK 3/4.") !== -1 &&
+          unB.text.indexOf("MR LWS vom 14.07.2026") < unB.text.indexOf("Standard-EEG vom 02.09.2026") &&
+          unB.text.indexOf("Standard-EEG vom 02.09.2026") < unB.text.indexOf("MR Schädel vom 10.09.2026") &&
+          unB.text.indexOf("MR Schädel vom 10.09.2026 (Spital Limmattal): Konstant Fazekas Grad 1. MTA normal. (in der Eigendurchsicht: xx.)") !== -1 &&
+          !/MR LWS[^\n]*Eigendurchsicht/.test(unB.text),
+      detail: unB.text.slice(0, 300) });
+    var zGeb = TB.ansichtBerichtMc.zerlege("Neuropsychologische Untersuchung Frau Muster, 20.06.1941\nDatum der Untersuchung: 27.08.2026\n\nAktuell\nVergesslich.");
+    faelle.push({ name: "Neuropsych-Datum: ein Geburtsdatum zählt nie, auch ohne das Wort „geb“",
+      ok: zGeb.neuroDatum === "27.08.2026", detail: String(zGeb.neuroDatum) });
+    var ext = TB.ansichtBerichtMc.parseZusatz("Natives MRI des Neurokraniums vom 17.04.2025\nBeurteilung\n\uF0B7\tGeringe Atrophie\nlinks.\n\uF0B7\tKein Nachweis von Mikroblutungen.\nDr. med. X Muster\nDieser Befundbrief wurde elektronisch visiert.");
+    faelle.push({ name: "Externes MRI: echte Aufzählung bleibt, Unterschrift endet den Text, Ort gelb",
+      ok: !!ext && ext.punkte && ext.punkte.length === 2 && ext.punkte[0] === "Geringe Atrophie links." &&
+          ext.ort === "" && ext.ziel === "mri" && JSON.stringify(ext).indexOf("Muster") === -1,
+      detail: JSON.stringify(ext) });
     return faelle;
   }
 

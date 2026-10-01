@@ -97,6 +97,8 @@ TB.statusTexte = {
   muskelnKeine: "keine Defizite.",
   merkmaleAlleAn: "alle wählen",
   merkmaleAlleAb: "alle abwählen",
+  zusatzMuskelAn: "Zusatz-Muskel dieses Status: erscheint gelb markiert, aber nicht angewählt — Klick nimmt ihn wieder raus",
+  zusatzMuskelAus: "Als Zusatz-Muskel vormerken: wird mit „Als eigenen Status speichern“ dem Status mitgegeben",
   tardocLesenKnopf: "Tardoc-Kriterien nachlesen",
   tardocLesenTitel: "Tardoc-Kriterien (TARDOC 1.4c)",
   tardocLesenEinleitung: "Von Claude zusammengefasst, eng am Original — zum Prüfen führt jeder Positions-Titel direkt auf die Position im LKAAT-Browser (öffnet in neuem Tab).",
@@ -457,7 +459,10 @@ TB.status = (function () {
   // ---- Teilmengen ------------------------------------------------------
   // zusatz (30.9.): Untersuchungen, die bei diesem Status manchmal
   // dazukommen — sie erscheinen beim Laden sichtbar, aber NICHT angewählt.
-  function teilmengeSpeichern(name, punkte, merkmalAb, zusatz) {
+  // merkmalZusatz (1.10.): je Untersuchung die Muskeln mit Stern —
+  // sichtbar markiert, aber nicht angewählt.
+  function teilmengeSpeichern(name, punkte, merkmalAb, zusatz, merkmalZusatz) {
+    var mz = (merkmalZusatz && Object.keys(merkmalZusatz).length) ? merkmalZusatz : null;
     var liste = teilmengen();
     var da = liste.find(function (t) {
       return t.name.toLowerCase() === String(name).toLowerCase(); });
@@ -465,12 +470,14 @@ TB.status = (function () {
       return punkte.indexOf(id) === -1; });
     if (da) { da.punkte = punkte.slice();
               if (merkmalAb) da.merkmalAb = merkmalAb;
-              if (zu.length) da.zusatz = zu; else delete da.zusatz; }
+              if (zu.length) da.zusatz = zu; else delete da.zusatz;
+              if (mz) da.merkmalZusatz = mz; else delete da.merkmalZusatz; }
     else {
       var eintrag = { id: "t" + Date.now().toString(36),
                       name: String(name), punkte: punkte.slice() };
       if (merkmalAb) eintrag.merkmalAb = merkmalAb;
       if (zu.length) eintrag.zusatz = zu;
+      if (mz) eintrag.merkmalZusatz = mz;
       liste.push(eintrag);
     }
     speichereTeilmengen(liste);

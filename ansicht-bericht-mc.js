@@ -54,7 +54,7 @@ TB.berichtMcTexte = {
   ueberschriftMedis: "Aktuelle Medikamente/Therapien",
   vorlageSatz: "Die ausführliche Anamnese ist dem neuropsychologischen Vorbericht zu entnehmen. Relevante Anamneseergänzungen wurden heute keine gemacht.",
   zusatzTitel: "Zusatzuntersuchungen einlesen",
-  zusatzHinweis: "EEG-Brief, Radiologie-Report und weitere Befunde EINZELN hier einfügen und einlesen — die App holt Datum und Beurteilung, ordnet chronologisch. Auch hier: nichts wird gespeichert.",
+  zusatzHinweis: "EEG-Brief, Radiologie-Report, Viollier-LP — oder den GANZEN übernommenen Untersuchungsblock aus KISIM auf einmal — hier einfügen und einlesen. Die App holt Datum und Befund und ordnet chronologisch. Auch hier: nichts wird gespeichert.",
   zusatzPlatzhalter: "Einen Zusatzuntersuchungs-Bericht einfügen (Strg+V) …",
   zusatzKnopf: "Einlesen",
   zusatzUnbekannt: "Format nicht erkannt — schick mir dieses Beispiel (anonymisiert), ich baue es ein.",
@@ -106,6 +106,26 @@ TB.ansichtBerichtMc = (function () {
     if (z.indexOf("aktuelle medik") === 0) return "medis";
     return null;
   }
+  // Datum der neuropsychologischen Untersuchung (1.10.): Nur der Kopf
+  // (erste 8 Zeilen) zählt, und nur ein PLAUSIBEL junges Datum — ein
+  // Geburtsdatum (1941) kann es nie sein, egal wie die Zeile lautet
+  // (Befund 1.10.: „Demenz-Scores vom 20.06.1941"). Bevorzugt wird eine
+  // Zeile mit „Untersuchung", dann „Bericht/Datum", sonst die erste.
+  function neuroDatumVon(zeilen, jahrJetzt) {
+    var jahr = jahrJetzt || new Date().getFullYear();
+    var kandidaten = [];
+    zeilen.slice(0, 8).forEach(function (zl, i) {
+      if (/geb/i.test(zl)) return;
+      (zl.match(/\d{2}\.\d{2}\.\d{4}/g) || []).forEach(function (d) {
+        var j = parseInt(d.slice(6), 10);
+        if (j < jahr - 5 || j > jahr + 1) return;
+        kandidaten.push({ d: d, i: i,
+          rang: /untersuch/i.test(zl) ? 0 : /bericht|datum/i.test(zl) ? 1 : 2 });
+      });
+    });
+    kandidaten.sort(function (a, b) { return (a.rang - b.rang) || (a.i - b.i); });
+    return kandidaten.length ? kandidaten[0].d : null;
+  }
   function zerlege(text) {
     var zeilen = String(text || "").replace(/\r\n?/g, "\n").split("\n");
     var abschnitte = {}, offenZiel = null, sammel = [];
@@ -148,15 +168,7 @@ TB.ansichtBerichtMc = (function () {
     // Vorberichts suchen (erste 8 Zeilen), damit alte Fremd-Daten aus dem
     // Anamnesetext ("Untersuchung vom 05.05.2025") nicht greifen. Nicht
     // gefunden = gelb, das ist so gewollt.
-    var neuroDatum = null;
-    zeilen.slice(0, 8).some(function (zl) {
-      // Zeilen mit dem Geburtsdatum überspringen („Geburtsdatum" enthält
-      // „datum" — Befund 30.9.: Demenz-Scores standen „vom 08.10.1944").
-      if (/geb/i.test(zl)) return false;
-      var m = /(untersuchung|datum|bericht)[^\d]{0,30}(\d{2}\.\d{2}\.\d{4})/i.exec(zl);
-      if (m) { neuroDatum = m[2]; return true; }
-      return false;
-    });
+    var neuroDatum = neuroDatumVon(zeilen);
     var TXW = TX();
     var fehlend = [];
     [["sozial", TXW.ueberschriftSozial], ["schule", TXW.ueberschriftSchule],
@@ -275,14 +287,94 @@ TB.ansichtBerichtMc = (function () {
   function zielAus(name) {
     var n = name.toUpperCase();
     if (/PET.?MR/.test(n)) return null;
-    if (/^MRT?\b|^MRI\b/.test(n)) return "mri";
+    // Nur ein MR des KOPFES belegt die MRI-Zeile (1.10.: ein MR LWS
+    // hätte sie sonst besetzt); andere MR erhalten eine eigene Zeile.
+    if (/\bMR[IT]?\b|MAGNETRESONANZ/.test(n) &&
+        /SCH[ÄA]DEL|NEUROKRAN|HIRN|KOPF|HYPOPHYS|CEREBR|KRANI/.test(n)) return "mri";
     if (/AMYLOID/.test(n)) return "amyloid";
     if (/FDG/.test(n)) return "fdg";
-    if (/EEG/.test(n)) return "eeg";
+    if (/\bEEG\b/.test(n)) return "eeg";
     if (/LUMBAL|LIQUOR/.test(n)) return "lp";
     return null;
   }
+  // Befundtext aus den Zeilen NACH der Kopfzeile bzw. nach „Beurteilung"
+  // (1.10., Näds Entscheid): Die Unterschrift beendet den Text; Striche
+  // („- …") fallen weg und der Text läuft zusammen; ECHTE Aufzählungs-
+  // punkte (•, Word-Symbolpunkt) bleiben eine Aufzählung; reine Etiketten
+  // wie „Beurteilung" oder „Befund/Beurteilung" fallen weg.
+  var SIGNATUR = /^\s*(Dr\.?\s*med\b|Prof\.?\s|PD\s+Dr|Leitende[rn]?\s|Ober(arzt|ärztin)\b|Fach(arzt|ärztin)\b|Assistenz(arzt|ärztin)\b|Dieser Befund|Freundliche|Mit freundlichen|Visum\b|vis\s+\d)|elektronisch visiert/i;
+  var PUNKTMARKE = /^\s*[\u2022\u25CF\u25AA\u25E6\u00B7\u2219\u2299\uF0B7\uF0A7\u2023\u2043]\s*/;
+  var STRICH = /^\s*[-\u2013\u2014]\s*/;
+  var ETIKETT = /^\s*((Befund\s*\/\s*)?Beurteilung|Befund)\s*:?\s*$/i;
+  function befundText(zeilen) {
+    var nachEtikett = -1;
+    zeilen.forEach(function (z, i) {
+      if (nachEtikett === -1 && /^\s*(Befund\s*\/\s*)?Beurteilung\s*:?\s*$/i.test(z)) nachEtikett = i;
+    });
+    if (nachEtikett !== -1) zeilen = zeilen.slice(nachEtikett + 1);
+    var fliess = [], punkte = [], imPunkt = false;
+    for (var i = 0; i < zeilen.length; i++) {
+      var z = String(zeilen[i]).replace(/\s+$/, "");
+      if (SIGNATUR.test(z) || /^\s*_{4,}/.test(z)) break;
+      if (ETIKETT.test(z)) continue;
+      if (!z.trim()) { imPunkt = false; continue; }
+      if (PUNKTMARKE.test(z)) {
+        punkte.push(z.replace(PUNKTMARKE, "").trim()); imPunkt = true; continue;
+      }
+      if (STRICH.test(z)) {
+        var r = z.replace(STRICH, "").trim();
+        if (r) fliess.push(r);
+        imPunkt = false; continue;
+      }
+      if (imPunkt && punkte.length) { punkte[punkte.length - 1] += " " + z.trim(); continue; }
+      fliess.push(z.trim());
+    }
+    return { text: fliess.join(" ").replace(/\s{2,}/g, " ").trim(),
+             punkte: punkte.length ? punkte : null };
+  }
+  // Untersuchungsblock aus KISIM (1.10.): mehrere Befunde, je mit einer
+  // Kopfzeile „[Zusatzuntersuchung] Name [Neurologie] vom TT.MM.JJJJ".
+  var KOPFZEILE = /^\s*(Zusatzuntersuchung\s+)?(.{2,80}?)\s+vom\s+(\d{2}\.\d{2}\.\d{4})\s*$/;
+  function parseBlock(t) {
+    var eintraege = [], akt = null;
+    t.split("\n").forEach(function (zl) {
+      var m = KOPFZEILE.exec(zl);
+      if (m) { akt = { name: m[2].trim(), datum: m[3], zeilen: [] }; eintraege.push(akt); return; }
+      if (akt) akt.zeilen.push(zl);
+    });
+    if (!eintraege.length) return null;
+    // Intern (KISIM-Block, kein Briefkopf/keine Unterschrift) = Spital
+    // Limmattal; ein fremder Bericht mit Unterschrift bleibt gelb.
+    var hatSignatur = t.split("\n").some(function (z) { return SIGNATUR.test(z); });
+    var ort = ortAus(t) || (hatSignatur ? "" : "Spital Limmattal");
+    var aus = [];
+    eintraege.forEach(function (e) {
+      var b = befundText(e.zeilen);
+      if (!b.text && !b.punkte) return;
+      var name = e.name.replace(/\s+Neurologie$/i, "").trim();
+      aus.push({ ziel: zielAus(name), name: name, datum: e.datum, ort: ort,
+                 beurteilung: b.text, punkte: b.punkte });
+    });
+    return aus.length ? aus : null;
+  }
+  // Alle Befunde aus einem eingefügten Text (Liste). parseZusatz bleibt
+  // für den Einzelfall und gibt den ersten zurück.
+  function parseZusatzAlle(text) {
+    var t = String(text || "").replace(/\r\n?/g, "\n");
+    var einzeln = parseEinzeln(t);
+    if (einzeln) return [einzeln];
+    var block = parseBlock(t);
+    if (block) return block;
+    var rest = parseRest(t);
+    return rest ? [rest] : [];
+  }
   function parseZusatz(text) {
+    var l = parseZusatzAlle(text);
+    return l.length ? l[0] : null;
+  }
+  // Sonderformate mit fester Gestalt: Viollier, Punktat, Radiology
+  // Report, PACS-Export „Study:".
+  function parseEinzeln(text) {
     var t = String(text || "").replace(/\r\n?/g, "\n");
     // Viollier-Demenzmarker (29.9.): Werte fuer die LP-Zeile; A/T/N
     // bleibt IMMER gelb (aerztliche Wertung).
@@ -319,12 +411,19 @@ TB.ansichtBerichtMc = (function () {
       return { ziel: "lp", name: "Lumbalpunktion mit Demenzmarkern",
                datum: "", ort: "Spital Limmattal", werte: w2 };
     }
-    var beu = t.match(/\nBeurteilung[ \t]*:?[ \t]*\n([\s\S]*?)(?=\n_{4,}|\n\s*Visum|\n\s*Freundliche|$)/);
+    var rrT = t.match(/\n_{4,}[ \t]*\nUntersuchung[ \t]*:?[ \t]*\n/);
+    var studT = t.match(/^Study:/m);
+    if (!rrT && !studT) return null;
+    return parseRest(t);
+  }
+  // Allgemeiner Weg: „Beurteilung" suchen, Name/Datum aus dem Kopf.
+  function parseRest(text) {
+    var t = String(text || "");
+    var beu = t.match(/\nBeurteilung[ \t]*:?[ \t]*\n([\s\S]*)$/);
     if (!beu) return null;
-    var inhalt = beu[1].split("\n").map(function (z) {
-      return z.replace(/^\s*-\s*/, "").trim();
-    }).filter(function (z) { return z; }).join(" ");
-    if (!inhalt) return null;
+    var bt = befundText(beu[1].split("\n"));
+    var inhalt = bt.text;
+    if (!inhalt && !bt.punkte) return null;
     var name = "", datum = "";
     // „Radiology Report" (30.9.): Blöcke durch ____-Linien getrennt; nur
     // der Block „Untersuchung" nennt die Untersuchung — im Block
@@ -344,7 +443,7 @@ TB.ansichtBerichtMc = (function () {
     }
     if (!name) return null;
     return { ziel: zielAus(name), name: name, datum: datum,
-             ort: ortAus(t), beurteilung: inhalt };
+             ort: ortAus(t), beurteilung: inhalt, punkte: bt.punkte };
   }
   function bauAnamnese(z, wahl) {
     var TXW = TX();
@@ -459,13 +558,18 @@ TB.ansichtBerichtMc = (function () {
       { id: "fdg", titel: "FDG-PET", ort: "Universitätsspital Zürich" },
       { id: "amyloid", titel: "Amyloid-PET", ort: "Universitätsspital Zürich" }
     ];
+    // Ist eine Zeile schon gefüllt (zweites EEG, zweites Kopf-MR), bekommt
+    // der weitere Befund seine eigene Zeile; jedes Kopf-MR trägt den
+    // Eigendurchsicht-Satz (Näd 1.10.: „bei jedem MR Schädel").
+    function belegt(a) { return !!(a.beurteilung || a.punkte || a.datum); }
     zusatz.forEach(function (zu) {
       var ziel = null;
       geruest.some(function (a) {
-        if (a.id === zu.ziel) { ziel = a; return true; }
+        if (a.id === zu.ziel && !(a.id !== "lp" && belegt(a))) { ziel = a; return true; }
         return false;
       });
       if (ziel) {
+        if (zu.punkte) ziel.punkte = zu.punkte;
         if (ziel.id === "mri" && zu.name) ziel.titel = zu.name;
         if (zu.datum) ziel.datum = zu.datum;
         if (zu.beurteilung) ziel.beurteilung = zu.beurteilung;
@@ -476,8 +580,10 @@ TB.ansichtBerichtMc = (function () {
           });
         }
       } else {
-        geruest.push({ id: "eigen" + geruest.length, titel: zu.name,
-          ort: zu.ort, datum: zu.datum, beurteilung: zu.beurteilung });
+        geruest.push({ id: "eigen" + geruest.length,
+          titel: zu.ziel === "eeg" ? "Standard-EEG" : zu.name,
+          ort: zu.ort, datum: zu.datum, beurteilung: zu.beurteilung,
+          punkte: zu.punkte, eigen: zu.ziel === "mri" });
       }
     });
     function iso(d) {
@@ -513,7 +619,7 @@ TB.ansichtBerichtMc = (function () {
     lis.forEach(function (l) { text.push("\u2022 " + l.t); });
     sortiert.forEach(function (a) {
       var hatWerte = a.werte && Object.keys(a.werte).length > 0;
-      if (!a.pflicht && !a.beurteilung && !a.datum && !hatWerte) return;
+      if (!a.pflicht && !a.beurteilung && !a.datum && !hatWerte && !a.punkte) return;
       leer();
       var k = kopfteile(a.titel, a.datum, a.ort);
       var iH, iT;
@@ -540,12 +646,23 @@ TB.ansichtBerichtMc = (function () {
           " ng/l (< 56.5) — A x, T x, N x.";
       }
       else if (a.beurteilung) { iH = absatzHtml(a.beurteilung); iT = a.beurteilung; }
+      else if (a.punkte) { iH = ""; iT = ""; }
       else if (a.inhalt) { iH = schuetze(a.inhalt); iT = a.inhalt; }
       else { iH = gelbH("xx."); iT = "xx."; }
-      if (a.eigen) {
-        iH += " <i>(in der Eigendurchsicht: " + gelbH("xx") + ".)</i>";
-        iT += " (in der Eigendurchsicht: xx.)";
+      var eigenH = " <i>(in der Eigendurchsicht: " + gelbH("xx") + ".)</i>";
+      var eigenT = " (in der Eigendurchsicht: xx.)";
+      if (a.punkte) {
+        // Echte Aufzählung (1.10.): Kopf + allfälliger Fliesstext, dann
+        // die Punkte als Liste; Eigendurchsicht danach.
+        html.push("<p>" + k.h + (iH ? " " + iH : "") + "</p>");
+        text.push(k.t + (iT ? " " + iT : ""));
+        html.push("<ul>" + a.punkte.map(function (p) {
+          return "<li>" + schuetze(p) + "</li>"; }).join("") + "</ul>");
+        a.punkte.forEach(function (p) { text.push("\u2022 " + p); });
+        if (a.eigen) { html.push("<p>" + eigenH.trim() + "</p>"); text.push(eigenT.trim()); }
+        return;
       }
+      if (a.eigen) { iH += eigenH; iT += eigenT; }
       html.push("<p>" + k.h + " " + iH + "</p>");
       text.push(k.t + " " + iT);
     });
@@ -685,9 +802,9 @@ TB.ansichtBerichtMc = (function () {
     });
     zKnopf.addEventListener("click", function () {
       if (!zQuelle.value.trim()) { TB.ui.melde(TXW.zusatzLeer, true); return; }
-      var p = parseZusatz(zQuelle.value);
-      if (!p) { TB.ui.melde(TXW.zusatzUnbekannt, true); return; }
-      state.zusatz.push(p);
+      var liste = parseZusatzAlle(zQuelle.value);
+      if (!liste.length) { TB.ui.melde(TXW.zusatzUnbekannt, true); return; }
+      liste.forEach(function (p) { state.zusatz.push(p); });
       zQuelle.value = "";
       renderChips();
       // Auch OHNE Vorbericht nutzbar: dann entsteht das
@@ -699,5 +816,6 @@ TB.ansichtBerichtMc = (function () {
 
   return { zeichne: zeichne, zerlege: zerlege,
            bauAnamnese: bauAnamnese, bauUntersuchungen: bauUntersuchungen,
-           medisFormat: medisFormat, parseZusatz: parseZusatz };
+           medisFormat: medisFormat, parseZusatz: parseZusatz,
+           parseZusatzAlle: parseZusatzAlle, neuroDatumVon: neuroDatumVon };
 })();

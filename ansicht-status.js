@@ -32,6 +32,7 @@ TB.ansichtStatus = (function () {
   // Zusätze (Näd 30.9.): sichtbar, aber nicht angewählt — kommen aus
   // geladenen eigenen Status oder werden mit dem ☆ vorgemerkt.
   var angeheftet = {};         // uid -> true
+  var merkmalZusatz = {};      // uid -> { merkmal-id: true } (1.10.: Muskel-Sterne)
 
   function inTeilmenge(id) {
     return TB.status.teilmengen().some(function (t) {
@@ -57,7 +58,7 @@ TB.ansichtStatus = (function () {
     aktiveTeilmengen = {}; manuellAn = {}; manuellAb = {};
     abweichungen = {}; bearbeiteId = null;
     merkmalWahl = {}; offeneMerkmale = {};
-    angeheftet = {};
+    angeheftet = {}; merkmalZusatz = {};
   }
   function passtZurSuche(u) {
     if (!suchbegriff) return true;
@@ -172,6 +173,14 @@ TB.ansichtStatus = (function () {
           // Zusätze dieses Status: sichtbar, nicht angewählt; die Ansicht
           // zeigt dann nur Standard und Zusätze (Schalter oben hebt das auf).
           (t.zusatz || []).forEach(function (id) { angeheftet[id] = true; });
+          // Zusatz-Muskeln (1.10.): gelb markiert, nicht angewählt; ihre
+          // Muskelliste steht gleich offen, damit man sie sofort sieht.
+          Object.keys(t.merkmalZusatz || {}).forEach(function (uid) {
+            var zs = {};
+            t.merkmalZusatz[uid].forEach(function (mid) { zs[mid] = true; });
+            merkmalZusatz[uid] = zs;
+            offeneMerkmale[uid] = true;
+          });
           nurGewaehlte = true;
           // Gespeicherte Muskel-Auswahl dieses Status anwenden (27.9.)
           Object.keys(t.merkmalAb || {}).forEach(function (uid) {
@@ -396,8 +405,10 @@ TB.ansichtStatus = (function () {
   function merkmalBereich(u) {
     var huelle = el("div", "status-merkmale");
     var an = TB.status.gewaehlteMerkmale(u, merkmalWahl).length;
+    var sterne = Object.keys(merkmalZusatz[u.id] || {}).length;
     var knopf = el("button", "status-merkmal-knopf",
-      TS().muskelnKnopf.replace("%s", an).replace("%s", u.merkmale.length));
+      TS().muskelnKnopf.replace("%s", an).replace("%s", u.merkmale.length) +
+      (sterne ? "  \u2605" + sterne : ""));
     knopf.title = TS().muskelnHinweis;
     knopf.addEventListener("click", function () {
       if (offeneMerkmale[u.id]) delete offeneMerkmale[u.id];
@@ -429,7 +440,9 @@ TB.ansichtStatus = (function () {
         letzteGruppe = mk.gruppe;
         feld.appendChild(el("div", "status-merkmal-titel", mk.gruppe));
       }
-      var zeile = el("label", "status-merkmal-zeile");
+      var istStern = !!(merkmalZusatz[u.id] && merkmalZusatz[u.id][mk.id]);
+      var zeile = el("label", "status-merkmal-zeile" +
+        (istStern && !TB.status.merkmalAn(merkmalWahl, u.id, mk.id) ? " ist-zusatz" : ""));
       var kreuz = el("input");
       kreuz.type = "checkbox";
       kreuz.checked = TB.status.merkmalAn(merkmalWahl, u.id, mk.id);
@@ -442,6 +455,18 @@ TB.ansichtStatus = (function () {
       });
       zeile.appendChild(kreuz);
       zeile.appendChild(el("span", "", mk.name));
+      var mStern = el("button", "status-zusatz" + (istStern ? " an" : ""),
+        istStern ? "\u2605" : "\u2606");
+      mStern.type = "button";
+      mStern.title = istStern ? TS().zusatzMuskelAn : TS().zusatzMuskelAus;
+      mStern.addEventListener("click", function (ev) {
+        ev.preventDefault(); ev.stopPropagation();
+        var zs = merkmalZusatz[u.id] || (merkmalZusatz[u.id] = {});
+        if (zs[mk.id]) delete zs[mk.id]; else zs[mk.id] = true;
+        if (!Object.keys(zs).length) delete merkmalZusatz[u.id];
+        neu();
+      });
+      zeile.appendChild(mStern);
       feld.appendChild(zeile);
     });
     huelle.appendChild(feld);
@@ -493,7 +518,13 @@ TB.ansichtStatus = (function () {
       });
       var zusatz = m.untersuchungen.filter(function (u) {
         return angeheftet[u.id] && !menge[u.id]; }).map(function (u) { return u.id; });
-      TB.status.teilmengeSpeichern(name, punkte, merkmalAb, zusatz);
+      var mZusatz = {};
+      Object.keys(merkmalZusatz).forEach(function (uid) {
+        if (!menge[uid] && zusatz.indexOf(uid) === -1) return;
+        var ids = Object.keys(merkmalZusatz[uid]);
+        if (ids.length) mZusatz[uid] = ids;
+      });
+      TB.status.teilmengeSpeichern(name, punkte, merkmalAb, zusatz, mZusatz);
       melde(TS().alsStatusFertig.replace("%s", name));
       neu();
     });

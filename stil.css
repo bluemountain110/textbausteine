@@ -563,3 +563,10 @@ dialog.maske { width: min(720px, 94vw); }
   color: #b7c7ca; padding: 0 4px; line-height: 1; }
 .status-zusatz.an { color: #c98a00; }
 .status-zeile.ist-zusatz { background: #fff8e6; border-left: 3px solid #e0b040; }
+
+/* 1.10.: Tardoc-Hinweis nie abschneiden — ganzer Text, bei Bedarf zweizeilig */
+.status-tardoc-zeile { align-items: flex-start; }
+.status-tardoc-hinweis { white-space: normal !important; overflow: visible !important;
+  text-overflow: clip !important; line-height: 1.35; }
+.status-merkmal-zeile.ist-zusatz { background: #fff8e6; border-radius: 4px; }
+.status-merkmal-zeile .status-zusatz { margin-left: auto; }
