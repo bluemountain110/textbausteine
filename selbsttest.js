@@ -415,6 +415,7 @@ TB.selbsttest = (function () {
     var okBefund = f.befund.html.indexOf("<u>Grundaktivität</u>: ") !== -1 &&
       f.befund.html.indexOf("<p>&nbsp;</p>") !== -1 &&
       f.befund.text.indexOf("Technisch gelungene 10/20 + 6 true temporal") === 0 &&
+      f.befund.text.indexOf("Lid- und Bulbusartefakte bds. frontal. Muskelartefakte.") !== -1 &&
       f.befund.text.indexOf("EKG: normokarder Sinusrhythmus.") !== -1;
     var okBeurteilung =
       f.beurteilung.text === "Normaler Grundrhythmus. Keine Verlangsamungsherde. Keine epilepsietypischen Potentiale.";

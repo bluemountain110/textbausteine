@@ -644,3 +644,28 @@ details.eeg-kat-zu[open] > summary {
 }
 .eeg-auto { background: #f6f4ee; }
 .eeg-auto-zeile .status-befund { cursor: pointer; }
+
+/* ---- EEG 16.2: Voranwahl, Dreiknöpfe, vorbereitete Zeilen -------- */
+.eeg-wahl-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 2px 0 8px;
+}
+.eeg-herdzeile {
+  position: relative;
+  padding-right: 34px;         /* Platz fürs ✕ — nichts überlappt */
+}
+.eeg-herdzeile:not(.aktiv) { opacity: 0.62; }
+.eeg-herdzeile:not(.aktiv):hover { opacity: 1; }
+.eeg-zeile-aktiv { margin: 0 2px 0 0; }
+.eeg-zeile-weg {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  margin-left: 0;
+}
+.eeg-zeile-dazu { display: block; }
+.status-kategorie .status-weitere { display: block; margin-top: 2px; }
+/* Vorschau: kompakte Absätze, Leerzeile bleibt genau eine Zeile hoch */
+.status-vorschau-inhalt p { margin: 0 0 3px; }

@@ -14,7 +14,13 @@
 //        — Überschriebenes wird NICHT hervorgehoben. NICHTS aus dieser
 //        Ansicht wird gespeichert; nur „Als eigene Vorlage speichern"
 //        legt Ankreuz-Muster, Auswahl-Vorwahlen und Zeilen-Muster ab,
-//        nie Feld-Werte (Grundsatz 1).
+//        nie Feld-Werte (Grundsatz 1). 16.2: Der Normalbefund ist beim
+//        Öffnen VORANGEWÄHLT (nichts anklicken, nur die Frequenz
+//        tippen), Ableitung und Vigilanz sind Dreiknopf-Zeilen
+//        (Standard/Notfall/IPS bzw. wach→schläfrig/wach/schläfrig),
+//        die Artefakte drei Kästchen ohne Mengenangabe, und zwei
+//        Herd- sowie eine Entladungs-Zeile stehen vorbereitet da —
+//        sie zählen erst, sobald sie angefasst werden.
 
 "use strict";
 window.TB = window.TB || {};
@@ -32,6 +38,7 @@ TB.ansichtEeg = (function () {
   var abweichungen = {};       // punkt-/auto-/zeilen-id -> überschrieben
   var angeheftet = {};         // punkt-id -> true (☆)
   var zeilen = { herde: [], entladungen: [] };
+  var initialisiert = false;   // einmalige Voranwahl beim Öffnen
   var offeneSelten = {};       // kategorie-id -> true (Punkt-Ebene)
   var offeneKat = {};          // kategorie-id -> true (eingeklappte Kat.)
   var suchbegriff = "";
@@ -62,26 +69,47 @@ TB.ansichtEeg = (function () {
   // „keine."-Kopplung: Zeilen ersetzen den keine.-Punkt und bringen
   // ihn zurück, sobald die letzte Zeile weg ist.
   function koppleKeine() {
-    schalte("vl_keine", zeilen.herde.length === 0);
-    schalte("ent_keine", zeilen.entladungen.length === 0);
+    var a = aktiveZeilen();
+    schalte("vl_keine", a.herde.length === 0);
+    schalte("ent_keine", a.entladungen.length === 0);
   }
-  function allesLeeren() {
+  function aktiveZeilen() {
+    return { herde: zeilen.herde.filter(function (z) { return z.aktiv; }),
+             entladungen: zeilen.entladungen.filter(function (z) {
+               return z.aktiv; }) };
+  }
+  function bereiteZeilenVor() {
+    zeilen = { herde: [], entladungen: [] };
+    var i;
+    for (i = 0; i < R().herdeVorbereitet; i++)
+      zeilen.herde.push(neueZeile("herde"));
+    for (i = 0; i < R().entladungenVorbereitet; i++)
+      zeilen.entladungen.push(neueZeile("entladungen"));
+  }
+  function initZustand() {
     aktiveVorlagen = {}; manuellAn = {}; manuellAb = {};
     werte = {}; abweichungen = {}; angeheftet = {};
-    zeilen = { herde: [], entladungen: [] };
     bearbeiteId = null;
+    bereiteZeilenVor();
+    // Der Normalbefund ist immer vorangewählt (Näd 2.10.): nichts
+    // anklicken müssen, nur die Frequenz tippen.
+    var normal = TB.eeg.vorlagen().find(function (v) {
+      return v.id === "v_eeg" ||
+        String(v.kuerzel || "").toLowerCase() === "eeg"; });
+    if (normal) vorlageAktivieren(normal, true);
   }
+  function allesLeeren() { initZustand(); }
   function passtZurSuche(p) {
     if (!suchbegriff) return true;
     return p.text.toLowerCase().indexOf(suchbegriff.toLowerCase()) !== -1;
   }
   function neueZeile(art) {
     if (art === "herde") {
-      return { haeufigkeit: R().herdHaeufigkeiten[0],
+      return { aktiv: false, haeufigkeit: R().herdHaeufigkeiten[0],
                band: R().baender[0].id, lok: ["frontal", "", "", ""],
                ausbreitung: "", seite: R().seiten[0] };
     }
-    return { haeufigkeit: R().entHaeufigkeiten[0],
+    return { aktiv: false, haeufigkeit: R().entHaeufigkeiten[0],
              form: R().entFormen[0], lok: ["frontal", "", "", ""],
              ausbreitung: "", seite: R().seiten[0] };
   }
@@ -91,6 +119,7 @@ TB.ansichtEeg = (function () {
     wurzel.textContent = "";
     var m = TB.eeg.master();
     if (!m) { zeichneLeer(wurzel); return; }
+    if (!initialisiert) { initialisiert = true; initZustand(); }
 
     var klebt = el("div", "status-sticky");
     var kopf = el("div", "status-kopf");
@@ -167,6 +196,30 @@ TB.ansichtEeg = (function () {
     wurzel.appendChild(k);
   }
 
+  function vorlageAktivieren(v, still) {
+    aktiveVorlagen = {}; manuellAn = {}; manuellAb = {};
+    angeheftet = {};
+    aktiveVorlagen[v.id] = true;
+    (v.zusatz || []).forEach(function (id) { angeheftet[id] = true; });
+    // Auswahl-Vorwahlen der Vorlage anwenden (nie Feld-Werte).
+    Object.keys(v.werte || {}).forEach(function (pid) {
+      var je = werte[pid] || (werte[pid] = {});
+      Object.keys(v.werte[pid]).forEach(function (label) {
+        je[label] = v.werte[pid][label]; });
+    });
+    // Zeilen-Muster der Vorlage übernehmen (als AKTIVE Zeilen), die
+    // vorbereiteten leeren Zeilen bleiben dahinter bestehen.
+    bereiteZeilenVor();
+    (v.herde || []).forEach(function (z, i) {
+      var kopie = JSON.parse(JSON.stringify(z)); kopie.aktiv = true;
+      zeilen.herde.splice(i, 0, kopie); });
+    (v.entladungen || []).forEach(function (z, i) {
+      var kopie = JSON.parse(JSON.stringify(z)); kopie.aktiv = true;
+      zeilen.entladungen.splice(i, 0, kopie); });
+    koppleKeine();
+    if (!still) nurGewaehlte = false;
+  }
+
   function zeichneVorlagen(wurzel) {
     var liste = TB.eeg.vorlagen();
     if (!liste.length) return;
@@ -179,27 +232,9 @@ TB.ansichtEeg = (function () {
       k.addEventListener("click", function () {
         if (aktiveVorlagen[v.id]) {
           delete aktiveVorlagen[v.id];
-          (v.zusatz || []).forEach(function (id) {
-            var nochAndersWo = liste.some(function (x) {
-              return x.id !== v.id && aktiveVorlagen[x.id] &&
-                (x.zusatz || []).indexOf(id) !== -1; });
-            if (!nochAndersWo) delete angeheftet[id];
-          });
+          (v.zusatz || []).forEach(function (id) { delete angeheftet[id]; });
         } else {
-          aktiveVorlagen[v.id] = true;
-          (v.zusatz || []).forEach(function (id) { angeheftet[id] = true; });
-          // Auswahl-Vorwahlen der Vorlage anwenden (nie Feld-Werte).
-          Object.keys(v.werte || {}).forEach(function (pid) {
-            var je = werte[pid] || (werte[pid] = {});
-            Object.keys(v.werte[pid]).forEach(function (label) {
-              je[label] = v.werte[pid][label]; });
-          });
-          // Zeilen-Muster der Vorlage übernehmen.
-          if (v.herde) zeilen.herde = JSON.parse(JSON.stringify(v.herde));
-          if (v.entladungen)
-            zeilen.entladungen = JSON.parse(JSON.stringify(v.entladungen));
-          koppleKeine();
-          nurGewaehlte = true;
+          vorlageAktivieren(v, false);
         }
         neu();
       });
@@ -239,12 +274,26 @@ TB.ansichtEeg = (function () {
   }
 
   function fuelleKategorie(kasten, block) {
+    var chipPunkte = {};
+    if (block.kategorie.id === "ableitung") {
+      kasten.appendChild(ableitungsChips());
+    }
+    if (block.kategorie.id === "vigilanz") {
+      kasten.appendChild(vigilanzChips());
+      chipPunkte["vig_haupt"] = true;   // der Satz läuft über die Knöpfe
+    }
+    if (block.kategorie.id === "artefakte") {
+      kasten.appendChild(artefaktChips());
+      R().artefaktKaestchen.forEach(function (id) {
+        chipPunkte[id] = true; });
+    }
     if (block.kategorie.zeilen) {
       zeichneZeilen(kasten, block.kategorie.zeilen);
     }
     var mitZeilen = block.kategorie.zeilen &&
-      zeilen[block.kategorie.zeilen].length > 0;
+      aktiveZeilen()[block.kategorie.zeilen].length > 0;
     var sichtbar = function (p) {
+      if (chipPunkte[p.id]) return false;   // laufen über die Knopfzeile
       if (mitZeilen && (p.id === "vl_keine" || p.id === "ent_keine"))
         return false;
       if (nurGewaehlte && !istGewaehlt(p.id) && !angeheftet[p.id]) return false;
@@ -279,6 +328,66 @@ TB.ansichtEeg = (function () {
     }
   }
 
+  // ---- Dreiknopf-Zeilen und Artefakt-Kästchen --------------------------
+  function chip(beschriftung, aktivZustand, tuDies) {
+    var k = el("button", "status-chip" + (aktivZustand ? " aktiv" : ""),
+      beschriftung);
+    k.addEventListener("click", function () { tuDies(); neu(); });
+    return k;
+  }
+  function wertAktuell(pid, label) {
+    var p = TB.eeg.punkt(TB.eeg.master(), pid);
+    if (!p) return "";
+    var stueck = TB.eeg.zerlege(p.text).find(function (st) {
+      return st.art === "auswahl" && st.label === label; });
+    if (!stueck) return "";
+    return TB.eeg.wertVon(stueck, werte, pid);
+  }
+  function ableitungsChips() {
+    var zeile = el("div", "eeg-wahl-chips");
+    var montage = wertAktuell("abl_satz", "Montage");
+    var bedingungen = wertAktuell("abl_satz", "Bedingungen");
+    R().ableitungKnoepfe.forEach(function (kn) {
+      var aktivZ = montage === kn.werte["Montage"] &&
+                   bedingungen === kn.werte["Bedingungen"];
+      zeile.appendChild(chip(kn.name, aktivZ, function () {
+        var je = werte["abl_satz"] || (werte["abl_satz"] = {});
+        Object.keys(kn.werte).forEach(function (label) {
+          je[label] = kn.werte[label]; });
+        schalte("abl_satz", true);
+        schalte("art_50hz", !!kn.artefakt50);
+      }));
+    });
+    return zeile;
+  }
+  function vigilanzChips() {
+    var zeile = el("div", "eeg-wahl-chips");
+    var jetzt = wertAktuell("vig_haupt", "Zustand");
+    R().vigilanzKnoepfe.forEach(function (kn) {
+      zeile.appendChild(chip(kn.name, istGewaehlt("vig_haupt") &&
+        jetzt === kn.wert, function () {
+          var je = werte["vig_haupt"] || (werte["vig_haupt"] = {});
+          je["Zustand"] = kn.wert;
+          schalte("vig_haupt", true);
+        }));
+    });
+    return zeile;
+  }
+  function artefaktChips() {
+    var zeile = el("div", "eeg-wahl-chips");
+    var m = TB.eeg.master();
+    R().artefaktKaestchen.forEach(function (pid) {
+      var p = TB.eeg.punkt(m, pid);
+      if (!p) return;
+      var kurz = TB.eeg.aufgeloest(p, werte).replace(/\.$/, "")
+        .replace(" bds. frontal", "");
+      zeile.appendChild(chip(kurz, istGewaehlt(pid), function () {
+        schalte(pid, !istGewaehlt(pid));
+      }));
+    });
+    return zeile;
+  }
+
   // ---- Herd- und Entladungs-Zeilen -------------------------------------
   function auswahl(optionen, wert, leerZeichen, wandel) {
     var ddl = el("select", "eeg-auswahl");
@@ -301,7 +410,9 @@ TB.ansichtEeg = (function () {
     var dazu = el("button", "eeg-zeile-dazu",
       art === "herde" ? TE().herdDazu : TE().entDazu);
     dazu.addEventListener("click", function () {
-      liste.push(neueZeile(art));
+      var frisch = neueZeile(art);
+      frisch.aktiv = true;
+      liste.push(frisch);
       koppleKeine();
       neu();
     });
@@ -309,14 +420,25 @@ TB.ansichtEeg = (function () {
   }
 
   function zeilenEditor(art, z, idx) {
-    var rahmen = el("div", "eeg-herdzeile");
+    var rahmen = el("div", "eeg-herdzeile" + (z.aktiv ? " aktiv" : ""));
     var istHerd = (art === "herde");
+    function fasseAn() {
+      if (!z.aktiv) { z.aktiv = true; koppleKeine(); }
+    }
+
+    var kreuz = el("input", "eeg-zeile-aktiv");
+    kreuz.type = "checkbox";
+    kreuz.checked = !!z.aktiv;
+    kreuz.title = TE().zeileZaehlt;
+    kreuz.addEventListener("change", function () {
+      z.aktiv = kreuz.checked; koppleKeine(); neu(); });
+    rahmen.appendChild(kreuz);
 
     var h = auswahl(istHerd ? R().herdHaeufigkeiten : R().entHaeufigkeiten,
       z.haeufigkeit);
     h.title = "Häufigkeit";
     h.addEventListener("change", function () {
-      z.haeufigkeit = h.value; neu(); });
+      z.haeufigkeit = h.value; fasseAn(); neu(); });
     rahmen.appendChild(h);
 
     if (istHerd) {
@@ -326,13 +448,13 @@ TB.ansichtEeg = (function () {
           return x.id === id; }).wort; });
       b.title = "Band";
       b.addEventListener("change", function () {
-        z.band = b.value; neu(); });
+        z.band = b.value; fasseAn(); neu(); });
       rahmen.appendChild(b);
     } else {
       var f = auswahl(R().entFormen, z.form);
       f.title = "Form";
       f.addEventListener("change", function () {
-        z.form = f.value; neu(); });
+        z.form = f.value; fasseAn(); neu(); });
       rahmen.appendChild(f);
     }
 
@@ -354,7 +476,7 @@ TB.ansichtEeg = (function () {
         l.title = "Lokalisation " + (i + 1);
         l.classList.add("eeg-lok");
         l.addEventListener("change", function () {
-          z.lok[i] = l.value;
+          z.lok[i] = l.value; fasseAn();
           if (i === 0 && (l.value === "generalisiert" ||
                           l.value === "hemisphärisch")) {
             z.lok[1] = ""; z.lok[2] = ""; z.lok[3] = "";
@@ -372,20 +494,26 @@ TB.ansichtEeg = (function () {
       var a = auswahl(R().ausbreitungen, z.ausbreitung || "", "— Ausbreitung");
       a.title = "Ausbreitung";
       a.addEventListener("change", function () {
-        z.ausbreitung = a.value; neu(); });
+        z.ausbreitung = a.value; fasseAn(); neu(); });
       rahmen.appendChild(a);
 
       var s = auswahl(R().seiten, z.seite || R().seiten[0]);
       s.title = "Seite";
       s.addEventListener("change", function () {
-        z.seite = s.value; neu(); });
+        z.seite = s.value; fasseAn(); neu(); });
       rahmen.appendChild(s);
     }
 
     var weg = el("button", "eeg-zeile-weg", "✕");
     weg.title = TE().zeileWeg;
     weg.addEventListener("click", function () {
-      zeilen[art].splice(idx, 1);
+      var vorbereitet = istHerd ? R().herdeVorbereitet
+                                : R().entladungenVorbereitet;
+      if (zeilen[art].length > vorbereitet) {
+        zeilen[art].splice(idx, 1);       // zusätzliche Zeile: weg
+      } else {
+        zeilen[art][idx] = neueZeile(art); // vorbereitete: zurücksetzen
+      }
       koppleKeine();
       neu();
     });
@@ -396,7 +524,7 @@ TB.ansichtEeg = (function () {
   // ---- Automatische Beurteilung in der Maske ---------------------------
   function zeichneAutoBeurteilung(ziel, m) {
     var menge = gewaehltAlsMenge(m);
-    var saetze = TB.eeg.autoBeurteilung(menge, werte, zeilen);
+    var saetze = TB.eeg.autoBeurteilung(menge, werte, aktiveZeilen());
     if (!saetze.length) return;
     var kasten = el("section", "status-kategorie eeg-auto");
     kasten.appendChild(el("div", "klein-hinweis", TE().autoHinweis));
@@ -550,8 +678,9 @@ TB.ansichtEeg = (function () {
   }
 
   function istLeer(m) {
+    var a = aktiveZeilen();
     return !Object.keys(gewaehltAlsMenge(m)).length &&
-           !zeilen.herde.length && !zeilen.entladungen.length;
+           !a.herde.length && !a.entladungen.length;
   }
 
   function kopierKnopf(beschriftung, nimm) {
@@ -560,7 +689,8 @@ TB.ansichtEeg = (function () {
       var m = TB.eeg.master();
       if (istLeer(m)) { melde(TE().nichtsGewaehlt, true); return; }
       var menge = gewaehltAlsMenge(m);
-      var f = TB.eeg.fliesstext(m, menge, werte, abweichungen, zeilen);
+      var f = TB.eeg.fliesstext(m, menge, werte, abweichungen,
+        aktiveZeilen());
       var teil = nimm(f);
       TB.ui.kopiereFassungen(teil.html, teil.text, function (ok, wie) {
         if (!ok) { melde(TE().kopierenFehl, true); return; }
@@ -575,8 +705,9 @@ TB.ansichtEeg = (function () {
   function zeichneRechts(m) {
     var rechts = el("div", "status-rechts");
     var menge = gewaehltAlsMenge(m);
+    var a = aktiveZeilen();
     var anzahl = Object.keys(menge).length +
-                 zeilen.herde.length + zeilen.entladungen.length;
+                 a.herde.length + a.entladungen.length;
     var ueberschrieben = Object.keys(abweichungen).length;
 
     var knoepfe = el("div", "status-knoepfe");
@@ -626,7 +757,8 @@ TB.ansichtEeg = (function () {
         });
         if (Object.keys(behalten).length) w[p.id] = behalten;
       });
-      TB.eeg.vorlageSpeichern(name, kuerzel, punkte, zusatz, w, zeilen);
+      TB.eeg.vorlageSpeichern(name, kuerzel, punkte, zusatz, w,
+        aktiveZeilen());
       melde(TE().vorlageFertig.replace("%s", name));
       neu();
     });
@@ -638,7 +770,7 @@ TB.ansichtEeg = (function () {
         .replace("%s", String(ueberschrieben))));
 
     var f = istLeer(m) ? null
-      : TB.eeg.fliesstext(m, menge, werte, abweichungen, zeilen);
+      : TB.eeg.fliesstext(m, menge, werte, abweichungen, aktiveZeilen());
     [[TE().befundTitel, f && f.befund], [TE().beurteilungTitel, f && f.beurteilung]]
       .forEach(function (paar) {
         var vorschau = el("div", "vorschau-kasten status-vorschau");

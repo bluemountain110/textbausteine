@@ -72,6 +72,30 @@ TB.eegGrundlage = (function () {
     entFormen: ["Spike-Wave-Komplexe", "Spikes", "Sharp-Waves",
                 "Polyspikes", "Polyspike-Wave-Komplexe",
                 "Sharp-Slow-Wave-Komplexe"],
+    // Dreiknopf-Zeilen (Näd 2.10. Nachmittag): links = vorangewählt.
+    ableitungKnoepfe: [
+      { name: "Standard",
+        werte: { "Montage": "10/20 + 6 true temporal Elektroden-Ableitung",
+                 "Bedingungen": "unter Standardbedingungen im EEG Stuhl" },
+        artefakt50: false },
+      { name: "Notfall",
+        werte: { "Montage": "10/20-Ableitung",
+                 "Bedingungen": "auf der Notfallliege" },
+        artefakt50: false },
+      { name: "IPS",
+        werte: { "Montage": "10/20-Ableitung",
+                 "Bedingungen": "im Bett auf der Intensivstation" },
+        artefakt50: true }
+    ],
+    vigilanzKnoepfe: [
+      { name: "wach, im Verlauf schläfrig",
+        wert: "wach, im Verlauf schläfrig mit Alpha-dropout und hypnagogen Thetawellen" },
+      { name: "wach", wert: "wach" },
+      { name: "durchgehend schläfrig", wert: "durchgehend schläfrig" }
+    ],
+    artefaktKaestchen: ["art_augen", "art_muskel", "art_bewegung"],
+    herdeVorbereitet: 2,
+    entladungenVorbereitet: 1,
     keineHerde: "Keine Verlangsamungsherde.",
     keineEtp: "Keine epilepsietypischen Potentiale.",
     etpWort: "Epilepsietypische Potentiale",
@@ -121,12 +145,9 @@ TB.eegGrundlage = (function () {
     p("abl_schlafentzug", "ableitung", false, "Zustand nach Schlafentzug."),
     // ---- Artefakte ----------------------------------------------------
     p("art_augen", "artefakte", true,
-      aw("Menge", "Wenig|Mässig viele|Viele|Keine") + " Lid- und Bulbusartefakte bds. frontal."),
-    p("art_muskel", "artefakte", true,
-      aw("Menge", "Wenig|Mässig viele|Viele|Keine") + " Muskelartefakte" +
-      aw("Schwerpunkt", "| v. a. frontal| v. a. temporal| diffus") + "."),
-    p("art_bewegung", "artefakte", false,
-      aw("Menge", "Wiederholt|Viele") + " Bewegungsartefakte."),
+      "Lid- und Bulbusartefakte bds. frontal."),
+    p("art_muskel", "artefakte", true, "Muskelartefakte."),
+    p("art_bewegung", "artefakte", true, "Bewegungsartefakte."),
     p("art_50hz", "artefakte", false,
       "50-Hz-Artefakte " + aw("Schwerpunkt", "diffus|über einzelnen Elektroden") + "."),
     p("art_pflege", "artefakte", false,
@@ -342,7 +363,7 @@ TB.eegGrundlage = (function () {
   // 16.1 hat den Katalog umgebaut (Schnell-Befund): stand-Wechsel löst
   // in eeg.js den einmaligen Vollersatz aus (eigene Punkte mit
   // id-Anfang "eig" überleben ihn).
-  var KATALOG_STAND = "2026-10-02b";
+  var KATALOG_STAND = "2026-10-02c";
 
   function master() {
     return { stand: KATALOG_STAND,
