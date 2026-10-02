@@ -37,7 +37,7 @@ TB.ansichtEeg = (function () {
   var werte = {};              // punkt-id -> { Label: Wert }
   var abweichungen = {};       // punkt-/auto-/zeilen-id -> überschrieben
   var angeheftet = {};         // punkt-id -> true (☆)
-  var zeilen = { herde: [], entladungen: [] };
+  var zeilen = { herde: [], entladungen: [], transienten: [] };
   var initialisiert = false;   // einmalige Voranwahl beim Öffnen
   var offeneSelten = {};       // kategorie-id -> true (Punkt-Ebene)
   var offeneKat = {};          // kategorie-id -> true (eingeklappte Kat.)
@@ -69,17 +69,20 @@ TB.ansichtEeg = (function () {
   // „keine."-Kopplung: Zeilen ersetzen den keine.-Punkt und bringen
   // ihn zurück, sobald die letzte Zeile weg ist.
   function koppleKeine() {
+    // Transienten sind KEINE Herde: sie ersetzen nur die Befundzeile
+    // "keine.", die Beurteilung behält "Keine Verlangsamungsherde."
     var a = aktiveZeilen();
     schalte("vl_keine", a.herde.length === 0);
     schalte("ent_keine", a.entladungen.length === 0);
   }
   function aktiveZeilen() {
-    return { herde: zeilen.herde.filter(function (z) { return z.aktiv; }),
-             entladungen: zeilen.entladungen.filter(function (z) {
-               return z.aktiv; }) };
+    var nurAktive = function (z) { return z.aktiv; };
+    return { herde: zeilen.herde.filter(nurAktive),
+             entladungen: zeilen.entladungen.filter(nurAktive),
+             transienten: zeilen.transienten.filter(nurAktive) };
   }
   function bereiteZeilenVor() {
-    zeilen = { herde: [], entladungen: [] };
+    zeilen = { herde: [], entladungen: [], transienten: [] };
     var i;
     for (i = 0; i < R().herdeVorbereitet; i++)
       zeilen.herde.push(neueZeile("herde"));
@@ -105,13 +108,19 @@ TB.ansichtEeg = (function () {
   }
   function neueZeile(art) {
     if (art === "herde") {
-      return { aktiv: false, haeufigkeit: R().herdHaeufigkeiten[0],
-               band: R().baender[0].id, lok: ["frontal", "", "", ""],
-               ausbreitung: "", seite: R().seiten[0] };
+      var hv = R().herdVorwahl;
+      return { aktiv: false, haeufigkeit: hv.haeufigkeit, band: hv.band,
+               lok: hv.lok.slice(), ausbreitung: hv.ausbreitung,
+               seite: hv.seite };
     }
-    return { aktiv: false, haeufigkeit: R().entHaeufigkeiten[0],
-             form: R().entFormen[0], lok: ["frontal", "", "", ""],
-             ausbreitung: "", seite: R().seiten[0] };
+    if (art === "transienten") {
+      return { aktiv: false, haeufigkeit: R().transHaeufigkeiten[0],
+               lok: ["temporal", "", "", ""], ausbreitung: "", seite: "" };
+    }
+    var ev = R().entVorwahl;
+    return { aktiv: false, haeufigkeit: ev.haeufigkeit,
+             form: R().entFormen[0], lok: ev.lok.slice(),
+             ausbreitung: ev.ausbreitung, seite: ev.seite };
   }
 
   // ---- Zeichnen --------------------------------------------------------
@@ -216,6 +225,9 @@ TB.ansichtEeg = (function () {
     (v.entladungen || []).forEach(function (z, i) {
       var kopie = JSON.parse(JSON.stringify(z)); kopie.aktiv = true;
       zeilen.entladungen.splice(i, 0, kopie); });
+    (v.transienten || []).forEach(function (z) {
+      var kopie = JSON.parse(JSON.stringify(z)); kopie.aktiv = true;
+      zeilen.transienten.push(kopie); });
     koppleKeine();
     if (!still) nurGewaehlte = false;
   }
@@ -287,11 +299,10 @@ TB.ansichtEeg = (function () {
       R().artefaktKaestchen.forEach(function (id) {
         chipPunkte[id] = true; });
     }
-    if (block.kategorie.zeilen) {
-      zeichneZeilen(kasten, block.kategorie.zeilen);
-    }
+    var a = aktiveZeilen();
     var mitZeilen = block.kategorie.zeilen &&
-      aktiveZeilen()[block.kategorie.zeilen].length > 0;
+      (a[block.kategorie.zeilen].length > 0 ||
+       (block.kategorie.zeilen === "herde" && a.transienten.length > 0));
     var sichtbar = function (p) {
       if (chipPunkte[p.id]) return false;   // laufen über die Knopfzeile
       if (mitZeilen && (p.id === "vl_keine" || p.id === "ent_keine"))
@@ -305,16 +316,47 @@ TB.ansichtEeg = (function () {
       return vorne(p) && sichtbar(p); });
     var seltene = block.punkte.filter(function (p) {
       return !vorne(p) && sichtbar(p); });
+    // „keine." (und alles Häufige) steht ZUERST, die Zeilen folgen.
     haeufige.forEach(function (p) { kasten.appendChild(zeile(p)); });
-    if (seltene.length) {
+    if (block.kategorie.zeilen) {
+      zeichneZeilen(kasten, block.kategorie.zeilen);
+      // Angefangene Transienten-Zeilen bleiben immer sichtbar.
+      if (block.kategorie.zeilen === "herde") {
+        zeilen.transienten.forEach(function (z, idx) {
+          kasten.appendChild(zeilenEditor("transienten", z, idx)); });
+      }
+    }
+    if (seltene.length || block.kategorie.zeilen === "herde") {
       var offen = !!offeneSelten[block.kategorie.id] || !!suchbegriff ||
                   nurGewaehlte;
       if (offen) {
+        var stadien = {};
+        R().schlafElemente.forEach(function (e) {
+          stadien[e.id] = e.stadium; });
+        var letzterTitel = null;
         seltene.forEach(function (p) {
+          if (block.kategorie.id === "vigilanz" && stadien[p.id] &&
+              stadien[p.id] !== letzterTitel) {
+            letzterTitel = stadien[p.id];
+            kasten.appendChild(el("div", "eeg-stadium-titel",
+              letzterTitel + ":"));
+          }
           var z = zeile(p); z.classList.add("selten");
           kasten.appendChild(z); });
+        if (block.kategorie.zeilen === "herde") {
+          var transDazu = el("button", "eeg-zeile-dazu selten",
+            TE().transDazu);
+          transDazu.addEventListener("click", function () {
+            var frisch = neueZeile("transienten");
+            frisch.aktiv = true;
+            zeilen.transienten.push(frisch);
+            koppleKeine();
+            neu();
+          });
+          kasten.appendChild(transDazu);
+        }
       }
-      if (!suchbegriff && !nurGewaehlte) {
+      if (!suchbegriff && !nurGewaehlte && seltene.length) {
         var schalter = el("button", "status-weitere", offen
           ? TE().weitereAuf
           : TE().weitereZu.replace("%s", String(seltene.length)));
@@ -422,6 +464,7 @@ TB.ansichtEeg = (function () {
   function zeilenEditor(art, z, idx) {
     var rahmen = el("div", "eeg-herdzeile" + (z.aktiv ? " aktiv" : ""));
     var istHerd = (art === "herde");
+    var istTrans = (art === "transienten");
     function fasseAn() {
       if (!z.aktiv) { z.aktiv = true; koppleKeine(); }
     }
@@ -434,14 +477,17 @@ TB.ansichtEeg = (function () {
       z.aktiv = kreuz.checked; koppleKeine(); neu(); });
     rahmen.appendChild(kreuz);
 
-    var h = auswahl(istHerd ? R().herdHaeufigkeiten : R().entHaeufigkeiten,
+    var h = auswahl(istTrans ? R().transHaeufigkeiten
+      : (istHerd ? R().herdHaeufigkeiten : R().entHaeufigkeiten),
       z.haeufigkeit);
     h.title = "Häufigkeit";
     h.addEventListener("change", function () {
       z.haeufigkeit = h.value; fasseAn(); neu(); });
     rahmen.appendChild(h);
 
-    if (istHerd) {
+    if (istTrans) {
+      rahmen.appendChild(el("span", "eeg-trans-wort", R().transWort));
+    } else if (istHerd) {
       var baender = R().baender.map(function (b) { return b.id; });
       var b = auswahl(baender, z.band, "", function (id) {
         return R().baender.find(function (x) {
@@ -497,7 +543,7 @@ TB.ansichtEeg = (function () {
         z.ausbreitung = a.value; fasseAn(); neu(); });
       rahmen.appendChild(a);
 
-      var s = auswahl(R().seiten, z.seite || R().seiten[0]);
+      var s = auswahl(R().seiten, z.seite || "", "— Seite");
       s.title = "Seite";
       s.addEventListener("change", function () {
         z.seite = s.value; fasseAn(); neu(); });
@@ -507,8 +553,8 @@ TB.ansichtEeg = (function () {
     var weg = el("button", "eeg-zeile-weg", "✕");
     weg.title = TE().zeileWeg;
     weg.addEventListener("click", function () {
-      var vorbereitet = istHerd ? R().herdeVorbereitet
-                                : R().entladungenVorbereitet;
+      var vorbereitet = istTrans ? 0
+        : (istHerd ? R().herdeVorbereitet : R().entladungenVorbereitet);
       if (zeilen[art].length > vorbereitet) {
         zeilen[art].splice(idx, 1);       // zusätzliche Zeile: weg
       } else {
@@ -647,7 +693,13 @@ TB.ansichtEeg = (function () {
           });
           huelle.appendChild(ddl);
         } else {
-          var ein = el("input", "eeg-feld");
+          var breite = "";
+          if (["Klinik", "Beschreibung", "Kurzbefund"].indexOf(s.label) !== -1)
+            breite = " eeg-feld-breit";
+          else if (["Schwerpunkt", "Substanz", "Sedation", "Quelle",
+                    "Elektrode"].indexOf(s.label) !== -1)
+            breite = " eeg-feld-mittel";
+          var ein = el("input", "eeg-feld" + breite);
           ein.type = "text";
           ein.value = TB.eeg.wertVon(s, werte, p.id);
           ein.placeholder = s.label;

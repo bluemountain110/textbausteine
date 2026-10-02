@@ -53,6 +53,7 @@ TB.eegTexte = {
   pflegeKnopf: "EEG-Pflege",
   seltenTitel: "Selten gebraucht (aufklappen):",
   herdDazu: "+ Herd",
+  transDazu: "+ steile Transienten",
   entDazu: "+ Entladung",
   zeileWeg: "Zeile entfernen (vorbereitete Zeilen werden geleert)",
   zeileZaehlt: "Zeile zählt im Befund — jedes Anfassen kreuzt sie von selbst an",
@@ -290,8 +291,8 @@ TB.eeg = (function () {
   function lokMitSeite(z) {
     var kette = kettenText(z.lok);
     if (kette === "generalisiert") return "generalisiert";
-    var seite = z.seite || R().seiten[0];
-    return (kette ? kette + " " : "") + seite;
+    var seite = z.seite || "";
+    return (kette + (seite ? " " + seite : "")).trim();
   }
   function ausbreitungsText(z) {
     if (!z.ausbreitung) return "";
@@ -318,6 +319,12 @@ TB.eeg = (function () {
       return h + " generalisierte " + form + ".";
     }
     return h + " " + form + " " + lokMitSeite(z) + ausbreitungsText(z) + ".";
+  }
+  function transBefundSatz(z) {
+    var h = z.haeufigkeit || R().transHaeufigkeiten[0];
+    var lage = lokMitSeite(z);
+    return h + " " + R().transWort + (lage ? " " + lage : "") +
+      ausbreitungsText(z) + R().transSchluss + ".";
   }
   function entBeurteilungSatz(z) {
     if (kettenText(z.lok) === "generalisiert") {
@@ -351,14 +358,41 @@ TB.eeg = (function () {
     if (hz >= r.avLeichtAb) return r.avSaetze.leicht;
     return r.avSaetze.mittel;
   }
+  function schlafStadium(gewaehlt) {
+    var tiefstes = null;
+    var reihen = R().schlafStadien;
+    R().schlafElemente.forEach(function (e) {
+      if (!gewaehlt[e.id]) return;
+      if (tiefstes === null ||
+          reihen.indexOf(e.stadium) > reihen.indexOf(tiefstes))
+        tiefstes = e.stadium;
+    });
+    return tiefstes;
+  }
+  function grossAnfang(t) {
+    t = String(t || "");
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  }
   function autoBeurteilung(gewaehlt, werte, zeilen) {
     var z = zeilen || {};
     var herde = z.herde || [], ent = z.entladungen || [];
     var saetze = [];
+    // Eingeschränkte Beurteilbarkeit steht GANZ VORN (Näd 2.10.).
+    if (gewaehlt["art_grenze"]) {
+      var grad = (werte && werte["art_grenze"] &&
+        werte["art_grenze"]["Grad"]) || "leicht";
+      saetze.push({ id: "auto_grenze",
+        text: R().grenzSatz.replace("%s", grossAnfang(grad)) });
+    }
     var av = avSatz(hzWert(gewaehlt, werte));
     if (av) saetze.push({ id: "auto_av", text: av });
     if (gewaehlt["ga_fgrda"]) {
       saetze.push({ id: "auto_fgrda", text: R().fgrdaBeurteilung });
+    }
+    var stadium = schlafStadium(gewaehlt);
+    if (stadium) {
+      saetze.push({ id: "auto_schlaf",
+        text: R().schlafSatz.replace("%s", stadium) });
     }
     if (herde.length) {
       herde.forEach(function (h, i) {
@@ -396,7 +430,9 @@ TB.eeg = (function () {
       var zeilenSaetze = [];
       if (bereich === "befund" && block.kategorie.zeilen) {
         var liste = z[block.kategorie.zeilen] || [];
-        if (liste.length) {
+        var trans = (block.kategorie.zeilen === "herde")
+          ? (z.transienten || []) : [];
+        if (liste.length || trans.length) {
           // Zeilen ersetzen „keine." und stehen vor den Zusatz-Punkten.
           teile = teile.filter(function (p) {
             return p.id !== "vl_keine" && p.id !== "ent_keine"; });
@@ -406,7 +442,19 @@ TB.eeg = (function () {
             zeilenSaetze.push({ id: "z_" + block.kategorie.zeilen + i,
                                 satz: satz });
           });
+          trans.forEach(function (zle, i) {
+            zeilenSaetze.push({ id: "z_trans" + i,
+                                satz: transBefundSatz(zle) });
+          });
         }
+      }
+      // Hyperventilation/Photostimulation: Häkchen weg heisst
+      // automatisch "nicht durchgeführt." (überschreibbar; Näd 2.10.).
+      if (bereich === "befund" && !teile.length && !zeilenSaetze.length &&
+          (block.kategorie.id === "hyperventilation" ||
+           block.kategorie.id === "photostimulation")) {
+        zeilenSaetze.push({ id: "auto_" + block.kategorie.id,
+                            satz: R().nichtDurchgefuehrt });
       }
       var autoSaetze = [];
       if (bereich === "beurteilung" && block.kategorie.id === "beurteilung") {
@@ -478,6 +526,8 @@ TB.eeg = (function () {
       return JSON.parse(JSON.stringify(x)); });
     var ent = (z.entladungen || []).map(function (x) {
       return JSON.parse(JSON.stringify(x)); });
+    var trans = (z.transienten || []).map(function (x) {
+      return JSON.parse(JSON.stringify(x)); });
     if (da) {
       da.kuerzel = String(kuerzel || da.kuerzel || "");
       da.punkte = punkte.slice();
@@ -485,12 +535,14 @@ TB.eeg = (function () {
       da.werte = w;
       if (herde.length) da.herde = herde; else delete da.herde;
       if (ent.length) da.entladungen = ent; else delete da.entladungen;
+      if (trans.length) da.transienten = trans; else delete da.transienten;
     } else {
       liste.push({ id: "v" + Date.now().toString(36), name: String(name),
                    kuerzel: String(kuerzel || ""), punkte: punkte.slice(),
                    zusatz: zu.length ? zu : undefined, werte: w,
                    herde: herde.length ? herde : undefined,
-                   entladungen: ent.length ? ent : undefined });
+                   entladungen: ent.length ? ent : undefined,
+                   transienten: trans.length ? trans : undefined });
     }
     speichereVorlagen(liste);
     return !da;
@@ -509,5 +561,6 @@ TB.eeg = (function () {
            herdBeurteilungSatz: herdBeurteilungSatz,
            entBefundSatz: entBefundSatz,
            entBeurteilungSatz: entBeurteilungSatz,
+           transBefundSatz: transBefundSatz,
            autoBeurteilung: autoBeurteilung, avSatz: avSatz };
 })();

@@ -415,7 +415,7 @@ TB.selbsttest = (function () {
     var okBefund = f.befund.html.indexOf("<u>Grundaktivität</u>: ") !== -1 &&
       f.befund.html.indexOf("<p>&nbsp;</p>") !== -1 &&
       f.befund.text.indexOf("Technisch gelungene 10/20 + 6 true temporal") === 0 &&
-      f.befund.text.indexOf("Lid- und Bulbusartefakte bds. frontal. Muskelartefakte.") !== -1 &&
+      f.befund.text.indexOf("Hyperventilation: keine neuen Aspekte.") !== -1 &&
       f.befund.text.indexOf("EKG: normokarder Sinusrhythmus.") !== -1;
     var okBeurteilung =
       f.beurteilung.text === "Normaler Grundrhythmus. Keine Verlangsamungsherde. Keine epilepsietypischen Potentiale.";
@@ -448,7 +448,14 @@ TB.selbsttest = (function () {
         "Vereinzelte generalisierte Spike-Wave-Komplexe." &&
       TB.eeg.entBeurteilungSatz(ent1) ===
         "Generalisierte epilepsietypische Potentiale.";
-    var okAv = TB.eeg.avSatz(8) === "Normaler Grundrhythmus." &&
+    var okSeiteLeer =
+      TB.eeg.herdBeurteilungSatz({ band: "theta-delta",
+        lok: ["temporal", "", "", ""], seite: "" }) ===
+        "Mässiggradiger Verlangsamungsherd temporal." &&
+      TB.eeg.transBefundSatz({ haeufigkeit: "Vereinzelt",
+        lok: ["temporal", "", "", ""], ausbreitung: "", seite: "" }) ===
+        "Vereinzelt eingelagerte steilere Transienten temporal, die Kriterien für epilepsietypische Potenziale jedoch nicht vollständig erfüllt.";
+    var okAv = okSeiteLeer && TB.eeg.avSatz(8) === "Normaler Grundrhythmus." &&
       TB.eeg.avSatz(7.9) === "Leichte Allgemeinveränderung." &&
       TB.eeg.avSatz(6) === "Leichte Allgemeinveränderung." &&
       TB.eeg.avSatz(5.9) === "Mittelschwere Allgemeinveränderung.";

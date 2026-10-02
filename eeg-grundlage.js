@@ -59,7 +59,7 @@ TB.eegGrundlage = (function () {
       { id: "zentral",   binde: "zentro" }
     ],
     spezialLok: ["generalisiert", "hemisphärisch"],
-    seiten: ["links", "rechts", "bds.", "bds. linksbetont",
+    seiten: ["", "links", "rechts", "bds.", "bds. linksbetont",
              "bds. rechtsbetont"],
     ausbreitungen: ["", "bis zur Mittellinie", "bis zur Gegenseite",
                     "bis frontal", "bis temporal", "bis parietal",
@@ -70,8 +70,8 @@ TB.eegGrundlage = (function () {
     entHaeufigkeiten: ["Vereinzelte", "Wiederholte", "Intermittierende",
                        "Kontinuierliche"],
     entFormen: ["Spike-Wave-Komplexe", "Spikes", "Sharp-Waves",
-                "Polyspikes", "Polyspike-Wave-Komplexe",
-                "Sharp-Slow-Wave-Komplexe"],
+                "Sharp-Wave-Komplexe", "Polyspikes",
+                "Polyspike-Wave-Komplexe", "Sharp-Slow-Wave-Komplexe"],
     // Dreiknopf-Zeilen (Näd 2.10. Nachmittag): links = vorangewählt.
     ableitungKnoepfe: [
       { name: "Standard",
@@ -96,6 +96,39 @@ TB.eegGrundlage = (function () {
     artefaktKaestchen: ["art_augen", "art_muskel", "art_bewegung"],
     herdeVorbereitet: 2,
     entladungenVorbereitet: 1,
+    // Voranwahl der vorbereiteten Herd-Zeile: das Häufigste (Näd
+    // 2.10. Abend) — intermittierend, Theta-Delta, temporal, KEINE
+    // Seite vorausgewählt.
+    herdVorwahl: { haeufigkeit: "Intermittierend", band: "theta-delta",
+                   lok: ["temporal", "", "", ""], ausbreitung: "",
+                   seite: "" },
+    entVorwahl: { haeufigkeit: "Vereinzelte", lok: ["temporal", "", "", ""],
+                  ausbreitung: "", seite: "" },
+    // Steile Transienten als eigene Zeilen-Art (wie die Herde, mit
+    // Kette und Seite), fester Schluss-Teil.
+    transHaeufigkeiten: ["Vereinzelt", "Wiederholt"],
+    transSchluss: ", die Kriterien für epilepsietypische Potenziale jedoch nicht vollständig erfüllt",
+    transWort: "eingelagerte steilere Transienten",
+    // Eingeschränkte Beurteilbarkeit (aus dem Artefakt-Punkt) steht
+    // GANZ VORN in der Beurteilung.
+    grenzSatz: "%s eingeschränkte Beurteilbarkeit aufgrund von Artefakten.",
+    // Hyperventilation/Photostimulation: Häkchen weg = automatisch
+    // "nicht durchgeführt." (überschreibbar).
+    nichtDurchgefuehrt: "nicht durchgeführt.",
+    // Schlafelemente, geordnet nach Stadium; ein Kreuz ergibt in der
+    // Beurteilung "Erreichen von Schlafstadium x." (das tiefste).
+    schlafStadien: ["N1", "N2", "N3", "REM"],
+    schlafElemente: [
+      { id: "vig_n1_vertex", stadium: "N1" },
+      { id: "vig_n1_theta", stadium: "N1" },
+      { id: "vig_n1_posts", stadium: "N1" },
+      { id: "vig_n2_spindeln", stadium: "N2" },
+      { id: "vig_n2_k", stadium: "N2" },
+      { id: "vig_n3_delta", stadium: "N3" },
+      { id: "vig_rem_saege", stadium: "REM" },
+      { id: "vig_rem_augen", stadium: "REM" }
+    ],
+    schlafSatz: "Erreichen von Schlafstadium %s.",
     keineHerde: "Keine Verlangsamungsherde.",
     keineEtp: "Keine epilepsietypischen Potentiale.",
     etpWort: "Epilepsietypische Potentiale",
@@ -148,12 +181,11 @@ TB.eegGrundlage = (function () {
       "Lid- und Bulbusartefakte bds. frontal."),
     p("art_muskel", "artefakte", true, "Muskelartefakte."),
     p("art_bewegung", "artefakte", true, "Bewegungsartefakte."),
-    p("art_50hz", "artefakte", false,
-      "50-Hz-Artefakte " + aw("Schwerpunkt", "diffus|über einzelnen Elektroden") + "."),
+    p("art_50hz", "artefakte", false, "50-Hz-Artefakte."),
     p("art_pflege", "artefakte", false,
       "Beatmungs-, Pflege- und Lagerungsartefakte."),
     p("art_elektrode", "artefakte", false,
-      "Elektrodenartefakt über {{Feld:Elektrode=F4}}."),
+      "Elektrodenartefakt über {{Feld:Elektrode}}."),
     p("art_puls", "artefakte", false,
       "Puls-/EKG-Artefakte {{Feld:Schwerpunkt=temporal links}}."),
     p("art_schwitz", "artefakte", false,
@@ -189,28 +221,24 @@ TB.eegGrundlage = (function () {
     // ---- Vigilanz -----------------------------------------------------
     p("vig_haupt", "vigilanz", true,
       aw("Zustand", "wach, im Verlauf schläfrig mit Alpha-dropout und hypnagogen Thetawellen|wach|durchgehend schläfrig|fluktuierende Vigilanz") + "."),
-    p("vig_schlaf", "vigilanz", false,
-      "Schlafstadium " + aw("Stadium", "N1 mit Vertexwellen|N2 mit Schlafspindeln und K-Komplexen|N3 mit hochgespannter Delta-Aktivität|REM") + " erreicht."),
     p("vig_ips", "vigilanz", false,
       "Durchgehend " + aw("Zustand", "somnolent|soporös|komatös") + ", keine Schlaf-Wach-Differenzierung abgrenzbar."),
-    p("vig_spindeln", "vigilanz", false,
-      "Schlafelemente (Spindeln) " + aw("Stand", "erhalten|nicht abgrenzbar") + "."),
-    p("vig_posts", "vigilanz", false,
+    p("vig_n1_vertex", "vigilanz", false, "Vertexwellen."),
+    p("vig_n1_theta", "vigilanz", false, "Hypnagoge Thetawellen."),
+    p("vig_n1_posts", "vigilanz", false,
       "POSTS (positive okzipitale scharfe Transienten des Schlafs)."),
+    p("vig_n2_spindeln", "vigilanz", false, "Schlafspindeln."),
+    p("vig_n2_k", "vigilanz", false, "K-Komplexe."),
+    p("vig_n3_delta", "vigilanz", false, "Hochgespannte Delta-Aktivität."),
+    p("vig_rem_saege", "vigilanz", false, "Sägezahnwellen."),
+    p("vig_rem_augen", "vigilanz", false, "Rasche Augenbewegungen."),
     p("vig_arousal", "vigilanz", false,
       "Arousals " + aw("Auslöser", "spontan|auf Reiz") + "."),
     // ---- Verlangsamungsherde (Hauptweg: die Herd-Zeilen der Maske) ----
     p("vl_keine", "verlangsamung", true, "keine."),
-    p("vl_polymorph", "verlangsamung", false,
-      aw("Häufigkeit", "Intermittierende|Kontinuierliche") + " polymorphe Delta-Aktivität " +
-      aw("Ort", ORT) + " " + aw("Seite", SEITE) + "."),
     p("vl_irda", "verlangsamung", false,
       aw("Art", "FIRDA (frontal intermittierende rhythmische Delta-Aktivität)|OIRDA (okzipital intermittierende rhythmische Delta-Aktivität)|TIRDA (temporal intermittierende rhythmische Delta-Aktivität)") +
       aw("Seite", "| links| rechts| bds.") + "."),
-    p("vl_steil", "verlangsamung", false,
-      aw("Häufigkeit", "Vereinzelt|Wiederholt") + " eingelagerte steilere Transienten " +
-      aw("Ort", ORT) + " " + aw("Seite", SEITE) +
-      ", die Kriterien für epilepsietypische Potenziale jedoch nicht vollständig erfüllt."),
     // ---- Entladungen (Hauptweg: die Entladungs-Zeilen der Maske) ------
     p("ent_keine", "entladungen", true, "keine."),
     p("ent_aktivierung", "entladungen", false,
@@ -221,10 +249,10 @@ TB.eegGrundlage = (function () {
       "Amplitudenmaximum über {{Feld:Elektrode=F4}}."),
     // ---- Hyperventilation ---------------------------------------------
     p("hv_haupt", "hyperventilation", true,
-      aw("Ergebnis", "keine neuen Aspekte|Zunahme der Verlangsamung|Provokation epilepsietypischer Potenziale|physiologische diffuse Verlangsamung, rasch rückläufig|nicht durchgeführt (fehlende Kooperation)|nicht durchgeführt (Kontraindikation)|nicht durchgeführt") + "."),
+      aw("Ergebnis", "keine neuen Aspekte|Zunahme der Verlangsamung|Provokation epilepsietypischer Potenziale|physiologische diffuse Verlangsamung, rasch rückläufig|abgebrochen|nicht durchgeführt") + "."),
     // ---- Photostimulation ---------------------------------------------
     p("ps_haupt", "photostimulation", true,
-      aw("Ergebnis", "keine neuen Aspekte|partielles photic driving|deutliches photic driving|nicht durchgeführt") + "."),
+      aw("Ergebnis", "keine neuen Aspekte|partielles photic driving|deutliches photic driving|abgebrochen|nicht durchgeführt") + "."),
     p("ps_ppr", "photostimulation", false,
       "Photoparoxysmale Reaktion, " + aw("Ausdehnung", "okzipital begrenzt|generalisiert") + ", " +
       aw("Verlauf", "selbstlimitierend|die Stimulation überdauernd") + ", bei {{Feld:Frequenz=15}} Hz."),
@@ -243,7 +271,7 @@ TB.eegGrundlage = (function () {
       "Aktivität um {{Feld:Frequenz=2,5}}/s, Beginn " + aw("Ort", ORT) + " " + aw("Seite", SEITE) +
       " um {{Feld:Uhrzeit}} Uhr, Dauer {{Feld:Dauer=26}} Sekunden."),
     p("am_evolution", "anfallsmuster", false,
-      "Mit " + aw("Evolution", "räumlicher und zeitlicher Evolution|räumlicher Evolution (Ausweitung)|zeitlicher Evolution (Frequenz und Amplitude)|fehlender Evolution") + "."),
+      "Mit " + aw("Evolution", "räumlicher und zeitlicher Evolution|Evolution in Raum und Frequenz|räumlicher Evolution (Ausweitung)|Evolution in der Frequenz|zeitlicher Evolution (Frequenz und Amplitude)|fehlender Evolution") + "."),
     p("am_korrelat", "anfallsmuster", false,
       "Während der Episode klinisch " + aw("Korrelat", "keine sichtbare Veränderung (subklinisch)|Korrelat wie beschrieben") + "."),
     p("am_reagibilitaet", "anfallsmuster", false,
@@ -303,26 +331,8 @@ TB.eegGrundlage = (function () {
     p("er_funktionell", "ereignisse", false,
       "In den Sekunden vor, zu Beginn und während der Episode keine erklärenden elektroenzephalographischen Veränderungen."),
     // ---- Beurteilung (Zusatz-Sätze — der Kern entsteht automatisch) ---
-    p("beu_anfall_kein", "beurteilung", false, "Kein Anfallsablauf."),
-    p("beu_anfall", "beurteilung", false,
-      "Aufzeichnung von {{Feld:Anzahl=1}} Anfallsabläufen, " +
-      aw("Korrelat", "subklinisch|mit klinischem Korrelat") + "."),
-    p("beu_ncse", "beurteilung", false,
-      "Die Salzburg-Kriterien eines nonkonvulsiven Status epilepticus sind " +
-      aw("Ergebnis", "nicht erfüllt|erfüllt") + "."),
-    p("beu_ncse_moeglich", "beurteilung", false,
-      "Befund vereinbar mit einem möglichen NCSE (iktal-interiktales Kontinuum) — Verlaufs-EEG bzw. Therapieversuch empfohlen."),
-    p("beu_koma", "beurteilung", false,
-      aw("Muster", "Schwere diffuse Funktionsstörung|Burst-Suppression-Muster") + " " +
-      aw("Reaktivität", "mit erhaltener Reaktivität|ohne erhaltene Reaktivität") + "."),
     p("beu_sedierung", "beurteilung", false,
       "Unter der laufenden Sedierung mit {{Feld:Sedation=Propofol}} zu interpretieren."),
-    p("beu_beta", "beurteilung", false,
-      "Leicht vermehrte Beta-Aktivität, a. e. bei " +
-      aw("Ursache", "fehlender Entspannung|Benzodiazepin-Medikation") + ". Zeichen der Schläfrigkeit."),
-    p("beu_funktionell", "beurteilung", false,
-      "Aufzeichnung eines funktionellen Anfalls" +
-      aw("Kontext", "| im Zuge der Photostimulation") + "."),
     p("beu_vergleich", "beurteilung", false,
       "Im Vergleich zum Vor-EEG vom {{Feld:Datum}} " +
       aw("Verlauf", "unverändert|gebessert|verschlechtert") + "."),
@@ -337,23 +347,22 @@ TB.eegGrundlage = (function () {
   function vorlagen() {
     return [
       { id: "v_eeg", name: "Normal", kuerzel: "eeg",
-        punkte: ["abl_satz", "art_augen", "art_muskel", "ga_grundrhythmus",
-                 "ga_blockade", "vig_haupt", "vl_keine", "ent_keine",
-                 "hv_haupt", "ps_haupt", "ekg_haupt"],
+        punkte: ["abl_satz", "ga_grundrhythmus", "ga_blockade",
+                 "vig_haupt", "vl_keine", "ent_keine", "hv_haupt",
+                 "ps_haupt", "ekg_haupt"],
         zusatz: ["ga_beta", "vl_irda", "nv_variante", "kl_breach",
-                 "beu_beta", "beu_vergleich", "beu_empfehlung"],
+                 "beu_vergleich", "beu_empfehlung"],
         werte: {} },
       { id: "v_eegips", name: "IPS", kuerzel: "eegips",
         punkte: ["abl_satz", "abl_sed", "art_augen", "art_muskel",
                  "art_50hz", "art_pflege", "ga_diffus", "ga_amplitude",
                  "vig_ips", "vl_keine", "ent_keine", "re_reakt", "ko_kont",
                  "ekg_haupt", "beu_sedierung"],
-        zusatz: ["vl_polymorph", "am_episode", "am_evolution",
-                 "am_korrelat", "am_reagibilitaet", "mu_lpd", "mu_gpd",
-                 "mu_bipd", "mu_lrda", "mu_grda", "mu_praevalenz", "mu_iic",
+        zusatz: ["am_episode", "am_evolution", "am_korrelat",
+                 "am_reagibilitaet", "mu_lpd", "mu_gpd", "mu_bipd",
+                 "mu_lrda", "mu_grda", "mu_praevalenz", "mu_iic",
                  "ko_burst", "ko_koma", "se_salzburg", "se_testgabe",
-                 "se_acns", "er_ereignis", "beu_ncse", "beu_ncse_moeglich",
-                 "beu_koma"],
+                 "se_acns", "er_ereignis"],
         werte: { abl_satz: { "Montage": "10/20-Ableitung",
                              "Bedingungen": "im Bett auf der Intensivstation",
                              "Patient": "somnolent" } } }
@@ -363,7 +372,7 @@ TB.eegGrundlage = (function () {
   // 16.1 hat den Katalog umgebaut (Schnell-Befund): stand-Wechsel löst
   // in eeg.js den einmaligen Vollersatz aus (eigene Punkte mit
   // id-Anfang "eig" überleben ihn).
-  var KATALOG_STAND = "2026-10-02c";
+  var KATALOG_STAND = "2026-10-02d";
 
   function master() {
     return { stand: KATALOG_STAND,

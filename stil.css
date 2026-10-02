@@ -669,3 +669,17 @@ details.eeg-kat-zu[open] > summary {
 .status-kategorie .status-weitere { display: block; margin-top: 2px; }
 /* Vorschau: kompakte Absätze, Leerzeile bleibt genau eine Zeile hoch */
 .status-vorschau-inhalt p { margin: 0 0 3px; }
+
+/* ---- EEG 16.3 ----------------------------------------------------- */
+input.eeg-feld { width: 9ch; }
+input.eeg-feld-mittel { width: 17ch; }
+input.eeg-feld-breit { flex: 1 1 24ch; min-width: 24ch; }
+.eeg-stadium-titel {
+  margin: 8px 0 2px 26px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #6b6558;
+  letter-spacing: 0.02em;
+}
+.eeg-trans-wort { color: #4a463d; }
+.eeg-zeile-dazu.selten { opacity: 0.85; }
