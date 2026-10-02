@@ -37,6 +37,7 @@ TB.eegGrundlage = (function () {
                 leicht: "Leichte Allgemeinveränderung.",
                 mittel: "Mittelschwere Allgemeinveränderung." },
     fgrdaBeurteilung: "Intermittierende fGRDA.",
+    gaNbBeurteilung: "Grundaktivität nicht beurteilbar.",
     // Herd-Zeilen: Band bestimmt den Schweregrad der Beurteilung.
     herdHaeufigkeiten: ["Vereinzelt", "Wiederholt", "Intermittierend",
                         "Kontinuierlich"],
@@ -69,9 +70,9 @@ TB.eegGrundlage = (function () {
     // volle Form.
     entHaeufigkeiten: ["Vereinzelte", "Wiederholte", "Intermittierende",
                        "Kontinuierliche"],
-    entFormen: ["Spike-Wave-Komplexe", "Spikes", "Sharp-Waves",
-                "Sharp-Wave-Komplexe", "Polyspikes",
-                "Polyspike-Wave-Komplexe", "Sharp-Slow-Wave-Komplexe"],
+    entFormen: ["Spike-Wave-Komplexe", "Spikes", "Sharp-Wave-Komplexe",
+                "Polyspikes", "Polyspike-Wave-Komplexe",
+                "Sharp-Slow-Wave-Komplexe"],
     // Dreiknopf-Zeilen (Näd 2.10. Nachmittag): links = vorangewählt.
     ableitungKnoepfe: [
       { name: "Standard",

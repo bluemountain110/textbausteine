@@ -174,6 +174,10 @@ TB.ansichtEeg = (function () {
     var linksSpalte = el("div", "status-linksspalte");
     linksSpalte.appendChild(klebt);
     var links = el("div", "status-maske");
+    TB.eeg.jeKategorie(m, "indikation").forEach(function (block) {
+      zeichneKategorie(links, block); });
+    TB.eeg.jeKategorie(m, "anamnese").forEach(function (block) {
+      zeichneKategorie(links, block); });
     var schnelle = [], seltene = [];
     TB.eeg.jeKategorie(m, "befund").forEach(function (block) {
       (block.kategorie.schnell ? schnelle : seltene).push(block); });
@@ -756,7 +760,13 @@ TB.ansichtEeg = (function () {
     kreuz.type = "checkbox";
     kreuz.checked = istGewaehlt(p.id);
     kreuz.addEventListener("change", function () {
-      schalte(p.id, kreuz.checked); neu(); });
+      schalte(p.id, kreuz.checked);
+      // Grundrhythmus-Satz und "nicht beurteilbar." schliessen sich aus.
+      if (p.id === "ga_nb" && kreuz.checked)
+        schalte("ga_grundrhythmus", false);
+      if (p.id === "ga_grundrhythmus" && kreuz.checked)
+        schalte("ga_nb", false);
+      neu(); });
     z.appendChild(kreuz);
 
     var inhalt = el("div", "status-zeile-inhalt");

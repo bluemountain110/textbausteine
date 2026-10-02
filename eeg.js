@@ -388,10 +388,14 @@ TB.eeg = (function () {
       saetze.push({ id: "auto_grenze",
         text: R().grenzSatz.replace("%s", grossAnfang(grad)) });
     }
-    // "Grundaktivität: nicht beurteilbar." unterdrückt den
+    // "Grundaktivität: nicht beurteilbar." ERSETZT den
     // Grundrhythmus-Satz der Automatik.
-    var av = gewaehlt["ga_nb"] ? null : avSatz(hzWert(gewaehlt, werte));
-    if (av) saetze.push({ id: "auto_av", text: av });
+    if (gewaehlt["ga_nb"]) {
+      saetze.push({ id: "auto_ganb", text: R().gaNbBeurteilung });
+    } else {
+      var av = avSatz(hzWert(gewaehlt, werte));
+      if (av) saetze.push({ id: "auto_av", text: av });
+    }
     if (gewaehlt["ga_fgrda"]) {
       saetze.push({ id: "auto_fgrda", text: R().fgrdaBeurteilung });
     }
