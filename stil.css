@@ -683,3 +683,9 @@ input.eeg-feld-breit { flex: 1 1 24ch; min-width: 24ch; }
 }
 .eeg-trans-wort { color: #4a463d; }
 .eeg-zeile-dazu.selten { opacity: 0.85; }
+
+/* ---- EEG 16.4 ----------------------------------------------------- */
+.eeg-anamnese-kopf { display: flex; align-items: center; gap: 7px;
+  padding: 4px 0 6px; cursor: pointer; }
+.eeg-anamnese .eeg-herdzeile { margin-left: 22px; }
+.eeg-anamnese .eeg-zeile-dazu { margin-left: 22px; }

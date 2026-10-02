@@ -54,10 +54,14 @@ TB.eegTexte = {
   seltenTitel: "Selten gebraucht (aufklappen):",
   herdDazu: "+ Herd",
   transDazu: "+ steile Transienten",
+  mediDazu: "+ Medikament",
+  indikationTitel: "Indikation/Fragestellung",
+  anamneseTitel: "Relevante Anamnese",
+  kopierenIndikation: "Indikation kopieren",
+  kopierenAnamnese: "Anamnese kopieren",
   entDazu: "+ Entladung",
   zeileWeg: "Zeile entfernen (vorbereitete Zeilen werden geleert)",
   zeileZaehlt: "Zeile zählt im Befund — jedes Anfassen kreuzt sie von selbst an",
-  autoHinweis: "Entsteht automatisch aus dem Befund — zum Anpassen einen Satz anklicken.",
   vorschauLeer: "(noch nichts angekreuzt)",
   befundKlickHinweis: "Zum Überschreiben anklicken",
   abweichungZurueck: "Auf Vorgabe zurück",
@@ -384,7 +388,9 @@ TB.eeg = (function () {
       saetze.push({ id: "auto_grenze",
         text: R().grenzSatz.replace("%s", grossAnfang(grad)) });
     }
-    var av = avSatz(hzWert(gewaehlt, werte));
+    // "Grundaktivität: nicht beurteilbar." unterdrückt den
+    // Grundrhythmus-Satz der Automatik.
+    var av = gewaehlt["ga_nb"] ? null : avSatz(hzWert(gewaehlt, werte));
     if (av) saetze.push({ id: "auto_av", text: av });
     if (gewaehlt["ga_fgrda"]) {
       saetze.push({ id: "auto_fgrda", text: R().fgrdaBeurteilung });
@@ -394,17 +400,25 @@ TB.eeg = (function () {
       saetze.push({ id: "auto_schlaf",
         text: R().schlafSatz.replace("%s", stadium) });
     }
+    function keineSatz(pid, tabelle, vorgabe) {
+      var wert = (werte && werte[pid] && werte[pid]["Befund"]) || "keine.";
+      return tabelle[wert] || vorgabe;
+    }
     if (herde.length) {
       herde.forEach(function (h, i) {
         saetze.push({ id: "auto_h" + i, text: herdBeurteilungSatz(h) }); });
     } else if (gewaehlt["vl_keine"]) {
-      saetze.push({ id: "auto_hkeine", text: R().keineHerde });
+      saetze.push({ id: "auto_hkeine",
+        text: keineSatz("vl_keine", R().keineVariantenHerde,
+                        R().keineHerde) });
     }
     if (ent.length) {
       ent.forEach(function (e, i) {
         saetze.push({ id: "auto_e" + i, text: entBeurteilungSatz(e) }); });
     } else if (gewaehlt["ent_keine"]) {
-      saetze.push({ id: "auto_ekeine", text: R().keineEtp });
+      saetze.push({ id: "auto_ekeine",
+        text: keineSatz("ent_keine", R().keineVariantenEtp,
+                        R().keineEtp) });
     }
     return saetze;
   }
@@ -427,7 +441,18 @@ TB.eeg = (function () {
     var html = [], text = [], schonWas = false;
     jeKategorie(m, bereich).forEach(function (block) {
       var teile = block.punkte.filter(function (p) { return !!gewaehlt[p.id]; });
-      var zeilenSaetze = [];
+      var zeilenSaetze = [], nachSaetze = [];
+      if (bereich === "anamnese" && block.kategorie.zeilen === "medis") {
+        var medis = z.medis || [];
+        if (medis.length) {
+          var teileSatz = medis.map(function (mz) {
+            var dosis = String(mz.dosis || "").trim();
+            return (mz.name || "") + (dosis ? " " + dosis : "");
+          }).join(", ") + ".";
+          // steht NACH dem Titel-Punkt "Aktuelle ... Medikation:"
+          nachSaetze.push({ id: "z_medis", satz: teileSatz });
+        }
+      }
       if (bereich === "befund" && block.kategorie.zeilen) {
         var liste = z[block.kategorie.zeilen] || [];
         var trans = (block.kategorie.zeilen === "herde")
@@ -460,7 +485,8 @@ TB.eeg = (function () {
       if (bereich === "beurteilung" && block.kategorie.id === "beurteilung") {
         autoSaetze = autoBeurteilung(gewaehlt, werte, z);
       }
-      if (!teile.length && !zeilenSaetze.length && !autoSaetze.length) return;
+      if (!teile.length && !zeilenSaetze.length && !nachSaetze.length &&
+          !autoSaetze.length) return;
       var stueckeH = [], stueckeT = [];
       autoSaetze.forEach(function (a) {
         var fertig = satzFertig(a.text, abweichungen, a.id);
@@ -482,6 +508,11 @@ TB.eeg = (function () {
         stueckeT.push(fertig);
         stueckeH.push(schuetze(fertig));
       });
+      nachSaetze.forEach(function (zs) {
+        var fertig = satzFertig(zs.satz, abweichungen, zs.id);
+        stueckeT.push(fertig);
+        stueckeH.push(schuetze(fertig));
+      });
       if (block.kategorie.absatz && schonWas) {
         html.push("<p>&nbsp;</p>");
         text.push("");
@@ -497,6 +528,10 @@ TB.eeg = (function () {
   }
   function fliesstext(m, gewaehlt, werte, abweichungen, zeilen) {
     return {
+      indikation: bereichText(m, "indikation", gewaehlt, werte,
+                              abweichungen, zeilen),
+      anamnese: bereichText(m, "anamnese", gewaehlt, werte,
+                            abweichungen, zeilen),
       befund: bereichText(m, "befund", gewaehlt, werte, abweichungen, zeilen),
       beurteilung: bereichText(m, "beurteilung", gewaehlt, werte,
                                abweichungen, zeilen)

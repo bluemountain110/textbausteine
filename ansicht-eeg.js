@@ -37,7 +37,7 @@ TB.ansichtEeg = (function () {
   var werte = {};              // punkt-id -> { Label: Wert }
   var abweichungen = {};       // punkt-/auto-/zeilen-id -> überschrieben
   var angeheftet = {};         // punkt-id -> true (☆)
-  var zeilen = { herde: [], entladungen: [], transienten: [] };
+  var zeilen = { herde: [], entladungen: [], transienten: [], medis: [] };
   var initialisiert = false;   // einmalige Voranwahl beim Öffnen
   var offeneSelten = {};       // kategorie-id -> true (Punkt-Ebene)
   var offeneKat = {};          // kategorie-id -> true (eingeklappte Kat.)
@@ -68,6 +68,10 @@ TB.ansichtEeg = (function () {
   }
   // „keine."-Kopplung: Zeilen ersetzen den keine.-Punkt und bringen
   // ihn zurück, sobald die letzte Zeile weg ist.
+  function koppleAnamnese() {
+    var aktiv = zeilen.medis.some(function (z) { return z.aktiv; });
+    schalte("ana_med", aktiv);
+  }
   function koppleKeine() {
     // Transienten sind KEINE Herde: sie ersetzen nur die Befundzeile
     // "keine.", die Beurteilung behält "Keine Verlangsamungsherde."
@@ -79,15 +83,18 @@ TB.ansichtEeg = (function () {
     var nurAktive = function (z) { return z.aktiv; };
     return { herde: zeilen.herde.filter(nurAktive),
              entladungen: zeilen.entladungen.filter(nurAktive),
-             transienten: zeilen.transienten.filter(nurAktive) };
+             transienten: zeilen.transienten.filter(nurAktive),
+             medis: zeilen.medis.filter(nurAktive) };
   }
   function bereiteZeilenVor() {
-    zeilen = { herde: [], entladungen: [], transienten: [] };
+    zeilen = { herde: [], entladungen: [], transienten: [], medis: [] };
     var i;
     for (i = 0; i < R().herdeVorbereitet; i++)
       zeilen.herde.push(neueZeile("herde"));
     for (i = 0; i < R().entladungenVorbereitet; i++)
       zeilen.entladungen.push(neueZeile("entladungen"));
+    for (i = 0; i < R().medisVorbereitet; i++)
+      zeilen.medis.push(neueZeile("medis"));
   }
   function initZustand() {
     aktiveVorlagen = {}; manuellAn = {}; manuellAb = {};
@@ -112,6 +119,9 @@ TB.ansichtEeg = (function () {
       return { aktiv: false, haeufigkeit: hv.haeufigkeit, band: hv.band,
                lok: hv.lok.slice(), ausbreitung: hv.ausbreitung,
                seite: hv.seite };
+    }
+    if (art === "medis") {
+      return { aktiv: false, name: R().antikonvulsiva[0], dosis: "" };
     }
     if (art === "transienten") {
       return { aktiv: false, haeufigkeit: R().transHaeufigkeiten[0],
@@ -287,6 +297,16 @@ TB.ansichtEeg = (function () {
 
   function fuelleKategorie(kasten, block) {
     var chipPunkte = {};
+    if (block.kategorie.id === "indikation") {
+      kasten.appendChild(indikationsChips());
+      R().indikationKnoepfe.forEach(function (kn) {
+        chipPunkte[kn.id] = true; });
+    }
+    if (block.kategorie.id === "anamnese") {
+      kasten.appendChild(anamneseBlock());
+      chipPunkte["ana_med"] = true;
+      return;   // die Kategorie besteht nur aus Kästchen und Zeilen
+    }
     if (block.kategorie.id === "ableitung") {
       kasten.appendChild(ableitungsChips());
     }
@@ -316,10 +336,20 @@ TB.ansichtEeg = (function () {
       return vorne(p) && sichtbar(p); });
     var seltene = block.punkte.filter(function (p) {
       return !vorne(p) && sichtbar(p); });
-    // „keine." (und alles Häufige) steht ZUERST, die Zeilen folgen.
-    haeufige.forEach(function (p) { kasten.appendChild(zeile(p)); });
+    // Nur „keine." steht VOR den Zeilen; alles Übrige (z. B. FIRDA)
+    // folgt UNTER den Zeilen (Näd 2.10. Abend).
+    var istKeine = function (p) {
+      return p.id === "vl_keine" || p.id === "ent_keine"; };
+    haeufige.filter(istKeine).forEach(function (p) {
+      kasten.appendChild(zeile(p)); });
+    var nachZeilen = haeufige.filter(function (p) { return !istKeine(p); });
+    if (!block.kategorie.zeilen) {
+      nachZeilen.forEach(function (p) { kasten.appendChild(zeile(p)); });
+      nachZeilen = [];
+    }
     if (block.kategorie.zeilen) {
       zeichneZeilen(kasten, block.kategorie.zeilen);
+      nachZeilen.forEach(function (p) { kasten.appendChild(zeile(p)); });
       // Angefangene Transienten-Zeilen bleiben immer sichtbar.
       if (block.kategorie.zeilen === "herde") {
         zeilen.transienten.forEach(function (z, idx) {
@@ -428,6 +458,91 @@ TB.ansichtEeg = (function () {
       }));
     });
     return zeile;
+  }
+
+  function indikationsChips() {
+    var zeile = el("div", "eeg-wahl-chips");
+    R().indikationKnoepfe.forEach(function (kn) {
+      zeile.appendChild(chip(kn.name, istGewaehlt(kn.id), function () {
+        schalte(kn.id, !istGewaehlt(kn.id));
+      }));
+    });
+    return zeile;
+  }
+  function anamneseBlock() {
+    var huelle = el("div", "eeg-anamnese");
+    var kopf = el("label", "eeg-anamnese-kopf");
+    var kreuz = el("input");
+    kreuz.type = "checkbox";
+    kreuz.checked = istGewaehlt("ana_med");
+    kreuz.addEventListener("change", function () {
+      if (kreuz.checked) {
+        if (!zeilen.medis.length) zeilen.medis.push(neueZeile("medis"));
+        zeilen.medis[0].aktiv = true;
+      } else {
+        zeilen.medis.forEach(function (z) { z.aktiv = false; });
+      }
+      koppleAnamnese();
+      neu();
+    });
+    kopf.appendChild(kreuz);
+    kopf.appendChild(document.createTextNode(" aktuelle Medikamente"));
+    huelle.appendChild(kopf);
+    if (istGewaehlt("ana_med")) {
+      zeilen.medis.forEach(function (z, idx) {
+        huelle.appendChild(mediZeile(z, idx)); });
+      var dazu = el("button", "eeg-zeile-dazu", TE().mediDazu);
+      dazu.addEventListener("click", function () {
+        var frisch = neueZeile("medis");
+        frisch.aktiv = true;
+        zeilen.medis.push(frisch);
+        neu();
+      });
+      huelle.appendChild(dazu);
+    }
+    return huelle;
+  }
+  function mediZeile(z, idx) {
+    var rahmen = el("div", "eeg-herdzeile" + (z.aktiv ? " aktiv" : ""));
+    var kreuz = el("input", "eeg-zeile-aktiv");
+    kreuz.type = "checkbox";
+    kreuz.checked = !!z.aktiv;
+    kreuz.title = TE().zeileZaehlt;
+    kreuz.addEventListener("change", function () {
+      z.aktiv = kreuz.checked; koppleAnamnese(); neu(); });
+    rahmen.appendChild(kreuz);
+    var namen = auswahl(R().antikonvulsiva, z.name);
+    namen.title = "Antikonvulsivum";
+    namen.addEventListener("change", function () {
+      z.name = namen.value;
+      if (!z.aktiv) { z.aktiv = true; koppleAnamnese(); }
+      neu();
+    });
+    rahmen.appendChild(namen);
+    var dosis = el("input", "eeg-feld eeg-feld-mittel");
+    dosis.type = "text";
+    dosis.placeholder = "Tagesdosis";
+    dosis.title = "Tagesdosis";
+    dosis.value = z.dosis || "";
+    dosis.addEventListener("change", function () {
+      z.dosis = dosis.value;
+      if (!z.aktiv) { z.aktiv = true; koppleAnamnese(); }
+      neu();
+    });
+    rahmen.appendChild(dosis);
+    var weg = el("button", "eeg-zeile-weg", "✕");
+    weg.title = TE().zeileWeg;
+    weg.addEventListener("click", function () {
+      if (zeilen.medis.length > R().medisVorbereitet) {
+        zeilen.medis.splice(idx, 1);
+      } else {
+        zeilen.medis[idx] = neueZeile("medis");
+      }
+      koppleAnamnese();
+      neu();
+    });
+    rahmen.appendChild(weg);
+    return rahmen;
   }
 
   // ---- Herd- und Entladungs-Zeilen -------------------------------------
@@ -573,7 +688,6 @@ TB.ansichtEeg = (function () {
     var saetze = TB.eeg.autoBeurteilung(menge, werte, aktiveZeilen());
     if (!saetze.length) return;
     var kasten = el("section", "status-kategorie eeg-auto");
-    kasten.appendChild(el("div", "klein-hinweis", TE().autoHinweis));
     saetze.forEach(function (a) {
       kasten.appendChild(autoZeile(a.id, a.text));
     });
@@ -763,6 +877,10 @@ TB.ansichtEeg = (function () {
     var ueberschrieben = Object.keys(abweichungen).length;
 
     var knoepfe = el("div", "status-knoepfe");
+    knoepfe.appendChild(kopierKnopf(TE().kopierenIndikation,
+      function (f) { return f.indikation; }));
+    knoepfe.appendChild(kopierKnopf(TE().kopierenAnamnese,
+      function (f) { return f.anamnese; }));
     knoepfe.appendChild(kopierKnopf(TE().kopierenBefund,
       function (f) { return f.befund; }));
     knoepfe.appendChild(kopierKnopf(TE().kopierenBeurteilung,
@@ -823,8 +941,14 @@ TB.ansichtEeg = (function () {
 
     var f = istLeer(m) ? null
       : TB.eeg.fliesstext(m, menge, werte, abweichungen, aktiveZeilen());
-    [[TE().befundTitel, f && f.befund], [TE().beurteilungTitel, f && f.beurteilung]]
+    [[TE().indikationTitel, f && f.indikation],
+     [TE().anamneseTitel, f && f.anamnese],
+     [TE().befundTitel, f && f.befund],
+     [TE().beurteilungTitel, f && f.beurteilung]]
       .forEach(function (paar) {
+        if ((paar[0] === TE().indikationTitel ||
+             paar[0] === TE().anamneseTitel) &&
+            (!paar[1] || !paar[1].html)) return;   // leere kleine Felder
         var vorschau = el("div", "vorschau-kasten status-vorschau");
         vorschau.appendChild(el("h3", "", paar[0]));
         var inhalt = el("div", "status-vorschau-inhalt");

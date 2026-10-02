@@ -448,7 +448,17 @@ TB.selbsttest = (function () {
         "Vereinzelte generalisierte Spike-Wave-Komplexe." &&
       TB.eeg.entBeurteilungSatz(ent1) ===
         "Generalisierte epilepsietypische Potentiale.";
-    var okSeiteLeer =
+    var okNeu16d =
+      TB.eeg.fliesstext(m, { ana_med: true, ind_standard: true }, {}, {},
+        { herde: [], entladungen: [], transienten: [],
+          medis: [{ name: "Lamotrigin", dosis: "200 mg" }] }
+      ).anamnese.text ===
+        "Aktuelle antikonvulsive Medikation: Lamotrigin 200 mg." &&
+      TB.eeg.autoBeurteilung({ vl_keine: true },
+        { vl_keine: { Befund:
+          "aufgrund ausgeprägter Artefakte nicht beurteilbar." } },
+        {})[0].text === "Verlangsamungsherde nicht beurteilbar.";
+    var okSeiteLeer = okNeu16d &&
       TB.eeg.herdBeurteilungSatz({ band: "theta-delta",
         lok: ["temporal", "", "", ""], seite: "" }) ===
         "Mässiggradiger Verlangsamungsherd temporal." &&

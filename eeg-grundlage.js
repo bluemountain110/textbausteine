@@ -131,6 +131,41 @@ TB.eegGrundlage = (function () {
     schlafSatz: "Erreichen von Schlafstadium %s.",
     keineHerde: "Keine Verlangsamungsherde.",
     keineEtp: "Keine epilepsietypischen Potentiale.",
+    // Die "keine."-Punkte sind eine Auswahl; jede Variante hat ihren
+    // eigenen automatischen Beurteilungs-Satz.
+    keineVariantenHerde: {
+      "keine.": "Keine Verlangsamungsherde.",
+      "aufgrund ausgeprägter Artefakte nicht beurteilbar.":
+        "Verlangsamungsherde nicht beurteilbar.",
+      "bei ausgeprägten Artefakten soweit beurteilbar keine.":
+        "Soweit beurteilbar keine Verlangsamungsherde."
+    },
+    keineVariantenEtp: {
+      "keine.": "Keine epilepsietypischen Potentiale.",
+      "aufgrund ausgeprägter Artefakte nicht beurteilbar.":
+        "Epilepsietypische Potentiale nicht beurteilbar.",
+      "bei ausgeprägten Artefakten soweit beurteilbar keine.":
+        "Soweit beurteilbar keine epilepsietypischen Potentiale."
+    },
+    // KISIM-Feld Indikation/Fragestellung: drei Kästchen (Näd 2.10.).
+    indikationKnoepfe: [
+      { id: "ind_standard", name: "Standard" },
+      { id: "ind_demenz", name: "Demenzabklärung" },
+      { id: "ind_status", name: "Status" }
+    ],
+    // Relevante Anamnese: Antikonvulsiva — erst die fünf häufigsten,
+    // dann alphabetisch (Näd 2.10.).
+    antikonvulsiva: ["Lamotrigin", "Levetiracetam", "Brivaracetam",
+      "Lacosamid", "Valproat", "Carbamazepin", "Cenobamat", "Clobazam",
+      "Clonazepam", "Eslicarbazepin", "Ethosuximid", "Gabapentin",
+      "Lorazepam", "Oxcarbazepin", "Perampanel", "Phenobarbital",
+      "Phenytoin", "Pregabalin", "Primidon", "Rufinamid", "Sultiam",
+      "Topiramat", "Vigabatrin", "Zonisamid"],
+    medisVorbereitet: 1,
+    // KISIM-Sprungfolge für das Skript (Start im Feld Indikation/
+    // Fragestellung): 2x Strg+Tab -> Relevante Anamnese, 4x -> das
+    // ZWEITE Befund-Kästchen, 2x -> Beurteilung.
+    kisimSpruenge: { nachAnamnese: 2, nachBefund: 4, nachBeurteilung: 2 },
     etpWort: "Epilepsietypische Potentiale",
     etpGeneralisiert: "Generalisierte epilepsietypische Potentiale",
     verlangsamungGen: "generalisierte Verlangsamung",
@@ -140,6 +175,8 @@ TB.eegGrundlage = (function () {
   // schnell=true: offen in der Maske; der Rest eingeklappt und nur
   // auf Aufklappen sichtbar (Näd, 2.10.: die meisten EEGs sind simpel).
   var KATEGORIEN = [
+    { id: "indikation", name: "Indikation/Fragestellung", bereich: "indikation", titel: false, absatz: false, schnell: true },
+    { id: "anamnese", name: "Relevante Anamnese", bereich: "anamnese", titel: false, absatz: false, schnell: true, zeilen: "medis" },
     { id: "ableitung", name: "Ableitung", bereich: "befund", titel: false, absatz: true, schnell: true },
     { id: "artefakte", name: "Artefakte", bereich: "befund", titel: false, absatz: true, schnell: true },
     { id: "grundaktivitaet", name: "Grundaktivität", bereich: "befund", titel: true, absatz: true, schnell: true },
@@ -162,6 +199,15 @@ TB.eegGrundlage = (function () {
   ];
 
   var PUNKTE = [
+    // ---- Indikation/Fragestellung (KISIM-Feld 1) ----------------------
+    p("ind_standard", "indikation", true,
+      "Verlangsamungsherde, epilepsietypische Potentiale?"),
+    p("ind_demenz", "indikation", true, "Demenzabklärung."),
+    p("ind_status", "indikation", true,
+      "(Non-konvulsiver) Status epilepticus?"),
+    // ---- Relevante Anamnese (KISIM-Feld 2) ----------------------------
+    p("ana_med", "anamnese", true,
+      "Aktuelle antikonvulsive Medikation:"),
     // ---- Ableitung (der Technik-Satz) ---------------------------------
     p("abl_satz", "ableitung", true,
       aw("Qualität", "Technisch gelungene|Technisch erschwerte") + " " +
@@ -199,6 +245,7 @@ TB.eegGrundlage = (function () {
       aw("Ausprägung", "gut|mässig|schlecht") + " ausgeprägter " +
       aw("Modulation", "modulierter|wenig modulierter|unmodulierter") +
       " okzipitaler Grundrhythmus um {{Feld:Frequenz=9}} Hz."),
+    p("ga_nb", "grundaktivitaet", false, "nicht beurteilbar."),
     p("ga_blockade", "grundaktivitaet", true,
       aw("Blockade", "Positive visuelle Blockade|Fehlende visuelle Blockade|Visuelle Blockade nicht beurteilbar (Augen nicht geöffnet)") + "."),
     p("ga_fgrda", "grundaktivitaet", true,
@@ -235,12 +282,14 @@ TB.eegGrundlage = (function () {
     p("vig_arousal", "vigilanz", false,
       "Arousals " + aw("Auslöser", "spontan|auf Reiz") + "."),
     // ---- Verlangsamungsherde (Hauptweg: die Herd-Zeilen der Maske) ----
-    p("vl_keine", "verlangsamung", true, "keine."),
+    p("vl_keine", "verlangsamung", true,
+      "{{Auswahl:Befund:keine.|aufgrund ausgeprägter Artefakte nicht beurteilbar.|bei ausgeprägten Artefakten soweit beurteilbar keine.}}"),
     p("vl_irda", "verlangsamung", false,
       aw("Art", "FIRDA (frontal intermittierende rhythmische Delta-Aktivität)|OIRDA (okzipital intermittierende rhythmische Delta-Aktivität)|TIRDA (temporal intermittierende rhythmische Delta-Aktivität)") +
       aw("Seite", "| links| rechts| bds.") + "."),
     // ---- Entladungen (Hauptweg: die Entladungs-Zeilen der Maske) ------
-    p("ent_keine", "entladungen", true, "keine."),
+    p("ent_keine", "entladungen", true,
+      "{{Auswahl:Befund:keine.|aufgrund ausgeprägter Artefakte nicht beurteilbar.|bei ausgeprägten Artefakten soweit beurteilbar keine.}}"),
     p("ent_aktivierung", "entladungen", false,
       "Aktivierung durch " + aw("Auslöser", "Hyperventilation|Photostimulation|Schläfrigkeit und Schlaf") + "."),
     p("ent_zaehlung", "entladungen", false,
@@ -331,12 +380,12 @@ TB.eegGrundlage = (function () {
     p("er_funktionell", "ereignisse", false,
       "In den Sekunden vor, zu Beginn und während der Episode keine erklärenden elektroenzephalographischen Veränderungen."),
     // ---- Beurteilung (Zusatz-Sätze — der Kern entsteht automatisch) ---
-    p("beu_sedierung", "beurteilung", false,
+    p("beu_sedierung", "beurteilung", true,
       "Unter der laufenden Sedierung mit {{Feld:Sedation=Propofol}} zu interpretieren."),
-    p("beu_vergleich", "beurteilung", false,
+    p("beu_vergleich", "beurteilung", true,
       "Im Vergleich zum Vor-EEG vom {{Feld:Datum}} " +
       aw("Verlauf", "unverändert|gebessert|verschlechtert") + "."),
-    p("beu_empfehlung", "beurteilung", false,
+    p("beu_empfehlung", "beurteilung", true,
       aw("Empfehlung", "Verlaufs-EEG|Langzeit-EEG|Nachtschlaf-EEG") + " empfohlen.")
   ];
 
@@ -350,8 +399,7 @@ TB.eegGrundlage = (function () {
         punkte: ["abl_satz", "ga_grundrhythmus", "ga_blockade",
                  "vig_haupt", "vl_keine", "ent_keine", "hv_haupt",
                  "ps_haupt", "ekg_haupt"],
-        zusatz: ["ga_beta", "vl_irda", "nv_variante", "kl_breach",
-                 "beu_vergleich", "beu_empfehlung"],
+        zusatz: ["ga_beta", "vl_irda", "nv_variante", "kl_breach"],
         werte: {} },
       { id: "v_eegips", name: "IPS", kuerzel: "eegips",
         punkte: ["abl_satz", "abl_sed", "art_augen", "art_muskel",
@@ -372,7 +420,7 @@ TB.eegGrundlage = (function () {
   // 16.1 hat den Katalog umgebaut (Schnell-Befund): stand-Wechsel löst
   // in eeg.js den einmaligen Vollersatz aus (eigene Punkte mit
   // id-Anfang "eig" überleben ihn).
-  var KATALOG_STAND = "2026-10-02d";
+  var KATALOG_STAND = "2026-10-02e";
 
   function master() {
     return { stand: KATALOG_STAND,
