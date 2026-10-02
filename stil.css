@@ -689,3 +689,4 @@ input.eeg-feld-breit { flex: 1 1 24ch; min-width: 24ch; }
   padding: 4px 0 6px; cursor: pointer; }
 .eeg-anamnese .eeg-herdzeile { margin-left: 22px; }
 .eeg-anamnese .eeg-zeile-dazu { margin-left: 22px; }
+.eeg-mg { color: #6b6558; margin-left: -2px; }

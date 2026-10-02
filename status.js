@@ -299,7 +299,12 @@ TB.status = (function () {
   }
   // Näd 28.9.: ohne "keine Defizite"-Vorspann — sonst müsste man bei
   // einem Defizit zwei Stellen ändern. Der Befund ist die reine Liste.
-  function normalVon(u, merkmalWahl) {
+  // normalUeber (2.10., Näd): je Teilmenge ABGEÄNDERTE Standardtexte —
+  // sie ERSETZEN den Normalbefund dieser Untersuchung und erscheinen
+  // darum nirgends fett. Gespeichert in der Teilmenge als normalAb.
+  function normalVon(u, merkmalWahl, normalUeber) {
+    if (normalUeber && normalUeber[u.id] !== undefined)
+      return normalUeber[u.id];
     if (!u.merkmale) return u.normal;
     var an = gewaehlteMerkmale(u, merkmalWahl);
     if (!an.length) return "xx.";
@@ -307,8 +312,8 @@ TB.status = (function () {
       return mk.name + " M5/M5"; }).join(", ") + ".";
   }
 
-  function befundVon(u, abweichungen, merkmalWahl) {
-    var soll = normalVon(u, merkmalWahl);
+  function befundVon(u, abweichungen, merkmalWahl, normalUeber) {
+    var soll = normalVon(u, merkmalWahl, normalUeber);
     var a = abweichungen && abweichungen[u.id];
     if (a !== undefined && a !== null && String(a).trim() !== "" &&
         String(a).trim() !== String(soll).trim()) {
@@ -316,7 +321,7 @@ TB.status = (function () {
     }
     return { text: mitPunkt(soll), abweichend: false, normal: soll };
   }
-  function fliesstext(m, gewaehlt, abweichungen, merkmalWahl) {
+  function fliesstext(m, gewaehlt, abweichungen, merkmalWahl, normalUeber) {
     var html = [], text = [];
     jeKategorie(m).forEach(function (block) {
       var teile = block.untersuchungen.filter(function (u) {
@@ -326,7 +331,7 @@ TB.status = (function () {
       var zeileText = block.kategorie.name + ": ";
       var stueckeH = [], stueckeT = [];
       teile.forEach(function (u) {
-        var b = befundVon(u, abweichungen, merkmalWahl);
+        var b = befundVon(u, abweichungen, merkmalWahl, normalUeber);
         var satzT = u.name + ": " + b.text;
         stueckeT.push(satzT);
         var satzH;
@@ -461,8 +466,9 @@ TB.status = (function () {
   // dazukommen — sie erscheinen beim Laden sichtbar, aber NICHT angewählt.
   // merkmalZusatz (1.10.): je Untersuchung die Muskeln mit Stern —
   // sichtbar markiert, aber nicht angewählt.
-  function teilmengeSpeichern(name, punkte, merkmalAb, zusatz, merkmalZusatz) {
+  function teilmengeSpeichern(name, punkte, merkmalAb, zusatz, merkmalZusatz, normalAb) {
     var mz = (merkmalZusatz && Object.keys(merkmalZusatz).length) ? merkmalZusatz : null;
+    var na = (normalAb && Object.keys(normalAb).length) ? normalAb : null;
     var liste = teilmengen();
     var da = liste.find(function (t) {
       return t.name.toLowerCase() === String(name).toLowerCase(); });
@@ -471,13 +477,15 @@ TB.status = (function () {
     if (da) { da.punkte = punkte.slice();
               if (merkmalAb) da.merkmalAb = merkmalAb;
               if (zu.length) da.zusatz = zu; else delete da.zusatz;
-              if (mz) da.merkmalZusatz = mz; else delete da.merkmalZusatz; }
+              if (mz) da.merkmalZusatz = mz; else delete da.merkmalZusatz;
+              if (na) da.normalAb = na; else delete da.normalAb; }
     else {
       var eintrag = { id: "t" + Date.now().toString(36),
                       name: String(name), punkte: punkte.slice() };
       if (merkmalAb) eintrag.merkmalAb = merkmalAb;
       if (zu.length) eintrag.zusatz = zu;
       if (mz) eintrag.merkmalZusatz = mz;
+      if (na) eintrag.normalAb = na;
       liste.push(eintrag);
     }
     speichereTeilmengen(liste);

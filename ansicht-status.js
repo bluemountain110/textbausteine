@@ -20,6 +20,8 @@ TB.ansichtStatus = (function () {
 
   // Sitzungszustand — lebt nur im Speicher des Browsers, nie im Lager.
   var aktiveTeilmengen = {};   // teilmengen-id -> true
+  var normalUeber = {};        // untersuchung-id -> eigener Standardtext
+                               // (aus den Teilmengen, normalAb)
   var manuellAn = {}, manuellAb = {};   // untersuchungs-id -> true
   var abweichungen = {};       // untersuchungs-id -> überschriebener Befund
   var offeneSelten = {};       // kategorie-id -> true
@@ -56,6 +58,7 @@ TB.ansichtStatus = (function () {
   }
   function allesLeeren() {
     aktiveTeilmengen = {}; manuellAn = {}; manuellAb = {};
+    normalUeber = {};
     abweichungen = {}; bearbeiteId = null;
     merkmalWahl = {}; offeneMerkmale = {};
     angeheftet = {}; merkmalZusatz = {};
@@ -161,6 +164,12 @@ TB.ansichtStatus = (function () {
       k.addEventListener("click", function () {
         if (aktiveTeilmengen[t.id]) {
           delete aktiveTeilmengen[t.id];
+          Object.keys(t.normalAb || {}).forEach(function (id) {
+            var nochAndersWo = liste.some(function (x) {
+              return x.id !== t.id && aktiveTeilmengen[x.id] &&
+                x.normalAb && x.normalAb[id] !== undefined; });
+            if (!nochAndersWo) delete normalUeber[id];
+          });
           (t.zusatz || []).forEach(function (id) {
             var nochAndersWo = liste.some(function (x) {
               return x.id !== t.id && aktiveTeilmengen[x.id] &&
@@ -170,6 +179,10 @@ TB.ansichtStatus = (function () {
         }
         else {
           aktiveTeilmengen[t.id] = true;
+          // Abgeänderte Standardtexte dieses Status (2.10.): sie SIND
+          // der Normalbefund — nichts davon erscheint fett.
+          Object.keys(t.normalAb || {}).forEach(function (id) {
+            normalUeber[id] = t.normalAb[id]; });
           // Zusätze dieses Status: sichtbar, nicht angewählt; die Ansicht
           // zeigt dann nur Standard und Zusätze (Schalter oben hebt das auf).
           (t.zusatz || []).forEach(function (id) { angeheftet[id] = true; });
@@ -333,7 +346,7 @@ TB.ansichtStatus = (function () {
       schalte(u.id, !istGewaehlt(u.id)); neu(); });
     inhalt.appendChild(name);
 
-    var soll = TB.status.normalVon(u, merkmalWahl);
+    var soll = TB.status.normalVon(u, merkmalWahl, normalUeber);
     if (bearbeiteId === u.id) {
       var feld = el("textarea", "status-abweichfeld");
       feld.rows = 2;
@@ -484,7 +497,8 @@ TB.ansichtStatus = (function () {
     var kopieren = el("button", "status-kopieren", TS().kopierenKnopf);
     kopieren.addEventListener("click", function () {
       if (!anzahl) { melde(TS().nichtsGewaehlt, true); return; }
-      var f = TB.status.fliesstext(m, menge, abweichungen, merkmalWahl);
+      var f = TB.status.fliesstext(m, menge, abweichungen, merkmalWahl,
+        normalUeber);
       TB.ui.kopiereFassungen(f.html, f.text, function (ok, wie) {
         if (!ok) { melde(TS().kopierenFehl, true); return; }
         TB.speicher.zaehleFunktion("statusKopiert");
@@ -524,7 +538,21 @@ TB.ansichtStatus = (function () {
         var ids = Object.keys(merkmalZusatz[uid]);
         if (ids.length) mZusatz[uid] = ids;
       });
-      TB.status.teilmengeSpeichern(name, punkte, merkmalAb, zusatz, mZusatz);
+      // Abgeänderte Texte (2.10., Näd): aktuelle Überschreibungen UND
+      // schon geltende eigene Standards der gewählten Untersuchungen
+      // werden zum STANDARD dieses Status — nach dem Speichern steht
+      // nichts mehr fett.
+      var normalAb = {};
+      punkte.concat(zusatz).forEach(function (id) {
+        if (abweichungen[id] !== undefined) normalAb[id] = abweichungen[id];
+        else if (normalUeber[id] !== undefined) normalAb[id] = normalUeber[id];
+      });
+      TB.status.teilmengeSpeichern(name, punkte, merkmalAb, zusatz, mZusatz,
+        normalAb);
+      Object.keys(normalAb).forEach(function (id) {
+        normalUeber[id] = normalAb[id];
+        delete abweichungen[id];
+      });
       melde(TS().alsStatusFertig.replace("%s", name));
       neu();
     });
@@ -541,7 +569,8 @@ TB.ansichtStatus = (function () {
     if (!anzahl) {
       inhalt.appendChild(el("p", "klein-hinweis", TS().vorschauLeer));
     } else {
-      var f = TB.status.fliesstext(m, menge, abweichungen, merkmalWahl);
+      var f = TB.status.fliesstext(m, menge, abweichungen, merkmalWahl,
+        normalUeber);
       inhalt.innerHTML = f.html;   // eigener, geschützter HTML-Aufbau
     }
     vorschau.appendChild(inhalt);

@@ -450,8 +450,11 @@ TB.eeg = (function () {
         var medis = z.medis || [];
         if (medis.length) {
           var teileSatz = medis.map(function (mz) {
+            var name = (mz.name === R().mediFreitext)
+              ? String(mz.frei || "").trim() : (mz.name || "");
             var dosis = String(mz.dosis || "").trim();
-            return (mz.name || "") + (dosis ? " " + dosis : "");
+            if (dosis && !/mg/i.test(dosis)) dosis += " mg";
+            return name + (dosis ? " " + dosis : "");
           }).join(", ") + ".";
           // steht NACH dem Titel-Punkt "Aktuelle ... Medikation:"
           nachSaetze.push({ id: "z_medis", satz: teileSatz });

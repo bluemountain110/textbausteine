@@ -156,12 +156,19 @@ TB.eegGrundlage = (function () {
     ],
     // Relevante Anamnese: Antikonvulsiva — erst die fünf häufigsten,
     // dann alphabetisch (Näd 2.10.).
+    // Erst die fünf häufigsten, dann die übrigen Antikonvulsiva
+    // alphabetisch, GANZ UNTEN die Benzodiazepine alphabetisch (Näd
+    // 2.10.), zuletzt der Freitext für alles andere. Dosen sind immer
+    // Milligramm — "mg" hängt die Ausgabe von selbst an.
     antikonvulsiva: ["Lamotrigin", "Levetiracetam", "Brivaracetam",
-      "Lacosamid", "Valproat", "Carbamazepin", "Cenobamat", "Clobazam",
-      "Clonazepam", "Eslicarbazepin", "Ethosuximid", "Gabapentin",
-      "Lorazepam", "Oxcarbazepin", "Perampanel", "Phenobarbital",
-      "Phenytoin", "Pregabalin", "Primidon", "Rufinamid", "Sultiam",
-      "Topiramat", "Vigabatrin", "Zonisamid"],
+      "Lacosamid", "Valproat", "Carbamazepin", "Cenobamat",
+      "Eslicarbazepin", "Ethosuximid", "Gabapentin", "Oxcarbazepin",
+      "Perampanel", "Phenobarbital", "Phenytoin", "Pregabalin",
+      "Primidon", "Rufinamid", "Sultiam", "Topiramat", "Vigabatrin",
+      "Zonisamid",
+      "Clobazam", "Clonazepam", "Diazepam", "Lorazepam", "Midazolam",
+      "Oxazepam"],
+    mediFreitext: "anderes …",
     medisVorbereitet: 1,
     // KISIM-Sprungfolge für das Skript (Start im Feld Indikation/
     // Fragestellung): 2x Strg+Tab -> Relevante Anamnese, 4x -> das

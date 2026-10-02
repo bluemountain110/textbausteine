@@ -515,7 +515,8 @@ TB.ansichtEeg = (function () {
     kreuz.addEventListener("change", function () {
       z.aktiv = kreuz.checked; koppleAnamnese(); neu(); });
     rahmen.appendChild(kreuz);
-    var namen = auswahl(R().antikonvulsiva, z.name);
+    var namen = auswahl(R().antikonvulsiva.concat([R().mediFreitext]),
+      z.name);
     namen.title = "Antikonvulsivum";
     namen.addEventListener("change", function () {
       z.name = namen.value;
@@ -523,10 +524,23 @@ TB.ansichtEeg = (function () {
       neu();
     });
     rahmen.appendChild(namen);
-    var dosis = el("input", "eeg-feld eeg-feld-mittel");
+    if (z.name === R().mediFreitext) {
+      var frei = el("input", "eeg-feld eeg-feld-mittel");
+      frei.type = "text";
+      frei.placeholder = "Medikament";
+      frei.title = "Medikament (Freitext)";
+      frei.value = z.frei || "";
+      frei.addEventListener("change", function () {
+        z.frei = frei.value;
+        if (!z.aktiv) { z.aktiv = true; koppleAnamnese(); }
+        neu();
+      });
+      rahmen.appendChild(frei);
+    }
+    var dosis = el("input", "eeg-feld");
     dosis.type = "text";
     dosis.placeholder = "Tagesdosis";
-    dosis.title = "Tagesdosis";
+    dosis.title = "Tagesdosis in mg";
     dosis.value = z.dosis || "";
     dosis.addEventListener("change", function () {
       z.dosis = dosis.value;
@@ -534,6 +548,7 @@ TB.ansichtEeg = (function () {
       neu();
     });
     rahmen.appendChild(dosis);
+    rahmen.appendChild(el("span", "eeg-mg", "mg"));
     var weg = el("button", "eeg-zeile-weg", "✕");
     weg.title = TE().zeileWeg;
     weg.addEventListener("click", function () {
@@ -762,10 +777,14 @@ TB.ansichtEeg = (function () {
     kreuz.addEventListener("change", function () {
       schalte(p.id, kreuz.checked);
       // Grundrhythmus-Satz und "nicht beurteilbar." schliessen sich aus.
-      if (p.id === "ga_nb" && kreuz.checked)
+      if (p.id === "ga_nb" && kreuz.checked) {
         schalte("ga_grundrhythmus", false);
-      if (p.id === "ga_grundrhythmus" && kreuz.checked)
+        schalte("ga_blockade", false);   // auch sie ist nicht beurteilbar
+      }
+      if (p.id === "ga_grundrhythmus" && kreuz.checked) {
         schalte("ga_nb", false);
+        schalte("ga_blockade", true);
+      }
       neu(); });
     z.appendChild(kreuz);
 
