@@ -570,3 +570,20 @@ dialog.maske { width: min(720px, 94vw); }
   text-overflow: clip !important; line-height: 1.35; }
 .status-merkmal-zeile.ist-zusatz { background: #fff8e6; border-radius: 4px; }
 .status-merkmal-zeile .status-zusatz { margin-left: auto; }
+
+/* ---- EEG-Werk (Etappe 10, 16.0) — baut auf den Status-Klassen auf ---- */
+.eeg-zeile .eeg-stuecke { line-height: 2; }
+select.eeg-auswahl, input.eeg-feld {
+  font: inherit; margin: 0 2px; padding: 1px 4px;
+  border: 1px solid #bbb; border-radius: 4px; background: #fff;
+  max-width: 100%;
+}
+input.eeg-feld { width: 7ch; }
+input.eeg-feld::placeholder { color: #999; font-size: 0.85em; }
+h3.eeg-beurteilung-titel {
+  margin: 18px 0 6px; padding-top: 10px; border-top: 2px solid #ccc;
+}
+.eeg-pflege-zeile .status-befund { white-space: pre-wrap; }
+.eeg-pflege-zeile.wird-gezogen { opacity: 0.4; }
+.eeg-pflege-zeile.ablage-oben { box-shadow: 0 -3px 0 #14595f; }
+.eeg-pflege-zeile.ablage-unten { box-shadow: 0 3px 0 #14595f; }

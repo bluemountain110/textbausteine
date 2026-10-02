@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "15.18 · Etappe 9 abgeschlossen · 01.10.2026";
+TB.FASSUNG = "16.0 · Etappe 10 EEG-Befund · 02.10.2026";
 
 TB.speicher = (function () {
 

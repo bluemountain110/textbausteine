@@ -193,6 +193,16 @@ TB.hilfe = (function () {
         ["Wenn Du nicht weiterkommst",
          "Komplexe Masken sind Bau-Arbeit — auch die grossen kommerziellen Programme lösen das mit denselben Marken und Fenstern. Du musst sie nicht selbst bauen können: Beschreibe im Bau-Chat, was der Bericht können soll, und lass Dir die Maske bauen; ändern kannst Du danach jederzeit Sätze über die Kärtchen. Ein Frage-Assistent, der neue Masken aus Antworten zusammenbaut, steht im Ideen-Speicher."]
       ]],
+      ["Das EEG-Werk — vom Ankreuzen zum fertigen Befund", [
+        ["Wozu es da ist",
+         "Im Bereich „EEG“ entsteht der ganze EEG-Befund samt Beurteilung aus einer Ankreuzmaske: Alles Normale steht schon da, Du änderst nur das Abweichende. Am Spital öffnet ;;eeg dasselbe Werk direkt in KISIM, in der Praxis in Axenita; ;;eegips bringt die Intensiv-Fassung mit Reaktivität, Kontinuität und den Status-epilepticus-Bausteinen."],
+        ["So füllst Du aus",
+         "Oben eine Vorlage wählen (Normal oder IPS) — die passenden Punkte sind angekreuzt, die Zusätze stehen mit ☆ bereit. In jedem Satz sind die veränderlichen Stellen Auswahllisten oder kleine Felder (z. B. die Frequenz). Klickst Du auf den Satztext selbst, kannst Du ihn frei überschreiben — nur der veränderte Teil erscheint dann fett in Dunkelgrau. Rechts wachsen Befund und Beurteilung live mit; drei Knöpfe kopieren Befund, Beurteilung oder beides als einen Block mit unterstrichenen Titeln."],
+        ["Eigene Vorlagen",
+         "„Auswahl als eigene Vorlage speichern“ merkt sich Ankreuz-Muster, Zusätze und Deine Auswahl-Vorwahlen — nie die Freifeld-Inhalte und nie überschriebene Texte, denn die können Patientenangaben enthalten. Gibst Du der Vorlage ein Kürzel, öffnet ;;kürzel sie künftig am Arbeitsplatz — so kannst Du Dir z. B. eine Nachtschlaf-Vorlage selbst anlegen."],
+        ["Pflege",
+         "„EEG-Pflege“ zeigt den ganzen Katalog: Texte anklicken und umformulieren, Punkte ziehen (auch in eine andere Kategorie), häufig/selten schalten, neue Punkte anlegen. Auswahl-Stellen schreibst Du als {{Auswahl:Name:eins|zwei}}, Freifelder als {{Feld:Name=Vorgabe}} — die erste Auswahl ist immer der Normalfall. Alles synct sofort auf alle Geräte; gepflegt wird nur hier in der App."]
+      ]],
       ["Das Status-Werk — der Neurostatus aus einem Gesamtkatalog", [
         ["Die Idee",
          "Im Hintergrund liegt EIN Gesamtstatus mit allen Untersuchungen, je mit Normalbefund, nach Kategorien geordnet (Allgemein, Stand und Gang, Kopf und Hirnnerven …). Deine einzelnen Status (CTS, Parkinson, Stroke …) sind Auswahlen daraus: Ein Klick auf den Status-Knopf oben kreuzt seine Untersuchungen an. Rechts entsteht laufend der fertige Fliesstext, nach Kategorien gegliedert, mit „Kopieren“ für KISIM, Axenita oder Word."],

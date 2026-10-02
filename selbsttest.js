@@ -363,6 +363,74 @@ TB.selbsttest = (function () {
     return faelle;
   }
 
+
+  // ---- EEG-Werk (Etappe 10) ------------------------------------------
+  // Geprüft wird die GRUNDAUSSTATTUNG (feste, bekannte Daten) — nicht
+  // Näds bearbeitete Fassung. Strukturprüfungen laufen über die Listen.
+  function pruefeEeg() {
+    var faelle = [];
+    var m = TB.eegGrundlage.master();
+    var vorlagen = TB.eegGrundlage.vorlagen();
+    // Struktur: jeder Punkt zeigt auf eine Kategorie, keine doppelte
+    // Kennung, kein leerer Text.
+    var katIds = {}, pIds = {}, doppelt = [], fremdKat = [], leerText = [];
+    m.kategorien.forEach(function (k) { katIds[k.id] = true; });
+    m.punkte.forEach(function (p) {
+      if (pIds[p.id]) doppelt.push(p.id);
+      pIds[p.id] = true;
+      if (!katIds[p.kategorie]) fremdKat.push(p.id);
+      if (!String(p.text || "").trim()) leerText.push(p.id);
+    });
+    faelle.push({ name: "EEG-Katalog: Kennungen eindeutig, Kategorien vorhanden, kein leerer Text",
+      ok: !doppelt.length && !fremdKat.length && !leerText.length,
+      soll: "0 / 0 / 0",
+      ist: doppelt.length + " / " + fremdKat.length + " / " + leerText.length });
+    // Jede Vorlage zeigt nur auf vorhandene Punkte, Kürzel eindeutig.
+    var fremd = [], kuerzelDoppelt = [], gesehen = {};
+    vorlagen.forEach(function (v) {
+      (v.punkte || []).concat(v.zusatz || []).forEach(function (id) {
+        if (!pIds[id]) fremd.push(v.name + ":" + id); });
+      var k = String(v.kuerzel || "").toLowerCase();
+      if (k) { if (gesehen[k]) kuerzelDoppelt.push(k); gesehen[k] = true; }
+    });
+    faelle.push({ name: "EEG-Vorlagen zeigen auf Vorhandenes, Kürzel eindeutig",
+      ok: !fremd.length && !kuerzelDoppelt.length,
+      soll: "0 / 0", ist: fremd.length + " / " + kuerzelDoppelt.length });
+    // Zerlegen und Auflösen: bekannter Satz mit Auswahl und Feld.
+    var probe = "Grundrhythmus um {{Feld:Frequenz=9}} Hz, {{Auswahl:Blockade:positiv|fehlend}}.";
+    var leer = TB.eeg.aufgeloest({ id: "probe", text: probe }, {});
+    var gesetzt = TB.eeg.aufgeloest({ id: "probe", text: probe },
+      { probe: { Frequenz: "11", Blockade: "fehlend" } });
+    faelle.push({ name: "EEG-Auflösung: Vorgaben und gesetzte Werte",
+      ok: leer === "Grundrhythmus um 9 Hz, positiv." &&
+          gesetzt === "Grundrhythmus um 11 Hz, fehlend.",
+      soll: "9/positiv und 11/fehlend", ist: leer + " | " + gesetzt });
+    // Fliesstext der Grundausstattung: Normal-Vorlage ergibt Befund mit
+    // unterstrichenen Kategorien und eine Beurteilung; die Leerzeile
+    // zwischen Technik-Satz und Grundaktivität sitzt.
+    var gewaehlt = {};
+    vorlagen[0].punkte.forEach(function (id) { gewaehlt[id] = true; });
+    var f = TB.eeg.fliesstext(m, gewaehlt, {}, {});
+    var okBefund = f.befund.html.indexOf("<u>Grundaktivität</u>: ") !== -1 &&
+      f.befund.html.indexOf("<p>&nbsp;</p>") !== -1 &&
+      f.befund.text.indexOf("Technisch gelungene 10/20 + 6 true temporal") === 0 &&
+      f.befund.text.indexOf("EKG: normokarder Sinusrhythmus.") !== -1;
+    var okBeurteilung =
+      f.beurteilung.text === "Normaler Grundrhythmus. Keine Verlangsamungsherde. Keine epilepsietypischen Potentiale.";
+    faelle.push({ name: "EEG-Fliesstext: Normal-Vorlage ergibt Befund und Beurteilung",
+      ok: okBefund && okBeurteilung,
+      soll: "Befund mit Titeln und Leerzeilen, Beurteilung dreiteilig",
+      ist: okBefund + " / " + okBeurteilung });
+    // Überschreiben: nur der veränderte Teil wird hervorgehoben.
+    var f2 = TB.eeg.fliesstext(m, { vl_keine: true }, {},
+      { vl_keine: "vereinzelt temporal links." });
+    var okAbw = f2.befund.html.indexOf("<b><span") !== -1 &&
+      f2.befund.text.indexOf("vereinzelt temporal links.") !== -1;
+    faelle.push({ name: "EEG-Überschreiben wird hervorgehoben",
+      ok: okAbw, soll: "fett in Dunkelgrau", ist: String(okAbw) });
+    return faelle;
+  }
+
   // ---- Status-Werk (Etappe 9) ----------------------------------------
   // Geprüft wird die GRUNDAUSSTATTUNG (feste, bekannte Daten) — nicht
   // Näds bearbeitete Fassung. Strukturprüfungen laufen über die Listen,
@@ -698,6 +766,7 @@ TB.selbsttest = (function () {
       pruefeVarianten().map(function (f) { f.gruppe = "Standort-Fassungen"; return f; }),
       pruefeMasken().map(function (f) { f.gruppe = "Masken"; return f; }),
       pruefeStatus().map(function (f) { f.gruppe = "Status-Werk"; return f; }),
+      pruefeEeg().map(function (f) { f.gruppe = "EEG-Werk"; return f; }),
       pruefeBerichtMc().map(function (f) { f.gruppe = "Bericht Memory Clinic"; return f; })
     ));
   }
