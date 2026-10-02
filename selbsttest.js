@@ -410,7 +410,8 @@ TB.selbsttest = (function () {
     // zwischen Technik-Satz und Grundaktivität sitzt.
     var gewaehlt = {};
     vorlagen[0].punkte.forEach(function (id) { gewaehlt[id] = true; });
-    var f = TB.eeg.fliesstext(m, gewaehlt, {}, {});
+    var f = TB.eeg.fliesstext(m, gewaehlt, {}, {},
+      { herde: [], entladungen: [] });
     var okBefund = f.befund.html.indexOf("<u>Grundaktivität</u>: ") !== -1 &&
       f.befund.html.indexOf("<p>&nbsp;</p>") !== -1 &&
       f.befund.text.indexOf("Technisch gelungene 10/20 + 6 true temporal") === 0 &&
@@ -421,13 +422,53 @@ TB.selbsttest = (function () {
       ok: okBefund && okBeurteilung,
       soll: "Befund mit Titeln und Leerzeilen, Beurteilung dreiteilig",
       ist: okBefund + " / " + okBeurteilung });
-    // Überschreiben: nur der veränderte Teil wird hervorgehoben.
+    // Schnell-Befund-Automatik: Herd-Ketten, Frequenz-Grenzen,
+    // Subdelta-Zusatz, generalisierte Entladung — und kein Fett mehr
+    // in der Ausgabe (Näd 2.10.).
+    var herd1 = { haeufigkeit: "Wiederholt", band: "theta",
+                  lok: ["frontal", "temporal", "", ""],
+                  ausbreitung: "", seite: "rechts" };
+    var herd2 = { haeufigkeit: "Intermittierend", band: "subdelta",
+                  lok: ["temporal", "frontal", "", ""],
+                  ausbreitung: "bis zur Mittellinie", seite: "links" };
+    var ent1 = { haeufigkeit: "Vereinzelte", form: "Spike-Wave-Komplexe",
+                 lok: ["generalisiert", "", "", ""],
+                 ausbreitung: "", seite: "links" };
+    var okKette =
+      TB.eeg.herdBefundSatz(herd1) ===
+        "Wiederholt eingelagerte Wellen aus dem Theta-Band fronto-temporal rechts." &&
+      TB.eeg.herdBeurteilungSatz(herd1) ===
+        "Leichter Verlangsamungsherd fronto-temporal rechts." &&
+      TB.eeg.herdBefundSatz(herd2) ===
+        "Intermittierend eingelagerte Wellen aus dem Subdelta-Band temporo-frontal links, mit Ausbreitung bis zur Mittellinie." &&
+      TB.eeg.herdBeurteilungSatz(herd2) ===
+        "Schwerer Verlangsamungsherd temporo-frontal links (mit Subdelta-Wellen)." &&
+      TB.eeg.entBefundSatz(ent1) ===
+        "Vereinzelte generalisierte Spike-Wave-Komplexe." &&
+      TB.eeg.entBeurteilungSatz(ent1) ===
+        "Generalisierte epilepsietypische Potentiale.";
+    var okAv = TB.eeg.avSatz(8) === "Normaler Grundrhythmus." &&
+      TB.eeg.avSatz(7.9) === "Leichte Allgemeinveränderung." &&
+      TB.eeg.avSatz(6) === "Leichte Allgemeinveränderung." &&
+      TB.eeg.avSatz(5.9) === "Mittelschwere Allgemeinveränderung.";
+    var auto = TB.eeg.autoBeurteilung(
+      { ga_grundrhythmus: true, ga_fgrda: true, ent_keine: true },
+      { ga_grundrhythmus: { Frequenz: "7,5" } },
+      { herde: [herd1], entladungen: [] });
+    var autoText = auto.map(function (a) { return a.text; }).join(" ");
+    var okAuto = autoText ===
+      "Leichte Allgemeinveränderung. Intermittierende fGRDA. " +
+      "Leichter Verlangsamungsherd fronto-temporal rechts. " +
+      "Keine epilepsietypischen Potentiale.";
     var f2 = TB.eeg.fliesstext(m, { vl_keine: true }, {},
-      { vl_keine: "vereinzelt temporal links." });
-    var okAbw = f2.befund.html.indexOf("<b><span") !== -1 &&
+      { vl_keine: "vereinzelt temporal links." },
+      { herde: [], entladungen: [] });
+    var okOhneFett = f2.befund.html.indexOf("<b>") === -1 &&
       f2.befund.text.indexOf("vereinzelt temporal links.") !== -1;
-    faelle.push({ name: "EEG-Überschreiben wird hervorgehoben",
-      ok: okAbw, soll: "fett in Dunkelgrau", ist: String(okAbw) });
+    faelle.push({ name: "EEG-Schnell-Befund: Ketten, Frequenz-Grenzen, Automatik, kein Fett",
+      ok: okKette && okAv && okAuto && okOhneFett,
+      soll: "alles wahr",
+      ist: okKette + " / " + okAv + " / " + okAuto + " / " + okOhneFett });
     return faelle;
   }
 

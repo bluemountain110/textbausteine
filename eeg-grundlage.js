@@ -1,58 +1,110 @@
 // Datei: eeg-grundlage.js
 // Projekt: Textbausteine — Teil: App (Browser) UND Chrome-Erweiterung
 //          (byteweise Kopie — Prüfsuite: cmp)
-// Zweck: Die Grundausstattung des EEG-Werks: alle Kategorien und
-//        Punkte eines ausführlichen EEG-Befunds samt Beurteilung, dazu
-//        die beiden Start-Vorlagen „Normal" (;;eeg) und „IPS"
-//        (;;eegips). Diese Datei ist NUR die Erstbefüllung und der
-//        Nachzieh-Stand — gearbeitet wird immer mit der Fassung in den
+// Zweck: Die Grundausstattung des EEG-Werks: Kategorien und Punkte
+//        samt der beiden Start-Vorlagen „Normal" (;;eeg) und „IPS"
+//        (;;eegips) — UND die Regeln des Schnell-Befunds: Bänder,
+//        Lokalisations-Ketten (fronto-/temporo-/…), Seiten,
+//        Ausbreitungen, Entladungsformen sowie die Automatik, die aus
+//        dem Befund die Beurteilung baut (Allgemeinveränderungs-
+//        Grenzen bei 8 und 6 Hz, Herd-Schweregrade je Band, fGRDA).
+//        Kategorien mit schnell=true stehen offen in der Maske, die
+//        übrigen eingeklappt. Diese Datei ist NUR Erstbefüllung und
+//        Regelwerk — gearbeitet wird mit der Fassung in den
 //        Einstellungen (eegMaster/eegVorlagen), die auf alle Geräte
-//        synct. Jeder Punkt ist ein Satzbaustein mit {{Auswahl:…}}-
-//        und {{Feld:…}}-Stellen (dieselbe Schreibweise wie die
-//        Baustein-Makros); die ERSTE Auswahl ist immer der
-//        Normalfall. Kategorien mit titel=true erscheinen im Befund
-//        unterstrichen (der Doppelpunkt nicht); absatz=true setzt
-//        davor eine Leerzeile. GRUNDSATZ: Vorlagen speichern nie
-//        Feld-Werte oder überschriebene Texte — nichts mit
-//        Patientenbezug verlässt je die Sitzung.
+//        synct. GRUNDSATZ: Vorlagen speichern nie Feld-Werte oder
+//        überschriebene Texte — nichts mit Patientenbezug verlässt je
+//        die Sitzung.
 
 "use strict";
 window.TB = window.TB || {};
 
 TB.eegGrundlage = (function () {
   var SEITE = "links|rechts|bds.|bds. linksbetont|bds. rechtsbetont|bds. ohne eindeutige Seitenbetonung";
-  var ORT = "frontotemporal|frontal|frontopolar|frontozentral|temporal|temporal anterior|temporal posterior|temporoparietal|temporookzipital|zentral|zentroparietal|parietal|parietookzipital|okzipital|hemisphäriell|bifrontal|bitemporal|bifrontotemporal|generalisiert|multifokal";
+  var ORT = "frontotemporal|frontal|frontopolar|frontozentral|temporal|temporal anterior|temporal posterior|temporoparietal|temporookzipital|zentral|zentroparietal|parietal|parietookzipital|okzipital|hemisphärisch|bifrontal|bitemporal|bifrontotemporal|generalisiert|multifokal";
   function aw(label, liste) { return "{{Auswahl:" + label + ":" + liste + "}}"; }
   function p(id, kat, haeufig, text) {
     return { id: id, kategorie: kat, haeufig: !!haeufig, text: text };
   }
 
+  // ---- Regeln des Schnell-Befunds (gelten in App UND Erweiterung) ----
+  // Allgemeinveränderung aus der Grundrhythmus-Frequenz: 8,0 Hz ist
+  // noch normal, 6,0 noch leicht (Näd, 2.10.).
+  var REGELN = {
+    avNormalAb: 8,
+    avLeichtAb: 6,
+    avSaetze: { normal: "Normaler Grundrhythmus.",
+                leicht: "Leichte Allgemeinveränderung.",
+                mittel: "Mittelschwere Allgemeinveränderung." },
+    fgrdaBeurteilung: "Intermittierende fGRDA.",
+    // Herd-Zeilen: Band bestimmt den Schweregrad der Beurteilung.
+    herdHaeufigkeiten: ["Vereinzelt", "Wiederholt", "Intermittierend",
+                        "Kontinuierlich"],
+    baender: [
+      { id: "theta",       wort: "Theta-Band",       herd: "Leichter",      gen: "Leichte" },
+      { id: "theta-delta", wort: "Theta-Delta-Band", herd: "Mässiggradiger", gen: "Mässiggradige" },
+      { id: "delta-theta", wort: "Delta-Theta-Band", herd: "Mittelschwerer", gen: "Mittelschwere" },
+      { id: "delta",       wort: "Delta-Band",       herd: "Schwerer",      gen: "Schwere" },
+      { id: "subdelta",    wort: "Subdelta-Band",    herd: "Schwerer",      gen: "Schwere",
+        zusatz: " (mit Subdelta-Wellen)" }
+    ],
+    // Lokalisations-Kette: bis 4 Glieder, Bindeform + letztes Glied
+    // voll ("frontal"+"temporal" → "fronto-temporal"); dazu die
+    // Sonderfälle generalisiert und hemisphärisch.
+    regionen: [
+      { id: "frontal",   binde: "fronto" },
+      { id: "temporal",  binde: "temporo" },
+      { id: "parietal",  binde: "parieto" },
+      { id: "okzipital", binde: "okzipito" },
+      { id: "zentral",   binde: "zentro" }
+    ],
+    spezialLok: ["generalisiert", "hemisphärisch"],
+    seiten: ["links", "rechts", "bds.", "bds. linksbetont",
+             "bds. rechtsbetont"],
+    ausbreitungen: ["", "bis zur Mittellinie", "bis zur Gegenseite",
+                    "bis frontal", "bis temporal", "bis parietal",
+                    "bis okzipital", "bis zentral"],
+    // Entladungs-Zeilen (Reihenfolge: Näd, 2.10.). „Spike-Wave" ist
+    // die Kurzform des Spike-Wave-Komplexes — im Befund steht die
+    // volle Form.
+    entHaeufigkeiten: ["Vereinzelte", "Wiederholte", "Intermittierende",
+                       "Kontinuierliche"],
+    entFormen: ["Spike-Wave-Komplexe", "Spikes", "Sharp-Waves",
+                "Polyspikes", "Polyspike-Wave-Komplexe",
+                "Sharp-Slow-Wave-Komplexe"],
+    keineHerde: "Keine Verlangsamungsherde.",
+    keineEtp: "Keine epilepsietypischen Potentiale.",
+    etpWort: "Epilepsietypische Potentiale",
+    etpGeneralisiert: "Generalisierte epilepsietypische Potentiale",
+    verlangsamungGen: "generalisierte Verlangsamung",
+    herdWort: "Verlangsamungsherd"
+  };
+
+  // schnell=true: offen in der Maske; der Rest eingeklappt und nur
+  // auf Aufklappen sichtbar (Näd, 2.10.: die meisten EEGs sind simpel).
   var KATEGORIEN = [
-    { id: "voreeg", name: "Vor-EEG", bereich: "befund", titel: false, absatz: false },
-    { id: "ableitung", name: "Ableitung", bereich: "befund", titel: false, absatz: true },
-    { id: "artefakte", name: "Artefakte", bereich: "befund", titel: false, absatz: true },
-    { id: "grundaktivitaet", name: "Grundaktivität", bereich: "befund", titel: true, absatz: true },
-    { id: "vigilanz", name: "Vigilanz", bereich: "befund", titel: true, absatz: false },
-    { id: "verlangsamung", name: "Verlangsamungsherde", bereich: "befund", titel: true, absatz: false },
-    { id: "entladungen", name: "Entladungen", bereich: "befund", titel: true, absatz: false },
-    { id: "anfallsmuster", name: "Anfallsmuster", bereich: "befund", titel: true, absatz: false },
-    { id: "muster", name: "Periodische und rhythmische Muster", bereich: "befund", titel: true, absatz: false },
-    { id: "reaktivitaet", name: "Reaktivität", bereich: "befund", titel: true, absatz: false },
-    { id: "kontinuitaet", name: "Kontinuität", bereich: "befund", titel: true, absatz: false },
-    { id: "se", name: "Status epilepticus", bereich: "befund", titel: true, absatz: false },
-    { id: "normvarianten", name: "Normvarianten", bereich: "befund", titel: true, absatz: false },
-    { id: "knochenluecke", name: "Knochenlücke", bereich: "befund", titel: true, absatz: false },
-    { id: "hyperventilation", name: "Hyperventilation", bereich: "befund", titel: true, absatz: true },
-    { id: "photostimulation", name: "Photostimulation", bereich: "befund", titel: true, absatz: false },
-    { id: "ereignisse", name: "Klinische Ereignisse", bereich: "befund", titel: true, absatz: true },
-    { id: "ekg", name: "EKG", bereich: "befund", titel: true, absatz: true },
-    { id: "beurteilung", name: "Beurteilung", bereich: "beurteilung", titel: false, absatz: false }
+    { id: "ableitung", name: "Ableitung", bereich: "befund", titel: false, absatz: true, schnell: true },
+    { id: "artefakte", name: "Artefakte", bereich: "befund", titel: false, absatz: true, schnell: true },
+    { id: "grundaktivitaet", name: "Grundaktivität", bereich: "befund", titel: true, absatz: true, schnell: true },
+    { id: "vigilanz", name: "Vigilanz", bereich: "befund", titel: true, absatz: false, schnell: true },
+    { id: "verlangsamung", name: "Verlangsamungsherde", bereich: "befund", titel: true, absatz: false, schnell: true, zeilen: "herde" },
+    { id: "entladungen", name: "Entladungen", bereich: "befund", titel: true, absatz: false, schnell: true, zeilen: "entladungen" },
+    { id: "hyperventilation", name: "Hyperventilation", bereich: "befund", titel: true, absatz: true, schnell: true },
+    { id: "photostimulation", name: "Photostimulation", bereich: "befund", titel: true, absatz: false, schnell: true },
+    { id: "ekg", name: "EKG", bereich: "befund", titel: true, absatz: true, schnell: true },
+    { id: "voreeg", name: "Vor-EEG", bereich: "befund", titel: false, absatz: true, schnell: false },
+    { id: "anfallsmuster", name: "Anfallsmuster", bereich: "befund", titel: true, absatz: true, schnell: false },
+    { id: "muster", name: "Periodische und rhythmische Muster", bereich: "befund", titel: true, absatz: false, schnell: false },
+    { id: "reaktivitaet", name: "Reaktivität", bereich: "befund", titel: true, absatz: false, schnell: false },
+    { id: "kontinuitaet", name: "Kontinuität", bereich: "befund", titel: true, absatz: false, schnell: false },
+    { id: "se", name: "Status epilepticus", bereich: "befund", titel: true, absatz: false, schnell: false },
+    { id: "normvarianten", name: "Normvarianten", bereich: "befund", titel: true, absatz: false, schnell: false },
+    { id: "knochenluecke", name: "Knochenlücke", bereich: "befund", titel: true, absatz: false, schnell: false },
+    { id: "ereignisse", name: "Klinische Ereignisse", bereich: "befund", titel: true, absatz: true, schnell: false },
+    { id: "beurteilung", name: "Beurteilung", bereich: "beurteilung", titel: false, absatz: false, schnell: true }
   ];
 
   var PUNKTE = [
-    // ---- Vor-EEG ------------------------------------------------------
-    p("ve_vor", "voreeg", false,
-      "Vor-EEG vom {{Feld:Datum}}: {{Feld:Kurzbefund}}"),
     // ---- Ableitung (der Technik-Satz) ---------------------------------
     p("abl_satz", "ableitung", true,
       aw("Qualität", "Technisch gelungene|Technisch erschwerte") + " " +
@@ -96,16 +148,14 @@ TB.eegGrundlage = (function () {
       " okzipitaler Grundrhythmus um {{Feld:Frequenz=9}} Hz."),
     p("ga_blockade", "grundaktivitaet", true,
       aw("Blockade", "Positive visuelle Blockade|Fehlende visuelle Blockade|Visuelle Blockade nicht beurteilbar (Augen nicht geöffnet)") + "."),
+    p("ga_fgrda", "grundaktivitaet", true,
+      "Intermittierende frontal betonte rhythmische Delta-Aktivität."),
     p("ga_seitendifferenz", "grundaktivitaet", false,
       "Seitendifferenz der Grundaktivität: {{Feld:Beschreibung=Amplitudenminderung links temporal}}."),
     p("ga_beta", "grundaktivitaet", false,
       aw("Grad", "Leicht|Deutlich") + " vermehrte Beta-Aktivität " +
       aw("Schwerpunkt", "frontal|über den hinteren Hirnarealen|diffus") + ", a. e. " +
       aw("Ursache", "bei fehlender Entspannung|medikamentös (Benzodiazepine)|medikamentös (Propofol)") + "."),
-    p("ga_av", "grundaktivitaet", false,
-      aw("Grad", "Leichte|Mässiggradige|Schwere") +
-      " Allgemeinveränderung mit diffuser Verlangsamung der Grundaktivität in den " +
-      aw("Band", "Theta-|Theta-/Delta-|Delta-") + "Bereich."),
     p("ga_diffus", "grundaktivitaet", false,
       "diffus verlangsamt auf {{Feld:Frequenz=6}}/s, " +
       aw("Verlauf", "kontinuierlich|diskontinuierlich") + "."),
@@ -128,17 +178,11 @@ TB.eegGrundlage = (function () {
       "POSTS (positive okzipitale scharfe Transienten des Schlafs)."),
     p("vig_arousal", "vigilanz", false,
       "Arousals " + aw("Auslöser", "spontan|auf Reiz") + "."),
-    // ---- Verlangsamungsherde ------------------------------------------
+    // ---- Verlangsamungsherde (Hauptweg: die Herd-Zeilen der Maske) ----
     p("vl_keine", "verlangsamung", true, "keine."),
-    p("vl_wellen", "verlangsamung", true,
-      aw("Häufigkeit", "Wiederholt eingelagerte|Vereinzelt eingelagerte|Gehäufte|Intermittierende|Subkontinuierliche|Kontinuierliche") +
-      " Wellen aus dem " + aw("Band", "Theta-Band|Delta-Band|Theta- und Delta-Band|Subdelta-Band") +
-      " " + aw("Ort", ORT) + " " + aw("Seite", SEITE) + "."),
     p("vl_polymorph", "verlangsamung", false,
       aw("Häufigkeit", "Intermittierende|Kontinuierliche") + " polymorphe Delta-Aktivität " +
       aw("Ort", ORT) + " " + aw("Seite", SEITE) + "."),
-    p("vl_ausbreitung", "verlangsamung", false,
-      "Mit Ausbreitung nach {{Feld:Richtung=parietal}}."),
     p("vl_irda", "verlangsamung", false,
       aw("Art", "FIRDA (frontal intermittierende rhythmische Delta-Aktivität)|OIRDA (okzipital intermittierende rhythmische Delta-Aktivität)|TIRDA (temporal intermittierende rhythmische Delta-Aktivität)") +
       aw("Seite", "| links| rechts| bds.") + "."),
@@ -146,20 +190,32 @@ TB.eegGrundlage = (function () {
       aw("Häufigkeit", "Vereinzelt|Wiederholt") + " eingelagerte steilere Transienten " +
       aw("Ort", ORT) + " " + aw("Seite", SEITE) +
       ", die Kriterien für epilepsietypische Potenziale jedoch nicht vollständig erfüllt."),
-    // ---- Entladungen --------------------------------------------------
+    // ---- Entladungen (Hauptweg: die Entladungs-Zeilen der Maske) ------
     p("ent_keine", "entladungen", true, "keine."),
-    p("ent_etp", "entladungen", true,
-      aw("Häufigkeit", "Vereinzelte|Wiederholte|Gehäufte") + " " +
-      aw("Form", "Sharp Waves|Spikes|Spike-Wave-Komplexe|Sharp-Wave-Komplexe|Polyspikes|Polyspike-Wave-Komplexe|Sharp-Slow-Wave-Komplexe") +
-      " " + aw("Ort", ORT) + " " + aw("Seite", SEITE) +
-      ", Amplitudenmaximum über {{Feld:Elektrode=F4}}."),
-    p("ent_gen", "entladungen", false,
-      aw("Häufigkeit", "Vereinzelte|Wiederholte") + " generalisierte " +
-      aw("Form", "3/s Spike-Wave-Komplexe|4–5/s Spike-Wave-Komplexe|atypische, langsame Spike-Wave-Komplexe (unter 2,5/s)|Polyspike-Wave-Komplexe") + "."),
     p("ent_aktivierung", "entladungen", false,
       "Aktivierung durch " + aw("Auslöser", "Hyperventilation|Photostimulation|Schläfrigkeit und Schlaf") + "."),
     p("ent_zaehlung", "entladungen", false,
       "Während {{Feld:Minuten=14}} Minuten insgesamt {{Feld:Anzahl=8}} derartige Episoden, maximale Dauer {{Feld:Sekunden=2,5}} Sekunden."),
+    p("ent_amplitude", "entladungen", false,
+      "Amplitudenmaximum über {{Feld:Elektrode=F4}}."),
+    // ---- Hyperventilation ---------------------------------------------
+    p("hv_haupt", "hyperventilation", true,
+      aw("Ergebnis", "keine neuen Aspekte|Zunahme der Verlangsamung|Provokation epilepsietypischer Potenziale|physiologische diffuse Verlangsamung, rasch rückläufig|nicht durchgeführt (fehlende Kooperation)|nicht durchgeführt (Kontraindikation)|nicht durchgeführt") + "."),
+    // ---- Photostimulation ---------------------------------------------
+    p("ps_haupt", "photostimulation", true,
+      aw("Ergebnis", "keine neuen Aspekte|partielles photic driving|deutliches photic driving|nicht durchgeführt") + "."),
+    p("ps_ppr", "photostimulation", false,
+      "Photoparoxysmale Reaktion, " + aw("Ausdehnung", "okzipital begrenzt|generalisiert") + ", " +
+      aw("Verlauf", "selbstlimitierend|die Stimulation überdauernd") + ", bei {{Feld:Frequenz=15}} Hz."),
+    p("ps_pmr", "photostimulation", false, "Photomyogene Reaktion."),
+    // ---- EKG ----------------------------------------------------------
+    p("ekg_haupt", "ekg", true,
+      aw("Befund", "normokarder Sinusrhythmus|normofrequenter Sinusrhythmus|Sinusbradykardie|Sinustachykardie|absolute Arrhythmie, a. e. bei Vorhofflimmern|vereinzelte Extrasystolen") + "."),
+    p("ekg_pause", "ekg", false,
+      "Pause von {{Feld:Sekunden=3}} s um {{Feld:Uhrzeit}} Uhr — Rückmeldung an die Behandler erfolgt."),
+    // ---- Vor-EEG (eingeklappt) ----------------------------------------
+    p("ve_vor", "voreeg", false,
+      "Vor-EEG vom {{Feld:Datum}}: {{Feld:Kurzbefund}}"),
     // ---- Anfallsmuster ------------------------------------------------
     p("am_episode", "anfallsmuster", true,
       "Episode mit rhythmischer " + aw("Band", "Theta-|Delta-|Alpha-|Spike-Wave-") +
@@ -219,40 +275,13 @@ TB.eegGrundlage = (function () {
     p("kl_breach", "knochenluecke", true,
       "Breach-Rhythmus über der Knochenlücke " + aw("Ort", ORT) + " " + aw("Seite", SEITE) +
       ": amplitudenerhöhte, teils steiler konfigurierte Aktivität — dort nicht sicher als epilepsietypisch zu werten."),
-    // ---- Hyperventilation ---------------------------------------------
-    p("hv_haupt", "hyperventilation", true,
-      aw("Ergebnis", "keine neuen Aspekte|Zunahme der Verlangsamung|Provokation epilepsietypischer Potenziale|physiologische diffuse Verlangsamung, rasch rückläufig|nicht durchgeführt (fehlende Kooperation)|nicht durchgeführt (Kontraindikation)|nicht durchgeführt") + "."),
-    // ---- Photostimulation ---------------------------------------------
-    p("ps_haupt", "photostimulation", true,
-      aw("Ergebnis", "keine neuen Aspekte|partielles photic driving|deutliches photic driving|nicht durchgeführt") + "."),
-    p("ps_ppr", "photostimulation", false,
-      "Photoparoxysmale Reaktion, " + aw("Ausdehnung", "okzipital begrenzt|generalisiert") + ", " +
-      aw("Verlauf", "selbstlimitierend|die Stimulation überdauernd") + ", bei {{Feld:Frequenz=15}} Hz."),
-    p("ps_pmr", "photostimulation", false, "Photomyogene Reaktion."),
     // ---- Klinische Ereignisse -----------------------------------------
     p("er_ereignis", "ereignisse", true,
       "Ereignis um {{Feld:Uhrzeit}} Uhr: {{Feld:Klinik}} — " +
       aw("Korrelat", "ohne begleitende elektroenzephalographische Veränderungen|mit begleitenden elektroenzephalographischen Veränderungen wie oben beschrieben") + "."),
     p("er_funktionell", "ereignisse", false,
       "In den Sekunden vor, zu Beginn und während der Episode keine erklärenden elektroenzephalographischen Veränderungen."),
-    // ---- EKG ----------------------------------------------------------
-    p("ekg_haupt", "ekg", true,
-      aw("Befund", "normokarder Sinusrhythmus|normofrequenter Sinusrhythmus|Sinusbradykardie|Sinustachykardie|absolute Arrhythmie, a. e. bei Vorhofflimmern|vereinzelte Extrasystolen") + "."),
-    p("ekg_pause", "ekg", false,
-      "Pause von {{Feld:Sekunden=3}} s um {{Feld:Uhrzeit}} Uhr — Rückmeldung an die Behandler erfolgt."),
-    // ---- Beurteilung --------------------------------------------------
-    p("beu_normal", "beurteilung", true, "Normaler Grundrhythmus."),
-    p("beu_av", "beurteilung", true,
-      aw("Grad", "Leichte|Mässiggradige|Schwere") + " Allgemeinveränderung."),
-    p("beu_herd_keine", "beurteilung", true, "Keine Verlangsamungsherde."),
-    p("beu_herd", "beurteilung", true,
-      aw("Häufigkeit", "Intermittierend|Kontinuierlich") + " " +
-      aw("Grad", "leichtgradiger|mässiggradiger|schwergradiger") + " Herdbefund " +
-      aw("Ort", ORT) + " " + aw("Seite", SEITE) + "."),
-    p("beu_etp_keine", "beurteilung", true, "Keine epilepsietypischen Potentiale."),
-    p("beu_etp", "beurteilung", true,
-      aw("Häufigkeit", "Vereinzelte|Wiederholte|Gehäufte") + " epilepsietypische Potentiale " +
-      aw("Ort", ORT) + " " + aw("Seite", SEITE) + "."),
+    // ---- Beurteilung (Zusatz-Sätze — der Kern entsteht automatisch) ---
     p("beu_anfall_kein", "beurteilung", false, "Kein Anfallsablauf."),
     p("beu_anfall", "beurteilung", false,
       "Aufzeichnung von {{Feld:Anzahl=1}} Anfallsabläufen, " +
@@ -282,38 +311,38 @@ TB.eegGrundlage = (function () {
 
   // Die beiden Start-Vorlagen. punkte = angekreuzt, zusatz = sichtbar
   // und nicht angewählt (☆), werte = NUR Auswahl-Vorwahlen je Punkt
-  // (nie Feld-Werte — Grundsatz 1).
+  // (nie Feld-Werte — Grundsatz 1). Die Kern-Beurteilung entsteht
+  // automatisch aus dem Befund und steht darum in keiner Vorlage.
   function vorlagen() {
     return [
       { id: "v_eeg", name: "Normal", kuerzel: "eeg",
         punkte: ["abl_satz", "art_augen", "art_muskel", "ga_grundrhythmus",
                  "ga_blockade", "vig_haupt", "vl_keine", "ent_keine",
-                 "hv_haupt", "ps_haupt", "ekg_haupt",
-                 "beu_normal", "beu_herd_keine", "beu_etp_keine"],
-        zusatz: ["ga_beta", "ga_av", "vl_wellen", "vl_irda", "ent_etp",
-                 "ent_gen", "ps_ppr", "er_ereignis", "nv_variante",
-                 "kl_breach", "beu_av", "beu_herd", "beu_etp", "beu_beta",
-                 "beu_funktionell", "beu_vergleich", "beu_empfehlung"],
+                 "hv_haupt", "ps_haupt", "ekg_haupt"],
+        zusatz: ["ga_beta", "vl_irda", "nv_variante", "kl_breach",
+                 "beu_beta", "beu_vergleich", "beu_empfehlung"],
         werte: {} },
       { id: "v_eegips", name: "IPS", kuerzel: "eegips",
         punkte: ["abl_satz", "abl_sed", "art_augen", "art_muskel",
                  "art_50hz", "art_pflege", "ga_diffus", "ga_amplitude",
                  "vig_ips", "vl_keine", "ent_keine", "re_reakt", "ko_kont",
-                 "ekg_haupt", "beu_av", "beu_etp_keine", "beu_sedierung"],
-        zusatz: ["ga_av", "vl_polymorph", "vl_wellen", "ent_etp",
-                 "am_episode", "am_evolution", "am_korrelat",
-                 "am_reagibilitaet", "mu_lpd", "mu_gpd", "mu_bipd",
-                 "mu_lrda", "mu_grda", "mu_praevalenz", "mu_iic",
+                 "ekg_haupt", "beu_sedierung"],
+        zusatz: ["vl_polymorph", "am_episode", "am_evolution",
+                 "am_korrelat", "am_reagibilitaet", "mu_lpd", "mu_gpd",
+                 "mu_bipd", "mu_lrda", "mu_grda", "mu_praevalenz", "mu_iic",
                  "ko_burst", "ko_koma", "se_salzburg", "se_testgabe",
-                 "se_acns", "er_ereignis", "beu_herd", "beu_etp",
-                 "beu_ncse", "beu_ncse_moeglich", "beu_koma"],
+                 "se_acns", "er_ereignis", "beu_ncse", "beu_ncse_moeglich",
+                 "beu_koma"],
         werte: { abl_satz: { "Montage": "10/20-Ableitung",
                              "Bedingungen": "im Bett auf der Intensivstation",
                              "Patient": "somnolent" } } }
     ];
   }
 
-  var KATALOG_STAND = "2026-10-02";
+  // 16.1 hat den Katalog umgebaut (Schnell-Befund): stand-Wechsel löst
+  // in eeg.js den einmaligen Vollersatz aus (eigene Punkte mit
+  // id-Anfang "eig" überleben ihn).
+  var KATALOG_STAND = "2026-10-02b";
 
   function master() {
     return { stand: KATALOG_STAND,
@@ -321,5 +350,6 @@ TB.eegGrundlage = (function () {
              punkte: JSON.parse(JSON.stringify(PUNKTE)) };
   }
 
-  return { master: master, vorlagen: vorlagen, KATALOG_STAND: KATALOG_STAND };
+  return { master: master, vorlagen: vorlagen,
+           KATALOG_STAND: KATALOG_STAND, REGELN: REGELN };
 })();

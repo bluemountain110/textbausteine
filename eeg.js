@@ -7,7 +7,12 @@
 //        Auswahlen und Felder, löst sie mit den gewählten Werten auf
 //        und erzeugt den fertigen Fliesstext für Befund und
 //        Beurteilung (HTML und reiner Text; Kategorien unterstrichen,
-//        der Doppelpunkt nicht, Überschriebenes fett in Dunkelgrau).
+//        der Doppelpunkt nicht, Überschriebenes OHNE Hervorhebung —
+//        im EEG steht nur, was auffällig ist). NEU in 16.1: die
+//        Herd- und Entladungs-Zeilen des Schnell-Befunds (Band,
+//        Lokalisations-Kette, Ausbreitung, Seite) und die Automatik,
+//        die die Beurteilung aus dem Befund baut (Regeln in
+//        eeg-grundlage.js, REGELN).
 //        In der App kommt der Speicher aus TB.speicher; in der
 //        Erweiterung setzt seite-eeg.js die Quelle TB.eegQuelle
 //        (nur lesend). GRUNDSATZ: Ein AUSGEFÜLLTER Befund ist ein
@@ -46,6 +51,11 @@ TB.eegTexte = {
   vorlageKuerzelBelegt: "Achtung: Ein Baustein trägt schon das Kürzel „%s“ — der Baustein hat am Arbeitsplatz Vorrang.",
   vorlageFertig: "Vorlage „%s“ gespeichert (nur Ankreuz-Muster und Auswahl-Vorwahlen, keine Befunde).",
   pflegeKnopf: "EEG-Pflege",
+  seltenTitel: "Selten gebraucht (aufklappen):",
+  herdDazu: "+ Herd",
+  entDazu: "+ Entladung",
+  zeileWeg: "Zeile entfernen",
+  autoHinweis: "Entsteht automatisch aus dem Befund — zum Anpassen einen Satz anklicken.",
   vorschauLeer: "(noch nichts angekreuzt)",
   befundKlickHinweis: "Zum Überschreiben anklicken",
   abweichungZurueck: "Auf Vorgabe zurück",
@@ -99,12 +109,40 @@ TB.eeg = (function () {
       speichereVorlagen(TB.eegGrundlage.vorlagen());
     }
   }
-  // Nachziehen: Punkte und Kategorien, die die Grundausstattung neu
-  // bekommt, werden hinter ihrem Vorgänger eingefügt; Näds eigene
-  // Texte und seine Reihenfolge bleiben unberührt.
+  // Nachziehen. Beim Stand-Wechsel auf den 16.1-Umbau wird der
+  // Katalog EINMAL voll ersetzt (Schnell-Befund braucht die neue
+  // Struktur); eigene Punkte mit id-Anfang "eig" werden hinten an
+  // ihre Kategorie gehängt, die Start-Vorlagen neu gesetzt, eigene
+  // Vorlagen bleiben. Danach gilt wieder: Neues wird hinter seinem
+  // Vorgänger eingefügt, Näds Texte und Reihenfolge bleiben.
   function migriereNeue(m) {
     var frisch = TB.eegGrundlage.master();
     var geaendert = false;
+    if (m.stand !== frisch.stand) {
+      var eigene = (m.punkte || []).filter(function (p) {
+        return String(p.id).indexOf("eig") === 0; });
+      m.kategorien = frisch.kategorien;
+      m.punkte = frisch.punkte;
+      eigene.forEach(function (p) {
+        if (!m.kategorien.some(function (k) { return k.id === p.kategorie; }))
+          p.kategorie = m.kategorien[0].id;
+        m.punkte.push(p);
+      });
+      m.stand = frisch.stand;
+      if (TB.speicher) {
+        var liste = vorlagen().filter(function (v) {
+          return v.id !== "v_eeg" && v.id !== "v_eegips"; });
+        liste = TB.eegGrundlage.vorlagen().concat(liste);
+        liste.forEach(function (v) {
+          v.punkte = (v.punkte || []).filter(function (id) {
+            return m.punkte.some(function (p) { return p.id === id; }); });
+          if (v.zusatz) v.zusatz = v.zusatz.filter(function (id) {
+            return m.punkte.some(function (p) { return p.id === id; }); });
+        });
+        speichereVorlagen(liste);
+      }
+      return true;
+    }
     m.kategorien = m.kategorien || [];
     m.punkte = m.punkte || [];
     frisch.kategorien.forEach(function (k, idx) {
@@ -209,8 +247,8 @@ TB.eeg = (function () {
   }
 
   // Wort-Unterschied (eigene Kopie der Status-Logik, damit die Datei
-  // auch in der Erweiterung ohne status.js läuft).
-  var ABWEICHFARBE = "#444444";
+  // auch in der Erweiterung ohne status.js läuft) — dient nur noch der
+  // Maske (↺ und Klick-Stelle), die AUSGABE hebt nichts hervor.
   function wortUnterschied(normal, abw) {
     var a = String(normal), b = String(abw);
     var vorn = 0, hinten = 0;
@@ -227,18 +265,164 @@ TB.eeg = (function () {
              nach: b.slice(b.length - hinten) };
   }
 
+  // ---- Herd- und Entladungs-Zeilen des Schnell-Befunds ------------------
+  // Eine Zeile: { haeufigkeit, band|form, lok:[bis 4 Regionen ODER
+  // "generalisiert"/"hemisphärisch"], ausbreitung, seite }. Die
+  // Lokalisations-Kette bindet: frontal+temporal → "fronto-temporal",
+  // temporal+frontal → "temporo-frontal" (letztes Glied voll).
+  function R() { return TB.eegGrundlage.REGELN; }
+  function bandVon(id) {
+    return R().baender.find(function (b) { return b.id === id; }) ||
+      R().baender[0];
+  }
+  function kettenText(lok) {
+    var glieder = (lok || []).filter(function (x) { return !!x; });
+    if (!glieder.length) return "";
+    if (glieder[0] === "generalisiert") return "generalisiert";
+    if (glieder[0] === "hemisphärisch") return "hemisphärisch";
+    return glieder.map(function (g, i) {
+      if (i === glieder.length - 1) return g;
+      var r = R().regionen.find(function (x) { return x.id === g; });
+      return (r ? r.binde : g) + "-";
+    }).join("");
+  }
+  function lokMitSeite(z) {
+    var kette = kettenText(z.lok);
+    if (kette === "generalisiert") return "generalisiert";
+    var seite = z.seite || R().seiten[0];
+    return (kette ? kette + " " : "") + seite;
+  }
+  function ausbreitungsText(z) {
+    if (!z.ausbreitung) return "";
+    if (kettenText(z.lok) === "generalisiert") return "";
+    return ", mit Ausbreitung " + z.ausbreitung;
+  }
+  function herdBefundSatz(z) {
+    var h = z.haeufigkeit || R().herdHaeufigkeiten[0];
+    return h + " eingelagerte Wellen aus dem " + bandVon(z.band).wort +
+      " " + lokMitSeite(z) + ausbreitungsText(z) + ".";
+  }
+  function herdBeurteilungSatz(z) {
+    var b = bandVon(z.band);
+    var zusatz = b.zusatz || "";
+    if (kettenText(z.lok) === "generalisiert") {
+      return b.gen + " " + R().verlangsamungGen + zusatz + ".";
+    }
+    return b.herd + " " + R().herdWort + " " + lokMitSeite(z) + zusatz + ".";
+  }
+  function entBefundSatz(z) {
+    var h = z.haeufigkeit || R().entHaeufigkeiten[0];
+    var form = z.form || R().entFormen[0];
+    if (kettenText(z.lok) === "generalisiert") {
+      return h + " generalisierte " + form + ".";
+    }
+    return h + " " + form + " " + lokMitSeite(z) + ausbreitungsText(z) + ".";
+  }
+  function entBeurteilungSatz(z) {
+    if (kettenText(z.lok) === "generalisiert") {
+      return R().etpGeneralisiert + ".";
+    }
+    return R().etpWort + " " + lokMitSeite(z) + ".";
+  }
+
+  // ---- Beurteilungs-Automatik -------------------------------------------
+  // Baut die Kern-Beurteilung aus dem Befund (Näd 2.10.: er will sie
+  // nie selbst machen): Grundrhythmus-Satz aus der Frequenz (unter 8
+  // leicht, unter 6 mittelschwer; 8,0 noch normal, 6,0 noch leicht),
+  // dann fGRDA, dann je Herd-Zeile ihr Satz (ohne Häufigkeit), dann
+  // je Entladungs-Zeile ihrer. Jeder Satz trägt eine feste Kennung
+  // und lässt sich in der Maske überschreiben.
+  function hzWert(gewaehlt, werte) {
+    var ids = ["ga_grundrhythmus", "ga_diffus"];
+    for (var i = 0; i < ids.length; i++) {
+      if (!gewaehlt[ids[i]]) continue;
+      var roh = (werte && werte[ids[i]] && werte[ids[i]]["Frequenz"]);
+      if (roh === undefined) roh = (ids[i] === "ga_diffus") ? "6" : "9";
+      var zahl = parseFloat(String(roh).replace(",", "."));
+      if (!isNaN(zahl)) return zahl;
+    }
+    return null;
+  }
+  function avSatz(hz) {
+    var r = R();
+    if (hz === null) return null;
+    if (hz >= r.avNormalAb) return r.avSaetze.normal;
+    if (hz >= r.avLeichtAb) return r.avSaetze.leicht;
+    return r.avSaetze.mittel;
+  }
+  function autoBeurteilung(gewaehlt, werte, zeilen) {
+    var z = zeilen || {};
+    var herde = z.herde || [], ent = z.entladungen || [];
+    var saetze = [];
+    var av = avSatz(hzWert(gewaehlt, werte));
+    if (av) saetze.push({ id: "auto_av", text: av });
+    if (gewaehlt["ga_fgrda"]) {
+      saetze.push({ id: "auto_fgrda", text: R().fgrdaBeurteilung });
+    }
+    if (herde.length) {
+      herde.forEach(function (h, i) {
+        saetze.push({ id: "auto_h" + i, text: herdBeurteilungSatz(h) }); });
+    } else if (gewaehlt["vl_keine"]) {
+      saetze.push({ id: "auto_hkeine", text: R().keineHerde });
+    }
+    if (ent.length) {
+      ent.forEach(function (e, i) {
+        saetze.push({ id: "auto_e" + i, text: entBeurteilungSatz(e) }); });
+    } else if (gewaehlt["ent_keine"]) {
+      saetze.push({ id: "auto_ekeine", text: R().keineEtp });
+    }
+    return saetze;
+  }
+
   // ---- Fliesstext -------------------------------------------------------
   // Je Bereich (befund/beurteilung): Kategorien in Listen-Reihenfolge;
   // titel=true schreibt „Name" unterstrichen (Doppelpunkt NICHT
   // unterstrichen), absatz=true setzt eine Leerzeile davor (nie vor
   // dem ersten gedruckten Block). Überschriebenes: nur der veränderte
   // Wortbereich fett in Dunkelgrau.
-  function bereichText(m, bereich, gewaehlt, werte, abweichungen) {
+  function satzFertig(soll, abweichungen, id) {
+    var a = abweichungen && abweichungen[id];
+    var istAbw = (a !== undefined && a !== null &&
+                  String(a).trim() !== "" &&
+                  String(a).trim() !== String(soll).trim());
+    return mitPunktEnde(istAbw ? a : soll);
+  }
+  function bereichText(m, bereich, gewaehlt, werte, abweichungen, zeilen) {
+    var z = zeilen || {};
     var html = [], text = [], schonWas = false;
     jeKategorie(m, bereich).forEach(function (block) {
       var teile = block.punkte.filter(function (p) { return !!gewaehlt[p.id]; });
-      if (!teile.length) return;
+      var zeilenSaetze = [];
+      if (bereich === "befund" && block.kategorie.zeilen) {
+        var liste = z[block.kategorie.zeilen] || [];
+        if (liste.length) {
+          // Zeilen ersetzen „keine." und stehen vor den Zusatz-Punkten.
+          teile = teile.filter(function (p) {
+            return p.id !== "vl_keine" && p.id !== "ent_keine"; });
+          liste.forEach(function (zle, i) {
+            var satz = block.kategorie.zeilen === "herde"
+              ? herdBefundSatz(zle) : entBefundSatz(zle);
+            zeilenSaetze.push({ id: "z_" + block.kategorie.zeilen + i,
+                                satz: satz });
+          });
+        }
+      }
+      var autoSaetze = [];
+      if (bereich === "beurteilung" && block.kategorie.id === "beurteilung") {
+        autoSaetze = autoBeurteilung(gewaehlt, werte, z);
+      }
+      if (!teile.length && !zeilenSaetze.length && !autoSaetze.length) return;
       var stueckeH = [], stueckeT = [];
+      autoSaetze.forEach(function (a) {
+        var fertig = satzFertig(a.text, abweichungen, a.id);
+        stueckeT.push(fertig);
+        stueckeH.push(schuetze(fertig));
+      });
+      zeilenSaetze.forEach(function (zs) {
+        var fertig = satzFertig(zs.satz, abweichungen, zs.id);
+        stueckeT.push(fertig);
+        stueckeH.push(schuetze(fertig));
+      });
       teile.forEach(function (p) {
         var soll = aufgeloest(p, werte);
         var a = abweichungen && abweichungen[p.id];
@@ -247,14 +431,7 @@ TB.eeg = (function () {
                       String(a).trim() !== soll.trim());
         var fertig = mitPunktEnde(istAbw ? a : soll);
         stueckeT.push(fertig);
-        if (istAbw) {
-          var d = wortUnterschied(mitPunktEnde(soll), fertig);
-          stueckeH.push(schuetze(d.vor) +
-            "<b><span style=\"color:" + ABWEICHFARBE + "\">" +
-            schuetze(d.mitte) + "</span></b>" + schuetze(d.nach));
-        } else {
-          stueckeH.push(schuetze(fertig));
-        }
+        stueckeH.push(schuetze(fertig));
       });
       if (block.kategorie.absatz && schonWas) {
         html.push("<p>&nbsp;</p>");
@@ -269,10 +446,11 @@ TB.eeg = (function () {
     });
     return { html: html.join(""), text: text.join("\n") };
   }
-  function fliesstext(m, gewaehlt, werte, abweichungen) {
+  function fliesstext(m, gewaehlt, werte, abweichungen, zeilen) {
     return {
-      befund: bereichText(m, "befund", gewaehlt, werte, abweichungen),
-      beurteilung: bereichText(m, "beurteilung", gewaehlt, werte, abweichungen)
+      befund: bereichText(m, "befund", gewaehlt, werte, abweichungen, zeilen),
+      beurteilung: bereichText(m, "beurteilung", gewaehlt, werte,
+                               abweichungen, zeilen)
     };
   }
   // Beides als EIN Block (Axenita-Weg und „Beides kopieren"):
@@ -287,22 +465,31 @@ TB.eeg = (function () {
   }
 
   // ---- Vorlagen ---------------------------------------------------------
-  function vorlageSpeichern(name, kuerzel, punkte, zusatz, werte) {
+  function vorlageSpeichern(name, kuerzel, punkte, zusatz, werte, zeilen) {
     var liste = vorlagen();
     var da = liste.find(function (v) {
       return v.name.toLowerCase() === String(name).toLowerCase(); });
     var zu = (zusatz || []).filter(function (id) {
       return punkte.indexOf(id) === -1; });
     var w = werte || {};
+    var z = zeilen || {};
+    var herde = (z.herde || []).map(function (x) {
+      return JSON.parse(JSON.stringify(x)); });
+    var ent = (z.entladungen || []).map(function (x) {
+      return JSON.parse(JSON.stringify(x)); });
     if (da) {
       da.kuerzel = String(kuerzel || da.kuerzel || "");
       da.punkte = punkte.slice();
       if (zu.length) da.zusatz = zu; else delete da.zusatz;
       da.werte = w;
+      if (herde.length) da.herde = herde; else delete da.herde;
+      if (ent.length) da.entladungen = ent; else delete da.entladungen;
     } else {
       liste.push({ id: "v" + Date.now().toString(36), name: String(name),
                    kuerzel: String(kuerzel || ""), punkte: punkte.slice(),
-                   zusatz: zu.length ? zu : undefined, werte: w });
+                   zusatz: zu.length ? zu : undefined, werte: w,
+                   herde: herde.length ? herde : undefined,
+                   entladungen: ent.length ? ent : undefined });
     }
     speichereVorlagen(liste);
     return !da;
@@ -316,5 +503,10 @@ TB.eeg = (function () {
            punkt: punkt, jeKategorie: jeKategorie, neuePunktId: neuePunktId,
            zerlege: zerlege, wertVon: wertVon, aufgeloest: aufgeloest,
            fliesstext: fliesstext, block: block,
-           wortUnterschied: wortUnterschied };
+           wortUnterschied: wortUnterschied,
+           kettenText: kettenText, herdBefundSatz: herdBefundSatz,
+           herdBeurteilungSatz: herdBeurteilungSatz,
+           entBefundSatz: entBefundSatz,
+           entBeurteilungSatz: entBeurteilungSatz,
+           autoBeurteilung: autoBeurteilung, avSatz: avSatz };
 })();

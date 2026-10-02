@@ -587,3 +587,60 @@ h3.eeg-beurteilung-titel {
 .eeg-pflege-zeile.wird-gezogen { opacity: 0.4; }
 .eeg-pflege-zeile.ablage-oben { box-shadow: 0 -3px 0 #14595f; }
 .eeg-pflege-zeile.ablage-unten { box-shadow: 0 3px 0 #14595f; }
+
+/* ---- EEG 16.1: Schnell-Befund ------------------------------------ */
+/* Überschriebenes wird im EEG NICHT hervorgehoben (Näd 2.10. — im
+   EEG steht nur, was auffällig ist; der Status behält sein Fett).
+   Nur eine feine gestrichelte Linie zeigt in der Maske die Stelle. */
+.eeg-zeile .abweichend-teil {
+  font-weight: inherit;
+  color: inherit;
+  border-bottom: 1px dashed #b8b2a7;
+}
+.eeg-selten-titel {
+  margin: 18px 0 6px;
+  font-size: 0.95rem;
+  color: #6b6558;
+}
+details.eeg-kat-zu {
+  border: 1px solid var(--linie, #d8d2c6);
+  border-radius: 10px;
+  background: var(--karte, #fffdf8);
+  margin: 0 0 8px;
+  padding: 2px 10px;
+}
+details.eeg-kat-zu > summary {
+  cursor: pointer;
+  padding: 7px 2px;
+  font-weight: 600;
+  color: #4a463d;
+}
+details.eeg-kat-zu[open] > summary {
+  border-bottom: 1px solid var(--linie, #e3ddd1);
+  margin-bottom: 6px;
+}
+.eeg-herdzeile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 8px;
+  margin: 0 0 6px;
+  border: 1px solid var(--linie, #d8d2c6);
+  border-radius: 10px;
+  background: #faf7f0;
+}
+.eeg-herdzeile select { max-width: 100%; }
+.eeg-zeile-dazu {
+  margin: 2px 0 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+}
+.eeg-zeile-weg {
+  margin-left: auto;
+  padding: 2px 9px;
+  border-radius: 999px;
+  color: #8a4a3a;
+}
+.eeg-auto { background: #f6f4ee; }
+.eeg-auto-zeile .status-befund { cursor: pointer; }
