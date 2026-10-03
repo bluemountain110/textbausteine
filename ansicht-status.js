@@ -207,6 +207,20 @@ TB.ansichtStatus = (function () {
       zeile.appendChild(k);
     });
     wurzel.appendChild(zeile);
+    // Info-Spickzettel (3.10.): typische Befunde der aktiven Status —
+    // bei den Radikulopathien die Kennmuskeln, Reflexe und Dermatome.
+    var infos = liste.filter(function (t) {
+      return aktiveTeilmengen[t.id] && t.info; });
+    if (infos.length) {
+      var kasten = el("div", "status-info");
+      infos.forEach(function (t) {
+        var absatz = el("div", "status-info-eintrag");
+        absatz.appendChild(el("b", "", t.name + ": "));
+        absatz.appendChild(document.createTextNode(t.info));
+        kasten.appendChild(absatz);
+      });
+      wurzel.appendChild(kasten);
+    }
   }
 
   function zeichneTardoc(wurzel, m) {

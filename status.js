@@ -238,7 +238,37 @@ TB.status = (function () {
     S().setzeEinstellung("statusMaster", m);
     if (TB.abgleich) TB.abgleich.anstossen();
   }
-  function teilmengen() { return S().einstellung("statusTeilmengen", []) || []; }
+  var teilmengenGeprueft = false;
+  function migriereTeilmengen() {
+    if (teilmengenGeprueft || !TB.speicher) return;
+    teilmengenGeprueft = true;
+    var soll = TB.statusGrundlage.TEILMENGEN_STAND;
+    if (S().einstellung("statusTeilmengenStand", "") === soll) return;
+    var liste = S().einstellung("statusTeilmengen", []) || [];
+    var vorher = JSON.stringify(liste);
+    // Die drei Probe-Status vom 2.10. räumen (Näd, 3.10.).
+    var weg = { tmujo0aw3: 1, tmulcjtyu: 1, tmupyrmig: 1 };
+    liste = liste.filter(function (t) { return !weg[t.id]; });
+    // Neue Start-Status anfügen — bestehende Namen bleiben unberührt.
+    var da = {};
+    liste.forEach(function (t) { da[String(t.name).toLowerCase()] = t; });
+    TB.statusGrundlage.teilmengen().forEach(function (g) {
+      var bekannt = da[String(g.name).toLowerCase()];
+      if (bekannt) {
+        // Bestehende Status bleiben unangetastet — nur ein fehlender
+        // Info-Spickzettel wird namensgleich ergänzt.
+        if (!bekannt.info && g.info) bekannt.info = g.info;
+        return;
+      }
+      liste.push(g);
+    });
+    if (JSON.stringify(liste) !== vorher) speichereTeilmengen(liste);
+    S().setzeEinstellung("statusTeilmengenStand", soll);
+  }
+  function teilmengen() {
+    migriereTeilmengen();
+    return S().einstellung("statusTeilmengen", []) || [];
+  }
   function speichereTeilmengen(liste) {
     S().setzeEinstellung("statusTeilmengen", liste);
     if (TB.abgleich) TB.abgleich.anstossen();

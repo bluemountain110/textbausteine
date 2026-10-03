@@ -690,3 +690,16 @@ input.eeg-feld-breit { flex: 1 1 24ch; min-width: 24ch; }
 .eeg-anamnese .eeg-herdzeile { margin-left: 22px; }
 .eeg-anamnese .eeg-zeile-dazu { margin-left: 22px; }
 .eeg-mg { color: #6b6558; margin-left: -2px; }
+
+/* ---- Status 16.7: Info-Spickzettel ------------------------------- */
+.status-info {
+  margin: 2px 0 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--linie, #d8d2c6);
+  border-left: 4px solid #14595f;
+  border-radius: 10px;
+  background: #f6f4ee;
+  font-size: 0.88rem;
+  color: #4a463d;
+}
+.status-info-eintrag + .status-info-eintrag { margin-top: 6px; }

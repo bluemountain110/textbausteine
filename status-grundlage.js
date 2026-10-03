@@ -208,6 +208,7 @@ TB.statusGrundlage = (function () {
     u("faszikulationen", "motorik", "Faszikulationen", "keine.", true, [n(2, ["Trophik"]), n(3, ["Trophik"])]),
     u("armhalteversuch", "motorik", "Armhalteversuch", "kein Absinken, keine Pronation.", true, [n(2, ["Rohkraft"])]),
     u("beinhalteversuch", "motorik", "Beinhalteversuch", "kein Absinken.", true, [n(3, ["Rohkraft"])]),
+    u("hoover", "motorik", "Hoover-Zeichen (re/li)", "negativ (kräftiger Fersendruck der Gegenseite bei Hüftbeugung).", false, [n(3, ["Rohkraft"])]),
     u("fingerspiel", "motorik", "Fingerspiel", "bds. normal.", true, [n(2, ["Bewegungsmuster"])]),
     u("kraftarme", "motorik", "Einzelkraftprüfung Arme (re/li)", "Mm. pectorales M5/M5, Arminnenrotation M5/M5, Armaussenrotation M5/M5, Armadduktion M5/M5, Armabduktion aus Nullstellung M5/M5, Armabduktion aus 90-Grad-Stellung M5/M5, Armstreckung M5/M5, Armbeugung M5/M5, Handgelenksstreckung M5/M5, Handgelenkbeugung M5/M5, Fingerstreckung M5/M5, Fingerbeugung im Endglied (Dig. II/III) M5/M5, Fingerbeugung im Endglied (Dig. IV/V) M5/M5, Zeigefingerabspreizung M5/M5, Kleinfingerabspreizung M5/M5, Daumenadduktion M5/M5, Daumenabduktion M5/M5, Daumenopposition M5/M5, Kleinfingeropposition M5/M5.", true, [n(4, null, 19)], MERKARME),
     u("kraftbeine", "motorik", "Einzelkraftprüfung Beine (re/li)", "Hüftbeugung M5/M5, Hüftstreckung M5/M5, Oberschenkelabduktion M5/M5, Oberschenkeladduktion M5/M5, Kniestreckung M5/M5, Kniebeugung M5/M5, Fusshebung M5/M5, Fusssenkung M5/M5, Grosszehenhebung M5/M5, Hebung Zehen II–V M5/M5, Zehenflexion M5/M5, Eversion M5/M5, Inversion M5/M5.", true, [n(5, null, 13)], MERKBEINE),
@@ -239,6 +240,7 @@ TB.statusGrundlage = (function () {
     u("rumpfataxie", "koordination", "Rumpf- und Sitzataxie", "keine.", false, [n(9, ["Rumpfataxie"])]),
     u("rigor", "koordination", "Rigor", "keiner, auch nicht unter Bahnung (kein Zahnradphänomen).", true, [n(2, ["Tonus"]), n(3, ["Tonus"])]),
     u("tremor", "koordination", "Tremor", "kein Ruhe-, Halte- oder Aktionstremor.", true, [n(10, ["Unwillkürliche Bewegungen"])]),
+    u("entrainment", "koordination", "Tremor-Entrainment und Ablenkbarkeit", "keine Ablenkbarkeit, kein Entrainment, keine Pausen.", false, [n(10, ["Unwillkürliche Bewegungen"])]),
     u("fingertapping", "koordination", "Finger-Tapping", "kein Dekrement, keine Verlangsamung.", true, [n(9, ["Finger-Tapping"])]),
     u("fusstapping", "koordination", "Fuss-Tapping", "kein Dekrement.", true, [n(9, ["Fuss-Tapping"])]),
     u("hyperkinesien", "koordination", "Unwillkürliche Bewegungen", "keine Chorea, Dystonie, Athetose, kein Ballismus, keine Myoklonien, keine Tics.", true, [n(10, ["Unwillkürliche Bewegungen"])]),
@@ -297,20 +299,1038 @@ TB.statusGrundlage = (function () {
     u("chvostek", "kopf", "Chvostek-Zeichen", "negativ.", false, [])
   ];
 
-  var TEILMENGEN = [
-    { id: "cts", name: "CTS", punkte: ["atrophien", "kraftarme", "mer", "troemner", "beruehrung", "spitzstumpf", "pallaesthesie", "tinel", "phalen", "froment"] },
-    { id: "pnp", name: "Polyneuropathie", punkte: ["gangbild", "strichgang", "romberg", "trophiktonus", "atrophien", "kraftbeine", "beruehrung", "struempfe", "pallaesthesie", "lagesinn", "spitzstumpf", "thermaesthesie", "mer", "babinski"] },
-    { id: "stroke", name: "Stroke", punkte: ["az", "vigilanz", "orientierung", "sprache", "nachsprechen", "aufforderungen", "stimme", "gesichtsfeld", "pupillen", "folgebewegungen", "blickparesen", "gesichtssensibilitaet", "mimik", "armhalteversuch", "beinhalteversuch", "beruehrung", "neglect", "fnv", "ffv", "khv", "mer", "babinski", "gangbild", "nihss"] },
-    { id: "myasthenie", name: "Myasthenie", punkte: ["ptose", "diplopie", "folgebewegungen", "blickparesen", "mimik", "stimme", "schlucken", "kopfdrehung", "schulterheben", "nackenmuskulatur", "armhalteversuch", "beinhalteversuch", "kraftarme", "kraftbeine", "besinger"] },
-    { id: "parkinson", name: "Parkinson", punkte: ["gangbild", "armschwung", "wendeschritte", "anlauf", "kamptokormie", "retropulsion", "hypomimie", "stimme", "trophiktonus", "rigor", "tremor", "fingertapping", "fusstapping", "diadochokinese", "schriftprobe", "mer"] },
-    { id: "schwindel", name: "Schwindel", punkte: ["gangbild", "strichgang", "romberg", "tandemromberg", "unterberger", "spontannystagmus", "kopfschuettelnystagmus", "kopfimpulstest", "skew", "dixhallpike", "rollmanoever", "nystagmen", "folgebewegungen", "sakkaden", "vorsuppression", "okn", "hoeren", "weber", "rinne", "fnv", "ffv", "diadochokinese"] },
-    { id: "memory", name: "Demenz/Memory", punkte: ["az", "vigilanz", "kooperation", "antrieb", "haendigkeit", "orientierung", "sprache", "nachsprechen", "aufforderungen", "neglect", "applaus", "stopandgo", "luria", "palmomental", "schnauzreflex", "hypomimie", "gangbild", "armschwung", "tremor", "rigor", "fingertapping", "fusstapping", "mer", "babinski", "kognition"] }
+  // Start-Status (3.10.): Näds sieben gewachsene Status (CTS mit
+  // seinen Standardtexten aus dem Export vom 3.10.) plus 23 von
+  // Claude vorgeschlagene — je mit einem info-Spickzettel (typische
+  // Befunde), den die Maske beim Laden zeigt. Näd passt sie in der
+  // App an und speichert unter gleichem Namen; die Nachzieh-Migration
+  // (status.js) bringt NEUE Namen in bestehende Welten, ohne
+  // Bestehendes anzufassen, und räumt die drei Probe-Status weg.
+  var TEILMENGEN =
+  [
+    {
+      "id": "cts",
+      "name": "CTS",
+      "punkte": [
+        "az",
+        "haendigkeit",
+        "beruehrung",
+        "tinel",
+        "phalen",
+        "atrophien",
+        "kraftarme",
+        "mer",
+        "troemner"
+      ],
+      "merkmalAb": {
+        "kraftarme": [
+          "pect",
+          "innenrot",
+          "aussenrot",
+          "addukt",
+          "abd0",
+          "abd90"
+        ]
+      },
+      "zusatz": [
+        "pallaesthesie",
+        "spitzstumpf",
+        "froment",
+        "faszikulationen"
+      ],
+      "normalAb": {
+        "beruehrung": "an Armen und Händen symmetrisch normal.",
+        "mer": "BSR +/+, TSR +/+, RPR +/+.",
+        "pallaesthesie": "radial 8/8"
+      },
+      "info": "Typisch: Thenaratrophie und APB-Schwäche (Daumenabduktion/-opposition), Tinel über dem Karpaltunnel, Phalen positiv; Sensibilitätsstörung Dig. I–III mit Spaltung des Ringfingers. DD C6/C7-Radikulopathie und Ulnarisneuropathie."
+    },
+    {
+      "id": "pnp",
+      "name": "Polyneuropathie",
+      "punkte": [
+        "gangbild",
+        "strichgang",
+        "romberg",
+        "trophiktonus",
+        "atrophien",
+        "kraftbeine",
+        "beruehrung",
+        "struempfe",
+        "pallaesthesie",
+        "lagesinn",
+        "spitzstumpf",
+        "thermaesthesie",
+        "mer",
+        "babinski"
+      ],
+      "info": "Typisch: strumpfförmige Sensibilitätsstörung, distale Pallhypästhesie (Malleolus!), früh abgeschwächte ASR, Romberg-Unsicherheit, später Fussheberschwäche und Atrophien."
+    },
+    {
+      "id": "stroke",
+      "name": "Stroke",
+      "punkte": [
+        "az",
+        "vigilanz",
+        "orientierung",
+        "sprache",
+        "nachsprechen",
+        "aufforderungen",
+        "stimme",
+        "gesichtsfeld",
+        "pupillen",
+        "folgebewegungen",
+        "blickparesen",
+        "gesichtssensibilitaet",
+        "mimik",
+        "armhalteversuch",
+        "beinhalteversuch",
+        "beruehrung",
+        "neglect",
+        "fnv",
+        "ffv",
+        "khv",
+        "mer",
+        "babinski",
+        "gangbild",
+        "nihss"
+      ],
+      "info": "Entlang NIHSS: Vigilanz, Sprache/Dysarthrie, Gesichtsfeld, Blickwendung, faziale Parese, Halteversuche, Ataxie, Sensibilität, Neglect. Seitenbetonung konsequent dokumentieren."
+    },
+    {
+      "id": "myasthenie",
+      "name": "Myasthenie",
+      "punkte": [
+        "ptose",
+        "diplopie",
+        "folgebewegungen",
+        "blickparesen",
+        "mimik",
+        "stimme",
+        "schlucken",
+        "kopfdrehung",
+        "schulterheben",
+        "nackenmuskulatur",
+        "armhalteversuch",
+        "beinhalteversuch",
+        "kraftarme",
+        "kraftbeine",
+        "besinger"
+      ],
+      "info": "Leitbefund Ermüdbarkeit: fluktuierende Ptose und Doppelbilder (Simpson), proximale Ermüdung an Halteversuchen und Nackenmuskulatur, nasale Stimme beim Sprechen. Besinger-Score für den Verlauf."
+    },
+    {
+      "id": "parkinson",
+      "name": "Parkinson",
+      "punkte": [
+        "gangbild",
+        "armschwung",
+        "wendeschritte",
+        "anlauf",
+        "kamptokormie",
+        "retropulsion",
+        "hypomimie",
+        "stimme",
+        "trophiktonus",
+        "mer",
+        "diadochokinese",
+        "rigor",
+        "tremor",
+        "fingertapping",
+        "fusstapping",
+        "schriftprobe"
+      ],
+      "zusatz": [
+        "haendigkeit"
+      ],
+      "info": "Typisch: Bradykinesie mit Dekrement (Tapping!), Rigor (mit Froment-Aktivierung), Ruhetremor, reduzierter Armschwung, Hypomimie, kleinschrittiges Gangbild, Retropulsion, Mikrographie."
+    },
+    {
+      "id": "schwindel",
+      "name": "Schwindel",
+      "punkte": [
+        "gangbild",
+        "strichgang",
+        "romberg",
+        "tandemromberg",
+        "unterberger",
+        "spontannystagmus",
+        "kopfschuettelnystagmus",
+        "kopfimpulstest",
+        "skew",
+        "dixhallpike",
+        "rollmanoever",
+        "nystagmen",
+        "folgebewegungen",
+        "sakkaden",
+        "vorsuppression",
+        "okn",
+        "hoeren",
+        "weber",
+        "rinne",
+        "fnv",
+        "ffv",
+        "diadochokinese"
+      ],
+      "info": "Akut: HINTS — Kopfimpulstest, Nystagmus-Charakteristik, Skew; zentrale Zeichen (Blickrichtungsnystagmus, Sakkaden, VOR-Suppression). Lagerung (Dix-Hallpike, Roll) für BPLS; Unterberger und Strichgang."
+    },
+    {
+      "id": "memory",
+      "name": "Demenz/Memory",
+      "punkte": [
+        "az",
+        "vigilanz",
+        "kooperation",
+        "antrieb",
+        "haendigkeit",
+        "orientierung",
+        "sprache",
+        "nachsprechen",
+        "aufforderungen",
+        "neglect",
+        "applaus",
+        "stopandgo",
+        "luria",
+        "palmomental",
+        "schnauzreflex",
+        "hypomimie",
+        "gangbild",
+        "armschwung",
+        "tremor",
+        "rigor",
+        "fingertapping",
+        "fusstapping",
+        "mer",
+        "babinski",
+        "kognition"
+      ],
+      "info": "Formale Kognition (MoCA/MMST) plus Frontalzeichen (Applaus, Stop-and-go, Luria, Palmomental), Parkinson-Screening (Tapping, Rigor, Armschwung) und Gangbild — auch an NPH denken."
+    },
+    {
+      "id": "ms",
+      "name": "MS",
+      "punkte": [
+        "visus",
+        "rotentsaettigung",
+        "rapd",
+        "pupillen",
+        "folgebewegungen",
+        "blickparesen",
+        "nystagmen",
+        "lhermitte",
+        "gesichtssensibilitaet",
+        "mimik",
+        "trophiktonus",
+        "kraftarme",
+        "kraftbeine",
+        "beruehrung",
+        "pallaesthesie",
+        "lagesinn",
+        "bauchhautreflexe",
+        "mer",
+        "babinski",
+        "fnv",
+        "khv",
+        "diadochokinese",
+        "gangbild",
+        "strichgang",
+        "romberg",
+        "edss"
+      ],
+      "zusatz": [
+        "diplopie",
+        "sakkaden",
+        "fundoskopie",
+        "t25fw",
+        "kognition",
+        "blasemastdarm"
+      ],
+      "merkmalAb": {
+        "kraftarme": [
+          "pect",
+          "innenrot",
+          "aussenrot",
+          "addukt",
+          "abd0",
+          "hgbeug",
+          "fibeug45",
+          "zeigeabsp",
+          "daumadd",
+          "daumopp",
+          "kleinopp"
+        ],
+        "kraftbeine": [
+          "hueftstreck",
+          "osabd",
+          "osadd",
+          "zehheb",
+          "zehflex",
+          "eversion",
+          "inversion"
+        ]
+      },
+      "info": "Typisch: Optikusneuritis (Visus, Rot-Entsättigung, RAPD), INO/Blickparesen, Lhermitte, abgeschwächte Bauchhautreflexe, Pyramidenzeichen, Hinterstrangstörung (Pallästhesie, Lagesinn), spastisch-ataktisches Gangbild. EDSS festhalten; T25FW für den Verlauf."
+    },
+    {
+      "id": "kopfschmerz",
+      "name": "Kopfschmerz",
+      "punkte": [
+        "az",
+        "blutdruckpuls",
+        "meningismus",
+        "temporalis",
+        "trigeminusdruck",
+        "halsbeweglichkeit",
+        "visus",
+        "gesichtsfeld",
+        "pupillen",
+        "fundoskopie",
+        "folgebewegungen",
+        "gesichtssensibilitaet",
+        "mimik",
+        "armhalteversuch",
+        "beinhalteversuch",
+        "mer",
+        "babinski",
+        "gangbild"
+      ],
+      "zusatz": [
+        "karotiden",
+        "horner",
+        "klopfdolenz",
+        "diplopie",
+        "hoeren"
+      ],
+      "info": "Red Flags gezielt suchen: Stauungspapille, Meningismus, neue fokale Zeichen, Horner (Dissektion), druckdolente/verdickte A. temporalis (RZA ab 50). Trigeminus-Austrittspunkte und HWS-Beweglichkeit bei zervikogenem/Spannungstyp."
+    },
+    {
+      "id": "radc5",
+      "name": "Radikulopathie C5",
+      "punkte": [
+        "klopfdolenz",
+        "halsbeweglichkeit",
+        "spurling",
+        "dermatom",
+        "beruehrung",
+        "atrophien",
+        "kraftarme",
+        "armhalteversuch",
+        "mer",
+        "troemner",
+        "babinski"
+      ],
+      "zusatz": [
+        "lhermitte",
+        "tinel",
+        "pallaesthesie"
+      ],
+      "merkmalAb": {
+        "kraftarme": [
+          "pect",
+          "innenrot",
+          "addukt",
+          "streck",
+          "hgstreck",
+          "hgbeug",
+          "fistreck",
+          "fibeug23",
+          "fibeug45",
+          "zeigeabsp",
+          "kleinabsp",
+          "daumadd",
+          "daumabd",
+          "daumopp",
+          "kleinopp"
+        ]
+      },
+      "info": "Kennmuskeln: Armabduktion (Deltoideus/Supraspinatus), Aussenrotation (Infraspinatus), Armbeugung (Bizeps C5/6). BSR abgeschwächt. Dermatom: Schulter und lateraler Oberarm. Spurling oft positiv."
+    },
+    {
+      "id": "radc6",
+      "name": "Radikulopathie C6",
+      "punkte": [
+        "klopfdolenz",
+        "halsbeweglichkeit",
+        "spurling",
+        "dermatom",
+        "beruehrung",
+        "atrophien",
+        "kraftarme",
+        "armhalteversuch",
+        "mer",
+        "troemner",
+        "babinski"
+      ],
+      "zusatz": [
+        "lhermitte",
+        "tinel",
+        "pallaesthesie"
+      ],
+      "merkmalAb": {
+        "kraftarme": [
+          "pect",
+          "innenrot",
+          "aussenrot",
+          "addukt",
+          "abd0",
+          "abd90",
+          "streck",
+          "hgbeug",
+          "fistreck",
+          "fibeug23",
+          "fibeug45",
+          "zeigeabsp",
+          "kleinabsp",
+          "daumadd",
+          "daumabd",
+          "daumopp",
+          "kleinopp"
+        ]
+      },
+      "info": "Kennmuskeln: Armbeugung (Bizeps/Brachioradialis) und Handgelenksstreckung. BSR und RPR abgeschwächt. Dermatom: Daumen und Zeigefinger, radialer Unterarm."
+    },
+    {
+      "id": "radc7",
+      "name": "Radikulopathie C7",
+      "punkte": [
+        "klopfdolenz",
+        "halsbeweglichkeit",
+        "spurling",
+        "dermatom",
+        "beruehrung",
+        "atrophien",
+        "kraftarme",
+        "armhalteversuch",
+        "mer",
+        "troemner",
+        "babinski"
+      ],
+      "zusatz": [
+        "lhermitte",
+        "tinel",
+        "pallaesthesie"
+      ],
+      "merkmalAb": {
+        "kraftarme": [
+          "innenrot",
+          "aussenrot",
+          "addukt",
+          "abd0",
+          "abd90",
+          "beug",
+          "hgstreck",
+          "fibeug23",
+          "fibeug45",
+          "zeigeabsp",
+          "kleinabsp",
+          "daumadd",
+          "daumabd",
+          "daumopp",
+          "kleinopp"
+        ]
+      },
+      "info": "Kennmuskeln: Armstreckung (Trizeps), Handgelenkbeugung, Fingerstreckung, Pectoralis. TSR abgeschwächt. Dermatom: Mittelfinger (Dig. III)."
+    },
+    {
+      "id": "radc8",
+      "name": "Radikulopathie C8",
+      "punkte": [
+        "klopfdolenz",
+        "halsbeweglichkeit",
+        "spurling",
+        "dermatom",
+        "beruehrung",
+        "atrophien",
+        "kraftarme",
+        "armhalteversuch",
+        "mer",
+        "troemner",
+        "babinski"
+      ],
+      "zusatz": [
+        "lhermitte",
+        "tinel",
+        "pallaesthesie"
+      ],
+      "merkmalAb": {
+        "kraftarme": [
+          "pect",
+          "innenrot",
+          "aussenrot",
+          "addukt",
+          "abd0",
+          "abd90",
+          "streck",
+          "beug",
+          "hgstreck",
+          "hgbeug",
+          "fistreck",
+          "zeigeabsp",
+          "kleinabsp",
+          "daumadd",
+          "kleinopp"
+        ]
+      },
+      "info": "Kennmuskeln: lange Fingerbeuger (Endglieder) und Daumenballen (Abduktion/Opposition, C8/Th1). Trömner-Seitendifferenz möglich. Dermatom: Dig. IV/V und ulnarer Unterarm. DD Ulnarisneuropathie: dort Thenar (APB) ausgespart."
+    },
+    {
+      "id": "radth1",
+      "name": "Radikulopathie Th1",
+      "punkte": [
+        "klopfdolenz",
+        "halsbeweglichkeit",
+        "spurling",
+        "dermatom",
+        "beruehrung",
+        "atrophien",
+        "kraftarme",
+        "armhalteversuch",
+        "mer",
+        "troemner",
+        "babinski"
+      ],
+      "zusatz": [
+        "lhermitte",
+        "tinel",
+        "pallaesthesie",
+        "horner",
+        "ptose"
+      ],
+      "merkmalAb": {
+        "kraftarme": [
+          "pect",
+          "innenrot",
+          "aussenrot",
+          "addukt",
+          "abd0",
+          "abd90",
+          "streck",
+          "beug",
+          "hgstreck",
+          "hgbeug",
+          "fistreck",
+          "fibeug23",
+          "fibeug45",
+          "daumabd",
+          "daumopp"
+        ]
+      },
+      "info": "Kennmuskeln: kleine Handmuskeln (Interossei, Hypothenar, Daumenadduktion). Dermatom: medialer Unterarm bis Ellbogen. An Horner denken (untere Plexus-/Pancoast-Läsion!)."
+    },
+    {
+      "id": "radl3",
+      "name": "Radikulopathie L3",
+      "punkte": [
+        "klopfdolenz",
+        "lasegue",
+        "dermatom",
+        "beruehrung",
+        "atrophien",
+        "kraftbeine",
+        "mer",
+        "babinski",
+        "gangbild",
+        "zehenfersengang",
+        "lasegueumgekehrt"
+      ],
+      "zusatz": [
+        "tineluntere",
+        "reithose",
+        "mennell",
+        "pallaesthesie"
+      ],
+      "merkmalAb": {
+        "kraftbeine": [
+          "hueftstreck",
+          "osabd",
+          "kniebeug",
+          "fussheb",
+          "fusssenk",
+          "gzheb",
+          "zehheb",
+          "zehflex",
+          "eversion",
+          "inversion"
+        ]
+      },
+      "info": "Kennmuskeln: Hüftbeugung, Adduktion, Kniestreckung (Quadrizeps). PSR abgeschwächt. Umgekehrter Lasègue positiv. Dermatom: Oberschenkelvorderseite bis Knie."
+    },
+    {
+      "id": "radl4",
+      "name": "Radikulopathie L4",
+      "punkte": [
+        "klopfdolenz",
+        "lasegue",
+        "dermatom",
+        "beruehrung",
+        "atrophien",
+        "kraftbeine",
+        "mer",
+        "babinski",
+        "gangbild",
+        "zehenfersengang",
+        "lasegueumgekehrt"
+      ],
+      "zusatz": [
+        "tineluntere",
+        "reithose",
+        "mennell",
+        "pallaesthesie"
+      ],
+      "merkmalAb": {
+        "kraftbeine": [
+          "hueftbeug",
+          "hueftstreck",
+          "osabd",
+          "osadd",
+          "kniebeug",
+          "fusssenk",
+          "gzheb",
+          "zehheb",
+          "zehflex",
+          "eversion"
+        ]
+      },
+      "info": "Kennmuskeln: Kniestreckung (Quadrizeps), Fusshebung und Inversion (Tibialis anterior). PSR abgeschwächt. Dermatom: medialer Unterschenkel bis Innenknöchel."
+    },
+    {
+      "id": "radl5",
+      "name": "Radikulopathie L5",
+      "punkte": [
+        "klopfdolenz",
+        "lasegue",
+        "dermatom",
+        "beruehrung",
+        "atrophien",
+        "kraftbeine",
+        "mer",
+        "babinski",
+        "gangbild",
+        "zehenfersengang",
+        "trendelenburg"
+      ],
+      "zusatz": [
+        "tineluntere",
+        "reithose",
+        "mennell",
+        "pallaesthesie"
+      ],
+      "merkmalAb": {
+        "kraftbeine": [
+          "hueftbeug",
+          "hueftstreck",
+          "osadd",
+          "kniestreck",
+          "kniebeug",
+          "fusssenk",
+          "zehflex"
+        ]
+      },
+      "info": "Kennmuskeln: Fuss- und Grosszehenhebung, Zehenheber, Hüftabduktion (Glutaeus medius — Trendelenburg!). Fersengang erschwert. MER typischerweise unauffällig (ASR erhalten). Dermatom: lateraler Unterschenkel, Fussrücken, Grosszehe. DD Peroneusparese: dort Inversion und Trendelenburg intakt."
+    },
+    {
+      "id": "rads1",
+      "name": "Radikulopathie S1",
+      "punkte": [
+        "klopfdolenz",
+        "lasegue",
+        "dermatom",
+        "beruehrung",
+        "atrophien",
+        "kraftbeine",
+        "mer",
+        "babinski",
+        "gangbild",
+        "zehenfersengang"
+      ],
+      "zusatz": [
+        "tineluntere",
+        "reithose",
+        "mennell",
+        "pallaesthesie"
+      ],
+      "merkmalAb": {
+        "kraftbeine": [
+          "hueftbeug",
+          "osabd",
+          "osadd",
+          "kniestreck",
+          "fussheb",
+          "gzheb",
+          "zehheb",
+          "inversion"
+        ]
+      },
+      "info": "Kennmuskeln: Fusssenkung (Zehengang erschwert!), Kniebeugung (ischiokrural), Hüftstreckung (Glutaeus maximus). ASR abgeschwächt. Dermatom: Fussaussenrand, Fusssohle, dorsale Wade."
+    },
+    {
+      "id": "enzephalitis",
+      "name": "Enzephalitis",
+      "punkte": [
+        "az",
+        "vigilanz",
+        "orientierung",
+        "kooperation",
+        "sprache",
+        "nachsprechen",
+        "aufforderungen",
+        "kurzgedaechtnis",
+        "meningismus",
+        "kernig",
+        "brudzinski",
+        "pupillen",
+        "folgebewegungen",
+        "mimik",
+        "armhalteversuch",
+        "beinhalteversuch",
+        "beruehrung",
+        "mer",
+        "babinski",
+        "hyperkinesien",
+        "gangbild"
+      ],
+      "zusatz": [
+        "fundoskopie",
+        "neglect",
+        "frontalzeichen",
+        "kognition",
+        "bewusstseinslage"
+      ],
+      "info": "Typisch: Vigilanz- und Verhaltensänderung, neues Gedächtnisdefizit (limbisch), Meningismus, epileptische Phänomene, Myoklonien oder orofaziale Dyskinesien (NMDA-R), fokale Zeichen (HSV temporal: Aphasie!). Stauungspapille suchen."
+    },
+    {
+      "id": "sht",
+      "name": "Schädel-Hirn-Trauma",
+      "punkte": [
+        "bewusstseinslage",
+        "orientierung",
+        "kurzgedaechtnis",
+        "pupillen",
+        "folgebewegungen",
+        "otoskopie",
+        "mimik",
+        "armhalteversuch",
+        "beinhalteversuch",
+        "beruehrung",
+        "mer",
+        "babinski",
+        "gangbild",
+        "romberg",
+        "klopfdolenz",
+        "halsbeweglichkeit"
+      ],
+      "zusatz": [
+        "riechen",
+        "spontannystagmus",
+        "kopfimpulstest",
+        "hoeren",
+        "gesichtsfeld"
+      ],
+      "info": "Bewusstseinslage (GCS-äquivalent) und Pupillen-Seitendifferenz zuerst; Amnesiedauer dokumentieren. Otoskopie (Hämatotympanon, Liquorrhoe), Brillen-/Battle-Hämatom inspizieren. Die HWS gehört IMMER mitbeurteilt; Riechverlust bei frontobasaler Verletzung."
+    },
+    {
+      "id": "ulnaris",
+      "name": "Ulnarisneuropathie",
+      "punkte": [
+        "atrophien",
+        "kraftarme",
+        "froment",
+        "tinel",
+        "beruehrung",
+        "dermatom",
+        "spitzstumpf",
+        "mer",
+        "troemner"
+      ],
+      "zusatz": [
+        "pallaesthesie",
+        "zweipunkt"
+      ],
+      "merkmalAb": {
+        "kraftarme": [
+          "pect",
+          "innenrot",
+          "aussenrot",
+          "addukt",
+          "abd0",
+          "abd90",
+          "streck",
+          "beug",
+          "hgstreck",
+          "hgbeug",
+          "fistreck",
+          "fibeug23",
+          "daumabd",
+          "daumopp"
+        ]
+      },
+      "info": "Typisch: Froment positiv, Schwäche von Interossei/Hypothenar/Daumenadduktion, Atrophie der Spatia interossea, Tinel am Sulcus; sensible Spaltung des Ringfingers. DD C8/Th1: dort zusätzlich Thenar (APB) und medialer Unterarm betroffen."
+    },
+    {
+      "id": "peroneus",
+      "name": "Peroneusparese",
+      "punkte": [
+        "gangbild",
+        "zehenfersengang",
+        "atrophien",
+        "kraftbeine",
+        "tineluntere",
+        "beruehrung",
+        "dermatom",
+        "mer",
+        "babinski"
+      ],
+      "zusatz": [
+        "trendelenburg",
+        "lasegue"
+      ],
+      "merkmalAb": {
+        "kraftbeine": [
+          "hueftbeug",
+          "hueftstreck",
+          "osabd",
+          "osadd",
+          "kniestreck",
+          "kniebeug",
+          "fusssenk",
+          "zehflex"
+        ]
+      },
+      "info": "Typisch: Steppergang, Fersengang erschwert, Fussheber- und Eversionsschwäche; Tinel am Fibulaköpfchen. DD L5-Radikulopathie: bei Peroneusläsion sind Inversion (Tibialis posterior) und Hüftabduktion/Trendelenburg INTAKT, ASR erhalten."
+    },
+    {
+      "id": "fazialis",
+      "name": "Fazialisparese",
+      "punkte": [
+        "mimik",
+        "bell",
+        "geschmack",
+        "gesichtssensibilitaet",
+        "cornealreflex",
+        "hoeren",
+        "otoskopie",
+        "folgebewegungen",
+        "armhalteversuch",
+        "sprache"
+      ],
+      "zusatz": [
+        "masseter",
+        "stimme",
+        "schlucken"
+      ],
+      "info": "Peripher: Stirn mitbetroffen, Bell-Phänomen, Geschmacksstörung, Hyperakusis; Otoskopie wegen Zoster oticus (Ramsay Hunt). Zentral: Stirn ausgespart, oft begleitende Arm- oder Sprachstörung — dann wie Stroke abklären."
+    },
+    {
+      "id": "anfall",
+      "name": "Anfall/postiktal",
+      "punkte": [
+        "vigilanz",
+        "orientierung",
+        "kurzgedaechtnis",
+        "sprache",
+        "zunge",
+        "mimik",
+        "pupillen",
+        "armhalteversuch",
+        "beinhalteversuch",
+        "mer",
+        "babinski",
+        "gangbild",
+        "klopfdolenz"
+      ],
+      "zusatz": [
+        "meningismus",
+        "fundoskopie",
+        "kognition"
+      ],
+      "info": "Lateraler Zungenbiss spricht für einen epileptischen Anfall. Todd-Parese und postiktaler Babinski sind möglich und rückläufig — Verlauf dokumentieren, ebenso die Reorientierungsdauer. Wirbelsäulen-Klopfdolenz (Frakturen) und Schultern (Luxation) prüfen."
+    },
+    {
+      "id": "tremorabkl",
+      "name": "Tremor-Abklärung",
+      "punkte": [
+        "haendigkeit",
+        "tremor",
+        "rigor",
+        "armhalteversuch",
+        "fnv",
+        "schriftprobe",
+        "fingertapping",
+        "diadochokinese",
+        "gangbild",
+        "armschwung",
+        "hypomimie",
+        "stimme"
+      ],
+      "zusatz": [
+        "fusstapping",
+        "retropulsion",
+        "updrs",
+        "entrainment"
+      ],
+      "info": "Ruhe- gegen Halte- und Intentionstremor abgrenzen; Schriftprobe (Mikrographie beim Parkinson, grosszügig-tremorös beim essenziellen Tremor). Begleitende Parkinson-Zeichen gezielt: Rigor, Armschwung, Hypomimie, Tapping-Dekrement. Bei Verdacht auf funktionellen Tremor: Entrainment und Ablenkbarkeit."
+    },
+    {
+      "id": "myelopathie",
+      "name": "Myelopathie/spinal",
+      "punkte": [
+        "gangbild",
+        "strichgang",
+        "trophiktonus",
+        "kraftbeine",
+        "beruehrung",
+        "rumpfsensibilitaet",
+        "pallaesthesie",
+        "lagesinn",
+        "mer",
+        "babinski",
+        "pyramidenzeichen",
+        "kloni",
+        "bauchhautreflexe",
+        "troemner",
+        "lhermitte"
+      ],
+      "zusatz": [
+        "kraftarme",
+        "reithose",
+        "analreflex",
+        "blasemastdarm",
+        "spurling"
+      ],
+      "merkmalAb": {
+        "kraftbeine": [
+          "hueftstreck",
+          "osabd",
+          "osadd",
+          "zehheb",
+          "zehflex",
+          "eversion",
+          "inversion"
+        ]
+      },
+      "info": "Sensibles Niveau am RUMPF suchen; Hinterstrang (Pallästhesie, Lagesinn). Spastik, gesteigerte MER, Kloni, Babinski; fehlende Bauchhautreflexe als Höhenhinweis. Zervikal: Trömner, Lhermitte. Sakrale Sensibilität und Sphinkter bei Konus-/Kauda-Verdacht."
+    },
+    {
+      "id": "als",
+      "name": "Motoneuron/ALS",
+      "punkte": [
+        "zunge",
+        "stimme",
+        "schlucken",
+        "faszikulationen",
+        "atrophien",
+        "kraftarme",
+        "kraftbeine",
+        "mer",
+        "babinski",
+        "troemner",
+        "masseterreflex",
+        "gangbild",
+        "atemmuskulatur",
+        "affekt",
+        "alsfrs"
+      ],
+      "zusatz": [
+        "fingerspiel",
+        "mrcsumme",
+        "schnauzreflex",
+        "rumpfmuskulatur"
+      ],
+      "merkmalAb": {
+        "kraftarme": [
+          "pect",
+          "innenrot",
+          "aussenrot",
+          "addukt",
+          "abd0",
+          "hgbeug",
+          "fibeug45",
+          "zeigeabsp",
+          "daumadd",
+          "kleinopp"
+        ],
+        "kraftbeine": [
+          "hueftstreck",
+          "osabd",
+          "osadd",
+          "zehheb",
+          "zehflex",
+          "eversion",
+          "inversion"
+        ]
+      },
+      "info": "Leitbefund: Nebeneinander von erstem (gesteigerte MER, Babinski, lebhafter Masseterreflex) und zweitem Motoneuron (Atrophien, Faszikulationen — Zunge ansehen!), gesteigerte Reflexe im atrophen Muskel. Keine Sensibilitätsstörung. Bulbär: Stimme, Schlucken, Zunge; Affekt (pseudobulbär). ALSFRS-R für den Verlauf."
+    },
+    {
+      "id": "nph",
+      "name": "NPH",
+      "punkte": [
+        "gangbild",
+        "anlauf",
+        "wendeschritte",
+        "retropulsion",
+        "zweiminuten",
+        "orientierung",
+        "kurzgedaechtnis",
+        "kognition",
+        "mer",
+        "babinski",
+        "blasemastdarm"
+      ],
+      "zusatz": [
+        "freezing",
+        "t25fw",
+        "uhrentest",
+        "luria",
+        "armschwung"
+      ],
+      "info": "Hakim-Trias: breitbasig-magnetische Gangstörung, kognitive Verlangsamung, Dranginkontinenz. Den 2-Minuten-Gehtest (und T25FW) VOR und NACH dem Liquor-Ablassversuch festhalten — die Gangbesserung entscheidet."
+    },
+    {
+      "id": "funktionell",
+      "name": "Funktionelle Störung",
+      "punkte": [
+        "gangbild",
+        "einbein",
+        "romberg",
+        "hoover",
+        "armhalteversuch",
+        "kraftbeine",
+        "beruehrung",
+        "dermatom",
+        "tremor",
+        "entrainment",
+        "mer",
+        "babinski"
+      ],
+      "zusatz": [
+        "strichgang",
+        "blindgang",
+        "zehenfersengang"
+      ],
+      "merkmalAb": {
+        "kraftbeine": [
+          "hueftstreck",
+          "osabd",
+          "osadd",
+          "kniebeug",
+          "fusssenk",
+          "gzheb",
+          "zehheb",
+          "zehflex",
+          "eversion",
+          "inversion"
+        ]
+      },
+      "info": "POSITIVE Zeichen dokumentieren, nicht nur Normales: Hoover, Give-way-Schwäche, Entrainment/Ablenkbarkeit des Tremors, Ablenkungs-Romberg, nicht-anatomische Sensibilitätsgrenzen, inkonsistentes Gangbild. Wertfrei beschreiben."
+    }
   ];
 
   // Kennung des Katalog-Stands: status.js stellt einen gespeicherten
   // Katalog mit älterer Kennung EINMALIG auf diesen Stand um
   // (Umbau 30.9.: Aufteilungen, Tardoc-Korrekturen).
-  var KATALOG_STAND = "2026-09-30";
+  var KATALOG_STAND = "2026-10-03";
+  var TEILMENGEN_STAND = "2026-10-03a";
 
   function master() {
     return { fassung: 1, stand: KATALOG_STAND,
@@ -320,5 +1340,6 @@ TB.statusGrundlage = (function () {
   function teilmengen() { return JSON.parse(JSON.stringify(TEILMENGEN)); }
 
   return { master: master, teilmengen: teilmengen, KATALOG_STAND: KATALOG_STAND,
+           TEILMENGEN_STAND: TEILMENGEN_STAND,
            UMSCHLUESSEL: {"weberrinne":["weber","rinne"],"gaumensegel":["gaumensegel","wuergreflex"],"lasegue":["lasegue","lasegueumgekehrt"],"kernig":["kernig","brudzinski"],"proximal":["aufstehenhocke","einbeinhuepfen","trendelenburg"],"merarme":["mer"],"merbeine":["mer"],"fnv":["fnv","ffv"],"sprache":["sprache","nachsprechen","aufforderungen"]} };
 })();
