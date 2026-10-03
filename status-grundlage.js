@@ -364,7 +364,11 @@ TB.statusGrundlage = (function () {
         "mer",
         "babinski"
       ],
-      "info": "Typisch: strumpfförmige Sensibilitätsstörung, distale Pallhypästhesie (Malleolus!), früh abgeschwächte ASR, Romberg-Unsicherheit, später Fussheberschwäche und Atrophien."
+      "info": "Typisch: strumpfförmige Sensibilitätsstörung, distale Pallhypästhesie (Malleolus!), früh abgeschwächte ASR, Romberg-Unsicherheit, später Fussheberschwäche und Atrophien.",
+      "zusatz": [
+        "zehenfersengang",
+        "schellong"
+      ]
     },
     {
       "id": "stroke",
@@ -395,7 +399,10 @@ TB.statusGrundlage = (function () {
         "gangbild",
         "nihss"
       ],
-      "info": "Entlang NIHSS: Vigilanz, Sprache/Dysarthrie, Gesichtsfeld, Blickwendung, faziale Parese, Halteversuche, Ataxie, Sensibilität, Neglect. Seitenbetonung konsequent dokumentieren."
+      "info": "Entlang NIHSS: Vigilanz, Sprache/Dysarthrie, Gesichtsfeld, Blickwendung, faziale Parese, Halteversuche, Ataxie, Sensibilität, Neglect. Seitenbetonung konsequent dokumentieren.",
+      "zusatz": [
+        "extinktion"
+      ]
     },
     {
       "id": "myasthenie",
@@ -417,7 +424,11 @@ TB.statusGrundlage = (function () {
         "kraftbeine",
         "besinger"
       ],
-      "info": "Leitbefund Ermüdbarkeit: fluktuierende Ptose und Doppelbilder (Simpson), proximale Ermüdung an Halteversuchen und Nackenmuskulatur, nasale Stimme beim Sprechen. Besinger-Score für den Verlauf."
+      "info": "Leitbefund Ermüdbarkeit: fluktuierende Ptose und Doppelbilder (Simpson), proximale Ermüdung an Halteversuchen und Nackenmuskulatur, nasale Stimme beim Sprechen. Besinger-Score für den Verlauf.",
+      "zusatz": [
+        "simpson",
+        "atemmuskulatur"
+      ]
     },
     {
       "id": "parkinson",
@@ -441,7 +452,9 @@ TB.statusGrundlage = (function () {
         "schriftprobe"
       ],
       "zusatz": [
-        "haendigkeit"
+        "haendigkeit",
+        "riechen",
+        "hoehnyahr"
       ],
       "info": "Typisch: Bradykinesie mit Dekrement (Tapping!), Rigor (mit Froment-Aktivierung), Ruhetremor, reduzierter Armschwung, Hypomimie, kleinschrittiges Gangbild, Retropulsion, Mikrographie."
     },
@@ -472,7 +485,12 @@ TB.statusGrundlage = (function () {
         "ffv",
         "diadochokinese"
       ],
-      "info": "Akut: HINTS — Kopfimpulstest, Nystagmus-Charakteristik, Skew; zentrale Zeichen (Blickrichtungsnystagmus, Sakkaden, VOR-Suppression). Lagerung (Dix-Hallpike, Roll) für BPLS; Unterberger und Strichgang."
+      "info": "Akut: HINTS — Kopfimpulstest, Nystagmus-Charakteristik, Skew; zentrale Zeichen (Blickrichtungsnystagmus, Sakkaden, VOR-Suppression). Lagerung (Dix-Hallpike, Roll) für BPLS; Unterberger und Strichgang.",
+      "zusatz": [
+        "fistelzeichen",
+        "valsalva",
+        "svv"
+      ]
     },
     {
       "id": "memory",
@@ -504,7 +522,12 @@ TB.statusGrundlage = (function () {
         "babinski",
         "kognition"
       ],
-      "info": "Formale Kognition (MoCA/MMST) plus Frontalzeichen (Applaus, Stop-and-go, Luria, Palmomental), Parkinson-Screening (Tapping, Rigor, Armschwung) und Gangbild — auch an NPH denken."
+      "info": "Formale Kognition (MoCA/MMST) plus Frontalzeichen (Applaus, Stop-and-go, Luria, Palmomental), Parkinson-Screening (Tapping, Rigor, Armschwung) und Gangbild — auch an NPH denken.",
+      "zusatz": [
+        "kurzgedaechtnis",
+        "uhrentest",
+        "wortfluessigkeit"
+      ]
     },
     {
       "id": "ms",
@@ -1330,7 +1353,7 @@ TB.statusGrundlage = (function () {
   // Katalog mit älterer Kennung EINMALIG auf diesen Stand um
   // (Umbau 30.9.: Aufteilungen, Tardoc-Korrekturen).
   var KATALOG_STAND = "2026-10-03";
-  var TEILMENGEN_STAND = "2026-10-03a";
+  var TEILMENGEN_STAND = "2026-10-03b";
 
   function master() {
     return { fassung: 1, stand: KATALOG_STAND,

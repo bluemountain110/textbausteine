@@ -256,8 +256,14 @@ TB.status = (function () {
       var bekannt = da[String(g.name).toLowerCase()];
       if (bekannt) {
         // Bestehende Status bleiben unangetastet — nur ein fehlender
-        // Info-Spickzettel wird namensgleich ergänzt.
+        // Info-Spickzettel und neue ☆-Zusätze werden namensgleich
+        // ergänzt (3.10., Näd: "gerne auch noch anpassen").
         if (!bekannt.info && g.info) bekannt.info = g.info;
+        (g.zusatz || []).forEach(function (id) {
+          if ((bekannt.punkte || []).indexOf(id) !== -1) return;
+          if (!bekannt.zusatz) bekannt.zusatz = [];
+          if (bekannt.zusatz.indexOf(id) === -1) bekannt.zusatz.push(id);
+        });
         return;
       }
       liste.push(g);
