@@ -111,5 +111,11 @@ TB.statusTexte = {
   kuerzelKnopf: "Kürzel",
   kuerzelFrage: "Kürzel dieses Status (ohne ;;) — damit öffnet ;;kürzel das Status-Fenster am Arbeitsplatz. Leer = automatisch aus dem Namen:",
   kuerzelDoppelt: "Das Kürzel „%s“ trägt schon der Status „%s“.",
-  kuerzelBelegt: "Achtung: Ein Baustein trägt schon das Kürzel „%s“ — der Baustein hat am Arbeitsplatz Vorrang."
+  kuerzelBelegt: "Achtung: Ein Baustein trägt schon das Kürzel „%s“ — der Baustein hat am Arbeitsplatz Vorrang.",
+  fensterHinweis: "Ausfüllen wie gewohnt — der Knopf übergibt alles ans Skript, das Fenster schliesst sich.",
+  fensterKnopf: "An KISIM übergeben",
+  fensterUebergeben: "Übergeben ✓ — Fenster schliesst sich …",
+  fensterLeer: "Noch nichts zum Übergeben — bitte zuerst ausfüllen.",
+  fensterFehler: "Die Zwischenablage liess sich nicht beschreiben — bitte noch einmal auf den Knopf drücken.",
+  fensterKeinStatus: "Kein Status mit dem Kürzel „%s“ gefunden — das Status-Werk öffnet leer."
 };

@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "17.0 · Etappe 11 Sammelrunde · 03.10.2026";
+TB.FASSUNG = "17.1 · Etappe 11 Nachbesserung · 04.10.2026";
 
 TB.speicher = (function () {
 
@@ -497,6 +497,7 @@ TB.speicher = (function () {
     standort: standort, setzeStandort: setzeStandort,
     alle: alle, alleAktiven: alleAktiven, allePapierkorb: allePapierkorb,
     holen: holen, holenPerKuerzel: holenPerKuerzel,
+    rtfHtml: rtfHtml,
     speichern: speichern, merkeBenutzt: merkeBenutzt,
     rtfNachruesten: rtfNachruesten,
     inPapierkorb: inPapierkorb, zurueckholen: zurueckholen,

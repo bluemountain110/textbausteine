@@ -997,5 +997,13 @@ TB.ansichtEeg = (function () {
     zeichne(wurzel);
   }
 
-  return { zeichne: zeichne };
+  // E11-Nachbesserung: aktueller Stand für den Fenster-Modus (URL-Weg
+  // des Skripts) — dieselben Quellen wie die Vorschau.
+  function aktuelleFelder() {
+    var m = TB.eeg.master();
+    if (!m) return null;
+    return TB.eeg.fliesstext(m, gewaehltAlsMenge(m), werte, abweichungen,
+                             aktiveZeilen());
+  }
+  return { zeichne: zeichne, aktuelleFelder: aktuelleFelder };
 })();

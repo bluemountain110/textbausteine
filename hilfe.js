@@ -250,10 +250,10 @@ TB.hilfe = (function () {
       ["Status und EEG direkt am Arbeitsplatz", [
         ["Der Kürzel-Weg (so soll ALLES funktionieren)",
          "Jede Funktion der App ist am Arbeitsplatz über ihr Kürzel erreichbar — tippen, Leertaste, Fenster, fertig. Die App im Browser ist zum Pflegen, Testen und Vorbereiten da; gearbeitet wird am Kürzel."],
-        ["Ein Status in KISIM oder Axenita",
-         "Tippe ;;statuscts (oder ;;statusstroke, ;;statusc7 … — jedes Kürzel steht in der Status-Pflege hinter dem Status). Es öffnet sich das Status-Fenster mit genau diesem Status: Deine Punkte angekreuzt, Deine Standardtexte als Normalbefund. Häkchen setzen oder wegnehmen, einen Befund anklicken und überschreiben (wird fett), bei Kraftprüfungen die Muskeln wählen — dann „Einfügen“: der fertige Status steht an der Schreibmarke."],
+        ["Ein Status in KISIM",
+         "Tippe ;;statuscts (oder ;;statusstroke, ;;statusc7 … — jedes Kürzel steht in der Status-Pflege hinter dem Status). Es öffnet sich ein Browserfenster mit GENAU dieser App-Seite: Dein Status vorausgewählt, Deine Standardtexte als Normalbefund. Ausfüllen wie gewohnt, dann unten „An KISIM übergeben“ — das Fenster schliesst sich und der fertige Status steht an der Schreibmarke."],
         ["Das EEG in KISIM",
-         "Tippe ;;eeg in der EEG-Vorlage im Feld Indikation/Fragestellung. Das Fenster führt durch Indikation, Anamnese (Medikamente mit Dosis), Befund (Frequenz tippen genügt fürs normale EEG; Herde und Entladungen als Zeilen) und die automatische Beurteilung. „Alles einfügen“ schreibt die vier Felder der Reihe nach und springt selbst mit Strg+Tab weiter; am Ende steht die Schreibmarke hinter der Beurteilung."],
+         "Tippe ;;eeg in der EEG-Vorlage im Feld Indikation/Fragestellung. Es öffnet sich das echte EEG-Werk der App im Browserfenster. Ausfüllen wie gewohnt (fürs normale EEG genügt die Frequenz), dann „An KISIM übergeben“: das Skript schreibt Indikation, Anamnese, Befund und Beurteilung der Reihe nach in die vier KISIM-Felder und springt selbst mit Strg+Tab weiter; am Ende steht die Schreibmarke hinter der Beurteilung. In der Praxis (Axenita) öffnen dieselben Kürzel das Fenster direkt in der Seite."],
         ["Seltene Status",
          "In der Status-Pflege kannst Du je Status „selten“ anhaken — er verschwindet aus der Status-Zeile und erscheint erst nach „Seltene anzeigen“. Das Kürzel funktioniert immer, auch bei seltenen."]
       ]],

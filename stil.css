@@ -710,3 +710,16 @@ input.eeg-feld-breit { flex: 1 1 24ch; min-width: 24ch; }
 .status-chip-schalter { font-style: italic; }
 .status-pflege-kuerzel { margin: 0 6px; }
 .status-pflege-selten { margin: 0 6px; white-space: nowrap; font-size: 0.9em; }
+
+/* ---- E11-Nachbesserung: Fenster-Modus (URL-Weg) ---- */
+body.nur-fenster header { display: none; }
+body.nur-fenster { padding-bottom: 72px; }
+.fenster-leiste { position: fixed; left: 0; right: 0; bottom: 0;
+  background: #2f5d50; color: #fff; display: flex; align-items: center;
+  justify-content: space-between; gap: 16px; padding: 12px 20px;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.25); z-index: 50; }
+.fenster-hinweis { font-size: 0.95em; }
+.fenster-knopf { background: #fff; color: #2f5d50; border: none;
+  border-radius: 8px; padding: 10px 22px; font-size: 1.05em;
+  font-weight: 700; cursor: pointer; }
+.fenster-knopf:disabled { opacity: 0.85; cursor: default; }

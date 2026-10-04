@@ -560,6 +560,14 @@ TB.ansichtStatus = (function () {
     zeichne(wurzel);
   }
 
+  // E11-Nachbesserung: aktueller Stand für den Fenster-Modus (URL-Weg).
+  function aktuellerText() {
+    var m = TB.status.master();
+    if (!m) return null;
+    return TB.status.fliesstext(m, gewaehltAlsMenge(m), abweichungen,
+                                merkmalWahl, normalUeber);
+  }
   return { zeichne: zeichne,
-           aktiviereTeilmenge: aktiviereTeilmenge };
+           aktiviereTeilmenge: aktiviereTeilmenge,
+           aktuellerText: aktuellerText };
 })();
