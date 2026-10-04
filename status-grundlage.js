@@ -17,10 +17,11 @@ window.TB = window.TB || {};
 
 TB.statusGrundlage = (function () {
   // Kurzschreiber, damit die Liste lesbar bleibt.
-  function u(id, kat, name, normal, haeufig, tardoc, merkmale) {
+  function u(id, kat, name, normal, haeufig, tardoc, merkmale, hinweis) {
     var e = { id: id, kategorie: kat, name: name, normal: normal,
               haeufig: !!haeufig, tardoc: tardoc || [] };
     if (merkmale) e.merkmale = merkmale;   // Einzelmerkmale (27.9.)
+    if (hinweis) e.hinweis = hinweis;      // Erklärzeile der Maske (E11)
     return e;
   }
   function n(g, m, muskeln) {
@@ -288,11 +289,13 @@ TB.statusGrundlage = (function () {
     // ---- Scores ------------------------------------------------------
     u("nihss", "scores", "NIHSS", "0/42 Punkte.", true, []),
     u("besinger", "scores", "Besinger-Score", "0 Punkte; im Einzelnen: Armvorhalteversuch 90° kein Absinken > 240 s (0), Beinvorhalteversuch 45° kein Absinken > 100 s (0), Kopfheben 45° aus Rückenlage kein Absinken > 120 s (0), Vitalkapazität > 3.5 l bzw. > 2.5 l (0), Gesichtsmuskulatur normal (0), Kauen normal (0), Schlucken normal (0), keine Doppelbilder bei Seitwärtsblick > 60 s (0), keine Ptose bei Aufwärtsblick > 60 s (0).", false, []),
-    u("mrs", "scores", "Modified Rankin Scale (mRS)", "0.", false, []),
+    u("mrs", "scores", "Modified Rankin Scale (mRS)", "0.", false, [], null,
+      "0 keine Symptome · 1 Symptome ohne relevante Beeinträchtigung · 2 leicht, eigene Angelegenheiten ohne Hilfe · 3 mässig, gehfähig mit etwas Hilfe · 4 mässig schwer, Gehen und Pflege mit Hilfe · 5 bettlägerig, dauernde Pflege · 6 Tod"),
     u("edss", "scores", "EDSS", "x.x.", false, []),
     u("updrs", "scores", "MDS-UPDRS III", "xx Punkte.", false, []),
     u("mrcsumme", "scores", "MRC-Summenscore", "60/60.", false, []),
-    u("hoehnyahr", "scores", "Hoehn & Yahr", "Stadium x.", false, []),
+    u("hoehnyahr", "scores", "Hoehn & Yahr", "Stadium x.", false, [], null,
+      "0 keine Zeichen · 1 einseitig · 1.5 einseitig + axial · 2 beidseits ohne Gleichgewichtsstörung · 2.5 Retropulsionstest kompensiert · 3 posturale Instabilität, selbständig · 4 schwer, Gehen/Stehen ohne Hilfe möglich · 5 rollstuhl- oder bettpflichtig"),
     u("ashworth", "scores", "Ashworth-Skala (modifiziert)", "0 an allen geprüften Muskelgruppen.", false, []),
     u("alsfrs", "scores", "ALSFRS-R", "xx/48 Punkte.", false, []),
     // ---- Kopf und Hirnnerven -----------------------------------------
@@ -306,11 +309,17 @@ TB.statusGrundlage = (function () {
   // App an und speichert unter gleichem Namen; die Nachzieh-Migration
   // (status.js) bringt NEUE Namen in bestehende Welten, ohne
   // Bestehendes anzufassen, und räumt die drei Probe-Status weg.
+  // Die 29 Start-Status (Etappe 11): wörtlich aus Näds Export vom
+  // 3.10.2026, 14:39 (Status-Export-Mac-efd5-...-14-39-54.json) — seine
+  // Texte, Zusätze, Muskel-Sterne und Spickzettel. Dazu je Status das
+  // kuerzel (;;status...), mit dem das Status-Fenster am Arbeitsplatz
+  // öffnet, und im Stroke-Status neu der mRS (Näd, 3.10.).
   var TEILMENGEN =
   [
     {
       "id": "cts",
       "name": "CTS",
+      "kuerzel": "statuscts",
       "punkte": [
         "az",
         "haendigkeit",
@@ -348,91 +357,169 @@ TB.statusGrundlage = (function () {
     {
       "id": "pnp",
       "name": "Polyneuropathie",
+      "kuerzel": "statuspnp",
       "punkte": [
         "gangbild",
         "strichgang",
+        "zehenfersengang",
         "romberg",
-        "trophiktonus",
-        "atrophien",
-        "kraftbeine",
+        "tandemromberg",
+        "retropulsion",
+        "ptose",
+        "gesichtssensibilitaet",
+        "mimik",
+        "zunge",
         "beruehrung",
         "struempfe",
         "pallaesthesie",
-        "lagesinn",
         "spitzstumpf",
+        "lagesinn",
         "thermaesthesie",
+        "trophiktonus",
+        "atrophien",
+        "faszikulationen",
+        "kraftbeine",
         "mer",
         "babinski"
       ],
       "info": "Typisch: strumpfförmige Sensibilitätsstörung, distale Pallhypästhesie (Malleolus!), früh abgeschwächte ASR, Romberg-Unsicherheit, später Fussheberschwäche und Atrophien.",
       "zusatz": [
-        "zehenfersengang",
         "schellong"
-      ]
+      ],
+      "merkmalAb": {
+        "kraftbeine": [
+          "osabd",
+          "osadd",
+          "zehheb",
+          "zehflex",
+          "eversion",
+          "inversion"
+        ]
+      }
     },
     {
       "id": "stroke",
       "name": "Stroke",
+      "kuerzel": "statusstroke",
       "punkte": [
         "az",
         "vigilanz",
-        "orientierung",
-        "sprache",
-        "nachsprechen",
-        "aufforderungen",
-        "stimme",
-        "gesichtsfeld",
+        "antrieb",
+        "haendigkeit",
+        "gangbild",
+        "zehenfersengang",
+        "tandemromberg",
         "pupillen",
+        "gesichtsfeld",
+        "ptose",
         "folgebewegungen",
         "blickparesen",
+        "diplopie",
+        "nystagmen",
         "gesichtssensibilitaet",
         "mimik",
+        "gaumensegel",
+        "stimme",
+        "schulterheben",
+        "zunge",
+        "beruehrung",
+        "faszikulationen",
         "armhalteversuch",
         "beinhalteversuch",
-        "beruehrung",
-        "neglect",
-        "fnv",
-        "ffv",
-        "khv",
-        "mer",
         "babinski",
-        "gangbild",
-        "nihss"
+        "fnv",
+        "khv",
+        "orientierung",
+        "sprache",
+        "neglect",
+        "nihss",
+        "mrs"
       ],
       "info": "Entlang NIHSS: Vigilanz, Sprache/Dysarthrie, Gesichtsfeld, Blickwendung, faziale Parese, Halteversuche, Ataxie, Sensibilität, Neglect. Seitenbetonung konsequent dokumentieren.",
       "zusatz": [
-        "extinktion"
-      ]
+        "retropulsion",
+        "masseter",
+        "hoeren",
+        "kopfdrehung",
+        "spontannystagmus",
+        "skew",
+        "extinktion",
+        "fingerspiel",
+        "kraftarme",
+        "kraftbeine",
+        "mer",
+        "ffv",
+        "nachsprechen",
+        "aufforderungen"
+      ],
+      "merkmalAb": {},
+      "normalAb": {
+        "mer": "BSR +/+, RPR +/+, PSR +/+, ASR +/+."
+      }
     },
     {
       "id": "myasthenie",
       "name": "Myasthenie",
+      "kuerzel": "statusmyasthenie",
       "punkte": [
+        "antrieb",
+        "haendigkeit",
+        "zehenfersengang",
+        "tandemromberg",
         "ptose",
-        "diplopie",
         "folgebewegungen",
         "blickparesen",
+        "diplopie",
+        "nystagmen",
+        "gesichtssensibilitaet",
         "mimik",
+        "gaumensegel",
         "stimme",
         "schlucken",
         "kopfdrehung",
         "schulterheben",
-        "nackenmuskulatur",
+        "zunge",
+        "faszikulationen",
         "armhalteversuch",
         "beinhalteversuch",
         "kraftarme",
         "kraftbeine",
+        "nackenmuskulatur",
         "besinger"
       ],
       "info": "Leitbefund Ermüdbarkeit: fluktuierende Ptose und Doppelbilder (Simpson), proximale Ermüdung an Halteversuchen und Nackenmuskulatur, nasale Stimme beim Sprechen. Besinger-Score für den Verlauf.",
       "zusatz": [
         "simpson",
         "atemmuskulatur"
-      ]
+      ],
+      "merkmalAb": {
+        "kraftarme": [
+          "pect",
+          "innenrot",
+          "aussenrot",
+          "addukt",
+          "zeigeabsp",
+          "kleinabsp",
+          "daumadd",
+          "daumabd",
+          "daumopp",
+          "kleinopp",
+          "hgbeug"
+        ],
+        "kraftbeine": [
+          "osabd",
+          "osadd",
+          "zehheb",
+          "zehflex",
+          "eversion",
+          "inversion"
+        ]
+      }
     },
     {
       "id": "parkinson",
       "name": "Parkinson",
+      "kuerzel": "statusparkinson",
       "punkte": [
         "gangbild",
         "armschwung",
@@ -451,6 +538,7 @@ TB.statusGrundlage = (function () {
         "fusstapping",
         "schriftprobe"
       ],
+      "merkmalAb": {},
       "zusatz": [
         "haendigkeit",
         "riechen",
@@ -461,6 +549,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "schwindel",
       "name": "Schwindel",
+      "kuerzel": "statusschwindel",
       "punkte": [
         "gangbild",
         "strichgang",
@@ -495,6 +584,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "memory",
       "name": "Demenz/Memory",
+      "kuerzel": "statusmemory",
       "punkte": [
         "az",
         "vigilanz",
@@ -532,6 +622,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "ms",
       "name": "MS",
+      "kuerzel": "statusms",
       "punkte": [
         "visus",
         "rotentsaettigung",
@@ -553,6 +644,7 @@ TB.statusGrundlage = (function () {
         "mer",
         "babinski",
         "fnv",
+        "ffv",
         "khv",
         "diadochokinese",
         "gangbild",
@@ -597,6 +689,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "kopfschmerz",
       "name": "Kopfschmerz",
+      "kuerzel": "statuskopf",
       "punkte": [
         "az",
         "blutdruckpuls",
@@ -629,6 +722,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "radc5",
       "name": "Radikulopathie C5",
+      "kuerzel": "statusc5",
       "punkte": [
         "klopfdolenz",
         "halsbeweglichkeit",
@@ -671,6 +765,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "radc6",
       "name": "Radikulopathie C6",
+      "kuerzel": "statusc6",
       "punkte": [
         "klopfdolenz",
         "halsbeweglichkeit",
@@ -715,6 +810,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "radc7",
       "name": "Radikulopathie C7",
+      "kuerzel": "statusc7",
       "punkte": [
         "klopfdolenz",
         "halsbeweglichkeit",
@@ -757,6 +853,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "radc8",
       "name": "Radikulopathie C8",
+      "kuerzel": "statusc8",
       "punkte": [
         "klopfdolenz",
         "halsbeweglichkeit",
@@ -799,6 +896,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "radth1",
       "name": "Radikulopathie Th1",
+      "kuerzel": "statusth1",
       "punkte": [
         "klopfdolenz",
         "halsbeweglichkeit",
@@ -843,9 +941,11 @@ TB.statusGrundlage = (function () {
     {
       "id": "radl3",
       "name": "Radikulopathie L3",
+      "kuerzel": "statusl3",
       "punkte": [
         "klopfdolenz",
         "lasegue",
+        "lasegueumgekehrt",
         "dermatom",
         "beruehrung",
         "atrophien",
@@ -853,8 +953,7 @@ TB.statusGrundlage = (function () {
         "mer",
         "babinski",
         "gangbild",
-        "zehenfersengang",
-        "lasegueumgekehrt"
+        "zehenfersengang"
       ],
       "zusatz": [
         "tineluntere",
@@ -881,9 +980,11 @@ TB.statusGrundlage = (function () {
     {
       "id": "radl4",
       "name": "Radikulopathie L4",
+      "kuerzel": "statusl4",
       "punkte": [
         "klopfdolenz",
         "lasegue",
+        "lasegueumgekehrt",
         "dermatom",
         "beruehrung",
         "atrophien",
@@ -891,8 +992,7 @@ TB.statusGrundlage = (function () {
         "mer",
         "babinski",
         "gangbild",
-        "zehenfersengang",
-        "lasegueumgekehrt"
+        "zehenfersengang"
       ],
       "zusatz": [
         "tineluntere",
@@ -919,9 +1019,11 @@ TB.statusGrundlage = (function () {
     {
       "id": "radl5",
       "name": "Radikulopathie L5",
+      "kuerzel": "statusl5",
       "punkte": [
         "klopfdolenz",
         "lasegue",
+        "lasegueumgekehrt",
         "dermatom",
         "beruehrung",
         "atrophien",
@@ -954,9 +1056,11 @@ TB.statusGrundlage = (function () {
     {
       "id": "rads1",
       "name": "Radikulopathie S1",
+      "kuerzel": "statuss1",
       "punkte": [
         "klopfdolenz",
         "lasegue",
+        "lasegueumgekehrt",
         "dermatom",
         "beruehrung",
         "atrophien",
@@ -989,6 +1093,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "enzephalitis",
       "name": "Enzephalitis",
+      "kuerzel": "statusenz",
       "punkte": [
         "az",
         "vigilanz",
@@ -1024,6 +1129,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "sht",
       "name": "Schädel-Hirn-Trauma",
+      "kuerzel": "statussht",
       "punkte": [
         "bewusstseinslage",
         "orientierung",
@@ -1054,6 +1160,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "ulnaris",
       "name": "Ulnarisneuropathie",
+      "kuerzel": "statusulnaris",
       "punkte": [
         "atrophien",
         "kraftarme",
@@ -1092,6 +1199,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "peroneus",
       "name": "Peroneusparese",
+      "kuerzel": "statusperoneus",
       "punkte": [
         "gangbild",
         "zehenfersengang",
@@ -1105,7 +1213,8 @@ TB.statusGrundlage = (function () {
       ],
       "zusatz": [
         "trendelenburg",
-        "lasegue"
+        "lasegue",
+        "lasegueumgekehrt"
       ],
       "merkmalAb": {
         "kraftbeine": [
@@ -1124,6 +1233,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "fazialis",
       "name": "Fazialisparese",
+      "kuerzel": "statusfazialis",
       "punkte": [
         "mimik",
         "bell",
@@ -1134,7 +1244,9 @@ TB.statusGrundlage = (function () {
         "otoskopie",
         "folgebewegungen",
         "armhalteversuch",
-        "sprache"
+        "sprache",
+        "nachsprechen",
+        "aufforderungen"
       ],
       "zusatz": [
         "masseter",
@@ -1146,11 +1258,14 @@ TB.statusGrundlage = (function () {
     {
       "id": "anfall",
       "name": "Anfall/postiktal",
+      "kuerzel": "statusanfall",
       "punkte": [
         "vigilanz",
         "orientierung",
         "kurzgedaechtnis",
         "sprache",
+        "nachsprechen",
+        "aufforderungen",
         "zunge",
         "mimik",
         "pupillen",
@@ -1171,12 +1286,14 @@ TB.statusGrundlage = (function () {
     {
       "id": "tremorabkl",
       "name": "Tremor-Abklärung",
+      "kuerzel": "statustremor",
       "punkte": [
         "haendigkeit",
         "tremor",
         "rigor",
         "armhalteversuch",
         "fnv",
+        "ffv",
         "schriftprobe",
         "fingertapping",
         "diadochokinese",
@@ -1196,6 +1313,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "myelopathie",
       "name": "Myelopathie/spinal",
+      "kuerzel": "statusmyelo",
       "punkte": [
         "gangbild",
         "strichgang",
@@ -1236,6 +1354,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "als",
       "name": "Motoneuron/ALS",
+      "kuerzel": "statusals",
       "punkte": [
         "zunge",
         "stimme",
@@ -1287,6 +1406,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "nph",
       "name": "NPH",
+      "kuerzel": "statusnph",
       "punkte": [
         "gangbild",
         "anlauf",
@@ -1312,6 +1432,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "funktionell",
       "name": "Funktionelle Störung",
+      "kuerzel": "statusfunk",
       "punkte": [
         "gangbild",
         "einbein",
@@ -1349,11 +1470,8 @@ TB.statusGrundlage = (function () {
     }
   ];
 
-  // Kennung des Katalog-Stands: status.js stellt einen gespeicherten
-  // Katalog mit älterer Kennung EINMALIG auf diesen Stand um
-  // (Umbau 30.9.: Aufteilungen, Tardoc-Korrekturen).
   var KATALOG_STAND = "2026-10-03";
-  var TEILMENGEN_STAND = "2026-10-03b";
+  var TEILMENGEN_STAND = "2026-10-03c";
 
   function master() {
     return { fassung: 1, stand: KATALOG_STAND,

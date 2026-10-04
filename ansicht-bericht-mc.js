@@ -44,7 +44,7 @@ TB.berichtMcTexte = {
   kopierenFehl: "Kopieren fehlgeschlagen.",
   fehltHinweis: "Im Vorbericht nicht gefunden (steht als xx im Ergebnis): %s",
   allesGefunden: "Alle Abschnitte gefunden.",
-  zumStatus: "Weiter zum Status (Status-Werk öffnen)",
+  zumStatus: "Memory-Status öffnen (im Status-Werk vorausgewählt)",
   uebernommen: "(übernommen aus neuropsychologischem Vorbericht)",
   ueberschriftSozial: "Sozialanamnese",
   ueberschriftSchule: "Schul-, Bildungs- und Berufsanamnese",
@@ -781,7 +781,11 @@ TB.ansichtBerichtMc = (function () {
         bauUntersuchungen(z, state.zusatz)));
       var weiter = el("button", "", TXW.zumStatus);
       weiter.addEventListener("click", function () {
-        TB.oberflaeche.geheZu("status"); });
+        // E11 (Näds Vorgabe): direkt den Memory-Status aktivieren —
+        // nur diesen; fällt er je weg, öffnet schlicht das Status-Werk.
+        if (!TB.ansichtStatus.aktiviereTeilmenge("memory"))
+          TB.oberflaeche.geheZu("status");
+      });
       ziele.appendChild(weiter);
     }
     function haltFest() {

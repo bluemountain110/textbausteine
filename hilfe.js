@@ -247,9 +247,19 @@ TB.hilfe = (function () {
         ["Hinweis zur Tastatur am Arbeitsplatz",
          "Auf der MX Keys for Mac heisst die Alt-Taste „option“ — unter Windows sendet sie Alt."]
       ]],
+      ["Status und EEG direkt am Arbeitsplatz", [
+        ["Der Kürzel-Weg (so soll ALLES funktionieren)",
+         "Jede Funktion der App ist am Arbeitsplatz über ihr Kürzel erreichbar — tippen, Leertaste, Fenster, fertig. Die App im Browser ist zum Pflegen, Testen und Vorbereiten da; gearbeitet wird am Kürzel."],
+        ["Ein Status in KISIM oder Axenita",
+         "Tippe ;;statuscts (oder ;;statusstroke, ;;statusc7 … — jedes Kürzel steht in der Status-Pflege hinter dem Status). Es öffnet sich das Status-Fenster mit genau diesem Status: Deine Punkte angekreuzt, Deine Standardtexte als Normalbefund. Häkchen setzen oder wegnehmen, einen Befund anklicken und überschreiben (wird fett), bei Kraftprüfungen die Muskeln wählen — dann „Einfügen“: der fertige Status steht an der Schreibmarke."],
+        ["Das EEG in KISIM",
+         "Tippe ;;eeg in der EEG-Vorlage im Feld Indikation/Fragestellung. Das Fenster führt durch Indikation, Anamnese (Medikamente mit Dosis), Befund (Frequenz tippen genügt fürs normale EEG; Herde und Entladungen als Zeilen) und die automatische Beurteilung. „Alles einfügen“ schreibt die vier Felder der Reihe nach und springt selbst mit Strg+Tab weiter; am Ende steht die Schreibmarke hinter der Beurteilung."],
+        ["Seltene Status",
+         "In der Status-Pflege kannst Du je Status „selten“ anhaken — er verschwindet aus der Status-Zeile und erscheint erst nach „Seltene anzeigen“. Das Kürzel funktioniert immer, auch bei seltenen."]
+      ]],
       ["Was noch kommt", [
         ["Die nächsten Etappen",
-         "Das Status-Werk und der Bericht Memory Clinic sind da. Als Nächstes überarbeitest Du Deine einzelnen Status (mit Zusätzen), dann folgen der EEG-Befund und die ENMG-Berichte (mehrstufig, mit Normwerten nach Alter und Geschlecht). Danach je nach Wunsch: Medikamenteneingabe für Praxis und Spital, Diagnoselisten, SEP-Befund, Formular-Abläufe, KI-Gegenlesen, die Kürzel auf dem Mac, die iPhone-Darstellung und eine Statistik mit mehr Aussagekraft."],
+         "Status und EEG laufen jetzt an beiden Arbeitsplätzen direkt am Kürzel. Als Nächstes folgen die ENMG-Berichte (mehrstufig, mit Normwerten nach Alter und Geschlecht). Danach je nach Wunsch: Medikamenteneingabe für Praxis und Spital, Dokument-Bausteine (;;kürzel zeigt ein hinterlegtes PDF oder Bild im Vollbild), ein Status-epilepticus-Dosierungsrechner nach Deiner Tabelle, Diagnoselisten, SEP-Befund, Formular-Abläufe, KI-Gegenlesen, die Kürzel auf dem Mac, die iPhone-Darstellung und eine Statistik mit mehr Aussagekraft."],
         ["Was noch nicht bewiesen ist",
          "Ob das Diktat die Marken anspringt, und ob die Zählung der Erweiterung in der Statistik der App als eigenes Gerät auftaucht. Beides zeigt sich erst im Alltag."]
       ]]

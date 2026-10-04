@@ -385,6 +385,41 @@ TB.ansichtStatusPflege = (function () {
         TB.status.speichereTeilmengen(liste); neu(); }));
       z.appendChild(el("span", "status-name",
         t.name + " (" + t.punkte.length + ")"));
+      if (t.kuerzel) z.appendChild(
+        el("span", "klein-hinweis status-pflege-kuerzel", ";;" + t.kuerzel));
+      // E11: „selten“ — der Status verschwindet aus der Chip-Zeile und
+      // erscheint erst nach „Seltene anzeigen“ (analog Untersuchungen).
+      var sl = el("label", "status-pflege-selten");
+      var sk = el("input");
+      sk.type = "checkbox";
+      sk.checked = !!t.selten;
+      sk.addEventListener("change", function () {
+        if (sk.checked) t.selten = true; else delete t.selten;
+        TB.status.speichereTeilmengen(liste);
+      });
+      sl.appendChild(sk);
+      sl.appendChild(document.createTextNode(" " + TS().seltenHaekchen));
+      z.appendChild(sl);
+      var kk = el("button", "status-klein", TS().kuerzelKnopf);
+      kk.addEventListener("click", function () {
+        var frisch = prompt(TS().kuerzelFrage, t.kuerzel || "");
+        if (frisch === null) return;
+        frisch = frisch.trim().toLowerCase().replace(/^;;/, "");
+        if (!frisch) frisch = TB.status.kuerzelFuerStatus(t.name, liste, t.id);
+        var anderer = liste.find(function (x) {
+          return x.id !== t.id &&
+            String(x.kuerzel || "").toLowerCase() === frisch; });
+        if (anderer) {
+          TB.ui.melde(TS().kuerzelDoppelt.replace("%s", frisch)
+            .replace("%s", anderer.name), true);
+          return;
+        }
+        if (TB.speicher.holenPerKuerzel && TB.speicher.holenPerKuerzel(frisch))
+          TB.ui.melde(TS().kuerzelBelegt.replace("%s", frisch), true);
+        t.kuerzel = frisch;
+        TB.status.speichereTeilmengen(liste); neu();
+      });
+      z.appendChild(kk);
       var um = el("button", "status-klein", TS().teilmengeUmbenennen);
       um.addEventListener("click", function () {
         var frisch = prompt(TS().alsStatusFrage, t.name);

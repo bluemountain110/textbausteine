@@ -34,7 +34,8 @@ TB.ansichtStatus = (function () {
   // Zusätze (Näd 30.9.): sichtbar, aber nicht angewählt — kommen aus
   // geladenen eigenen Status oder werden mit dem ☆ vorgemerkt.
   var angeheftet = {};         // uid -> true
-  var merkmalZusatz = {};      // uid -> { merkmal-id: true } (1.10.: Muskel-Sterne)
+  var merkmalZusatz = {};
+  var seltenOffen = false;     // E11: seltene Status-Chips eingeblendet      // uid -> { merkmal-id: true } (1.10.: Muskel-Sterne)
 
   function inTeilmenge(id) {
     return TB.status.teilmengen().some(function (t) {
@@ -87,7 +88,8 @@ TB.ansichtStatus = (function () {
     klebt.appendChild(kopf);
 
     zeichneTeilmengen(klebt);
-    zeichneTardoc(klebt, m);
+    TB.ansichtStatusTardoc.zeichne(klebt, m, gewaehltAlsMenge(m),
+      merkmalWahl);
 
     var suchzeile = el("div", "status-suchzeile");
     var suche = el("input", "status-suche");
@@ -153,59 +155,92 @@ TB.ansichtStatus = (function () {
     wurzel.appendChild(k);
   }
 
+  function deaktiviere(t, liste) {
+    delete aktiveTeilmengen[t.id];
+    Object.keys(t.normalAb || {}).forEach(function (id) {
+      var nochAndersWo = liste.some(function (x) {
+        return x.id !== t.id && aktiveTeilmengen[x.id] &&
+          x.normalAb && x.normalAb[id] !== undefined; });
+      if (!nochAndersWo) delete normalUeber[id];
+    });
+    (t.zusatz || []).forEach(function (id) {
+      var nochAndersWo = liste.some(function (x) {
+        return x.id !== t.id && aktiveTeilmengen[x.id] &&
+          (x.zusatz || []).indexOf(id) !== -1; });
+      if (!nochAndersWo) delete angeheftet[id];
+    });
+  }
+  function aktiviere(t) {
+    aktiveTeilmengen[t.id] = true;
+    // Abgeänderte Standardtexte dieses Status (2.10.): sie SIND
+    // der Normalbefund — nichts davon erscheint fett.
+    Object.keys(t.normalAb || {}).forEach(function (id) {
+      normalUeber[id] = t.normalAb[id]; });
+    // Zusätze dieses Status: sichtbar, nicht angewählt; die Ansicht
+    // zeigt dann nur Standard und Zusätze (Schalter oben hebt das auf).
+    (t.zusatz || []).forEach(function (id) { angeheftet[id] = true; });
+    // Zusatz-Muskeln (1.10.): gelb markiert, nicht angewählt; ihre
+    // Muskelliste steht gleich offen, damit man sie sofort sieht.
+    Object.keys(t.merkmalZusatz || {}).forEach(function (uid) {
+      var zs = {};
+      t.merkmalZusatz[uid].forEach(function (mid) { zs[mid] = true; });
+      merkmalZusatz[uid] = zs;
+      offeneMerkmale[uid] = true;
+    });
+    nurGewaehlte = true;
+    // Gespeicherte Muskel-Auswahl dieses Status anwenden (27.9.)
+    Object.keys(t.merkmalAb || {}).forEach(function (uid) {
+      var ab = {};
+      t.merkmalAb[uid].forEach(function (mid) { ab[mid] = true; });
+      merkmalWahl[uid] = ab;
+    });
+  }
+  // E11, öffentlich: Status-Werk mit GENAU diesem Status öffnen — der
+  // Memory-Direktknopf im MC-Bericht ruft das; kennung ist id ODER
+  // Kürzel. Beginnt eine frische Sitzung (alles andere geleert).
+  function aktiviereTeilmenge(kennung) {
+    var k = String(kennung || "").toLowerCase();
+    var t = TB.status.teilmengen().find(function (x) {
+      return String(x.id).toLowerCase() === k ||
+        String(x.kuerzel || "").toLowerCase() === k; });
+    if (!t) return false;
+    allesLeeren();
+    aktiviere(t);
+    if (TB.oberflaeche && TB.oberflaeche.geheZu) TB.oberflaeche.geheZu("status");
+    return true;
+  }
+
   function zeichneTeilmengen(wurzel) {
     var liste = TB.status.teilmengen();
     if (!liste.length) return;
     var zeile = el("div", "status-teilmengen");
     zeile.appendChild(el("span", "klein-hinweis", TS().teilmengenTitel));
-    liste.forEach(function (t) {
+    // E11: Status mit dem Häkchen „selten“ stehen hinter einem Schalter
+    // — aktive bleiben immer sichtbar (analog seltene Untersuchungen).
+    var sichtbare = liste.filter(function (t) {
+      return !t.selten || aktiveTeilmengen[t.id] || seltenOffen; });
+    var versteckte = liste.length - sichtbare.length;
+    sichtbare.forEach(function (t) {
       var k = el("button",
-        "status-chip" + (aktiveTeilmengen[t.id] ? " aktiv" : ""), t.name);
+        "status-chip" + (aktiveTeilmengen[t.id] ? " aktiv" : "") +
+        (t.selten ? " selten" : ""), t.name);
+      if (t.kuerzel) k.title = ";;" + t.kuerzel;
       k.addEventListener("click", function () {
-        if (aktiveTeilmengen[t.id]) {
-          delete aktiveTeilmengen[t.id];
-          Object.keys(t.normalAb || {}).forEach(function (id) {
-            var nochAndersWo = liste.some(function (x) {
-              return x.id !== t.id && aktiveTeilmengen[x.id] &&
-                x.normalAb && x.normalAb[id] !== undefined; });
-            if (!nochAndersWo) delete normalUeber[id];
-          });
-          (t.zusatz || []).forEach(function (id) {
-            var nochAndersWo = liste.some(function (x) {
-              return x.id !== t.id && aktiveTeilmengen[x.id] &&
-                (x.zusatz || []).indexOf(id) !== -1; });
-            if (!nochAndersWo) delete angeheftet[id];
-          });
-        }
-        else {
-          aktiveTeilmengen[t.id] = true;
-          // Abgeänderte Standardtexte dieses Status (2.10.): sie SIND
-          // der Normalbefund — nichts davon erscheint fett.
-          Object.keys(t.normalAb || {}).forEach(function (id) {
-            normalUeber[id] = t.normalAb[id]; });
-          // Zusätze dieses Status: sichtbar, nicht angewählt; die Ansicht
-          // zeigt dann nur Standard und Zusätze (Schalter oben hebt das auf).
-          (t.zusatz || []).forEach(function (id) { angeheftet[id] = true; });
-          // Zusatz-Muskeln (1.10.): gelb markiert, nicht angewählt; ihre
-          // Muskelliste steht gleich offen, damit man sie sofort sieht.
-          Object.keys(t.merkmalZusatz || {}).forEach(function (uid) {
-            var zs = {};
-            t.merkmalZusatz[uid].forEach(function (mid) { zs[mid] = true; });
-            merkmalZusatz[uid] = zs;
-            offeneMerkmale[uid] = true;
-          });
-          nurGewaehlte = true;
-          // Gespeicherte Muskel-Auswahl dieses Status anwenden (27.9.)
-          Object.keys(t.merkmalAb || {}).forEach(function (uid) {
-            var ab = {};
-            t.merkmalAb[uid].forEach(function (mid) { ab[mid] = true; });
-            merkmalWahl[uid] = ab;
-          });
-        }
+        if (aktiveTeilmengen[t.id]) deaktiviere(t, liste);
+        else aktiviere(t);
         neu();
       });
       zeile.appendChild(k);
     });
+    if (versteckte > 0 || (seltenOffen && liste.some(function (t) {
+          return t.selten; }))) {
+      var schalter = el("button", "status-chip status-chip-schalter",
+        seltenOffen ? TS().seltenVerbergen
+                    : TS().seltenZeigen.replace("%s", String(versteckte)));
+      schalter.addEventListener("click", function () {
+        seltenOffen = !seltenOffen; neu(); });
+      zeile.appendChild(schalter);
+    }
     wurzel.appendChild(zeile);
     // Info-Spickzettel (3.10.): typische Befunde der aktiven Status —
     // bei den Radikulopathien die Kennmuskeln, Reflexe und Dermatome.
@@ -223,84 +258,8 @@ TB.ansichtStatus = (function () {
     }
   }
 
-  function zeichneTardoc(wurzel, m) {
-    var stand = TB.status.tardoc(m, gewaehltAlsMenge(m), merkmalWahl);
-    var kasten = el("div", "status-tardoc");
-    Object.keys(stand).forEach(function (art) {
-      var a = stand[art];
-      var zeile = el("div", "status-tardoc-zeile");
-      var wort = a.stufe === "A"
-        ? TS().tardocPilleA : (a.stufe === "B" ? TS().tardocPilleB
-                                               : TS().tardocPilleLeer);
-      var pille = el("span", "status-pille" +
-        (a.stufe === "A" ? " gut" : (a.stufe === "B" ? " halb" : "")),
-        wort.replace("%s", a.name).replace("%s", String(a.erfuellte)));
-      zeile.appendChild(pille);
-      var hinweisText = TB.status.tardocFehltText(a);
-      var hinweis = el("span", "klein-hinweis status-tardoc-hinweis",
-        hinweisText);
-      hinweis.title = hinweisText;
-      zeile.appendChild(hinweis);
-      kasten.appendChild(zeile);
-    });
-    var fuss = el("div", "status-tardoc-fuss",
-      TS().tardocHinweis.replace("%s", TB.tardocDaten.fassung));
-    var lesen = el("button", "status-tardoc-lesen", TS().tardocLesenKnopf);
-    lesen.addEventListener("click", zeigeKriterien);
-    fuss.appendChild(lesen);
-    kasten.appendChild(fuss);
-    wurzel.appendChild(kasten);
-  }
-
-  // Das Nachlese-Fenster (Näds Wunsch 27.9.): beide Positionen mit
-  // Gruppenliste — Zusammenfassung, jeder Titel verlinkt aufs Original.
-  function zeigeKriterien() {
-    var schleier = el("div", "status-schleier");
-    schleier.addEventListener("click", function (e) {
-      if (e.target === schleier) schleier.remove(); });
-    var karte = el("div", "status-lesen-karte");
-    var kopf = el("div", "status-kopf");
-    kopf.appendChild(el("h3", "", TS().tardocLesenTitel));
-    var zu = el("button", "", TS().tardocLesenZu);
-    zu.addEventListener("click", function () { schleier.remove(); });
-    kopf.appendChild(zu);
-    karte.appendChild(kopf);
-    karte.appendChild(el("p", "klein-hinweis", TS().tardocLesenEinleitung));
-    TB.status.tardocKriterien().forEach(function (art) {
-      karte.appendChild(el("h4", "", art.name));
-      // Näd 28.9.: Tabelle — jede Zeile eine Gruppe, Spalten
-      // Exploration B und A, in jeder Zelle die Anforderung. Die Zellen
-      // sind laut Tarif in beiden Spalten identisch; der Unterschied
-      // steht in der Kopfzeile (Anzahl Gruppen, Minuten).
-      karte.appendChild(el("p", "klein-hinweis", TS().tardocLesenGleich));
-      var huelle = el("div", "status-lesen-tabelle-huelle");
-      var tab = el("table", "status-lesen-tabelle");
-      var kopfzeile = el("tr");
-      kopfzeile.appendChild(el("th", "", TS().tardocLesenGruppeKopf));
-      [["halb", art.zeileB, art.linkB], ["gut", art.zeileA, art.linkA]]
-        .forEach(function (p) {
-          var th = el("th", p[0]);
-          var link = el("a", "", p[1]);
-          link.href = p[2]; link.target = "_blank"; link.rel = "noopener";
-          th.appendChild(link);
-          kopfzeile.appendChild(th);
-        });
-      tab.appendChild(kopfzeile);
-      art.gruppen.forEach(function (g) {
-        var tr = el("tr");
-        tr.appendChild(el("td", "status-lesen-gruppenname", g.kopf));
-        ["halb", "gut"].forEach(function (k) {
-          tr.appendChild(el("td", k, g.merkmale)); });
-        tab.appendChild(tr);
-      });
-      huelle.appendChild(tab);
-      karte.appendChild(huelle);
-    });
-    karte.appendChild(el("p", "klein-hinweis", TS().tardocLesenStand));
-    schleier.appendChild(karte);
-    document.body.appendChild(schleier);
-  }
-
+  // Tardoc-Ampeln und Nachlese wohnen seit E11 in
+  // ansicht-status-tardoc.js (600-Zeilen-Regel).
   function zeichneKategorie(ziel, m, block) {
     var sichtbar = function (u) {
       if (nurGewaehlte && !istGewaehlt(u.id) && !angeheftet[u.id]) return false;
@@ -412,6 +371,10 @@ TB.ansichtStatus = (function () {
         inhalt.appendChild(zurueck);
       }
     }
+    // E11: Erklärzeile (z. B. die Stufen von Hoehn & Yahr und mRS) —
+    // nur in der Maske, nie im Befundtext.
+    if (u.hinweis) inhalt.appendChild(
+      el("div", "status-hinweiszeile", u.hinweis));
     z.appendChild(inhalt);
     if (u.merkmale) z.appendChild(merkmalBereich(u));
     var stern = el("button", "status-zusatz" + (angeheftet[u.id] ? " an" : ""),
@@ -597,5 +560,6 @@ TB.ansichtStatus = (function () {
     zeichne(wurzel);
   }
 
-  return { zeichne: zeichne };
+  return { zeichne: zeichne,
+           aktiviereTeilmenge: aktiviereTeilmenge };
 })();

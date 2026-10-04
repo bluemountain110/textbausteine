@@ -1,5 +1,6 @@
 // Datei: status.js
-// Projekt: Textbausteine — Teil: App (Browser), nur App
+// Projekt: Textbausteine — Teil: App (Browser) UND Chrome-Erweiterung
+//          (byteweise Kopie — Prüfsuite: cmp)
 // Zweck: Das Herz des Status-Werks: liest und schreibt den
 //        Gesamtstatus und die Teilmengen (sie liegen als
 //        Einstellungs-Werte statusMaster/statusTeilmengen und syncen
@@ -14,110 +15,19 @@
 //        Die sichtbaren Texte stehen hier als eigenes Textobjekt
 //        (TB.statusTexte), damit texte.js byteweise Erweiterungs-Kopie
 //        bleibt — dasselbe Muster wie ansicht-kaertchen.js (E8).
+//        E11: In der App kommt der Speicher aus TB.speicher; in der
+//        Erweiterung setzt seite-status.js die Quelle TB.statusQuelle
+//        (nur lesend — Migrationen laufen dort nie).
 
 "use strict";
 window.TB = window.TB || {};
 
-TB.statusTexte = {
-  bereichStatus: "Status",
-  bereichUebersicht: "Übersicht",
-  statusTitel: "Status-Werk",
-  statusLeer: "Noch kein Gesamtstatus auf diesem Konto. Mit dem Knopf unten holst Du die mitgelieferte Grundausstattung — sie synct danach auf alle Geräte.",
-  grundausstattungKnopf: "Grundausstattung übernehmen",
-  grundausstattungNeuKnopf: "Grundausstattung neu laden",
-  grundausstattungWarnung: "Das ersetzt Deinen bearbeiteten Gesamtstatus durch die Lieferfassung. Deine eigenen Status-Muster (Teilmengen) bleiben erhalten. Fortfahren?",
-  grundausstattungFertig: "Grundausstattung übernommen.",
-  teilmengenTitel: "Status wählen (mehrere möglich):",
-  suchePlatzhalter: "Untersuchung suchen …",
-  weitereZu: "Weitere Untersuchungen (%s) einblenden",
-  weitereAuf: "Weitere Untersuchungen ausblenden",
-  zaehlerZeile: "%s Untersuchungen gewählt · %s überschrieben",
-  kopierenKnopf: "Kopieren",
-  kopiertMeldung: "Status kopiert — am Zielort mit Strg+V (Mac: Cmd+V) einfügen.",
-  kopiertNurText: "Status kopiert — nur als reiner Text (ohne Fett).",
-  kopierenFehl: "Kopieren fehlgeschlagen.",
-  nichtsGewaehlt: "Keine Untersuchung angekreuzt — es gibt nichts zu kopieren.",
-  zuruecksetzenKnopf: "Alles zurücksetzen",
-  zurueckgesetzt: "Maske geleert — nichts wurde gespeichert.",
-  alsStatusKnopf: "Auswahl als eigenen Status speichern",
-  alsStatusFrage: "Name des neuen Status:",
-  alsStatusErsetzen: "„%s“ gibt es schon — Ankreuz-Muster ersetzen?",
-  alsStatusFertig: "Status „%s“ gespeichert (nur das Ankreuz-Muster, keine Befunde).",
-  pflegeKnopf: "Status-Pflege",
-  zurueckZumAusfuellen: "Zurück zum Ausfüllen",
-  vorschauTitel: "Vorschau",
-  vorschauLeer: "(noch nichts angekreuzt)",
-  abweichungZurueck: "Auf Normalbefund zurück",
-  befundKlickHinweis: "Zum Überschreiben anklicken",
-  nameKlickHinweis: "Klick kreuzt an oder ab",
-  tardocFuerAFehlt: "Für %s A fehlen %s Gruppen — am nächsten: %s",
-  tardocFuerAFehlt1: "Für %s A fehlt 1 Gruppe — am nächsten: %s",
-  tardocErfuellt: "%s A erfüllt (%s Gruppen).",
-  tardocKeine: "keine Gruppe begonnen",
-  tardocHinweis: "Zählung nach %s: B = bis zu 3, A = ab 4 dokumentierte Gruppen. Die Ampel zählt nur Gruppen — ob die Exploration als eigenständige Leistung erbracht wurde (Neurostatus B 23 Min. / A 46 Min., Hirnnerven A 35 Min.), beurteilst Du; massgeblich bleibt der Tarif.",
-  tardocPilleA: "%s: A (%s Gruppen)",
-  tardocPilleB: "%s: B (%s von bis zu 3 Gruppen)",
-  tardocPilleLeer: "%s: –",
-  // Pflege
-  pflegeTitel: "Status-Pflege",
-  pflegeHinweis: "Änderungen wirken sofort und syncen auf alle Geräte. Häufige Untersuchungen stehen offen in der Maske, seltene hinter „Weitere“.",
-  kategorieNeu: "Neue Kategorie",
-  kategorieName: "Name der Kategorie:",
-  kategorieLoeschenVoll: "Diese Kategorie enthält noch Untersuchungen — zuerst verschieben.",
-  untersuchungNeu: "Neue Untersuchung",
-  untersuchungLoeschenFrage: "„%s“ endgültig aus dem Gesamtstatus entfernen?",
-  haeufigMarke: "häufig",
-  seltenMarke: "selten",
-  feldName: "Untersuchung",
-  feldNormal: "Normalbefund",
-  feldKategorie: "Kategorie",
-  feldHaeufig: "Häufig untersucht (steht offen in der Maske)",
-  feldTardoc: "Tardoc-Etiketten",
-  tardocKeineEtiketten: "keine",
-  tardocNeu: "Etikett dazu",
-  tardocArt: "Statusart",
-  tardocGruppe: "Gruppe",
-  tardocMerkmale: "Merkmale (mit Komma getrennt)",
-  tardocMuskeln: "Anzahl Muskeln",
-  teilmengePflegeTitel: "Eigene Status (Ankreuz-Muster)",
-  teilmengeUmbenennen: "Umbenennen",
-  teilmengeLoeschen: "Löschen",
-  teilmengeLoeschenFrage: "Status „%s“ löschen? (Der Gesamtstatus bleibt unberührt.)",
-  speichern: "Speichern",
-  abbrechen: "Abbrechen",
-  loeschenKnopf: "Löschen",
-  gespeichert: "Gespeichert.",
-  hoch: "▲", runter: "▼",
-  nurGewaehlteKnopf: "Nur Gewählte und Zusätze",
-  ziehenHinweis: "Zum Verschieben an diesem Griff (oder der ganzen Zeile) ziehen und an der gewünschten Stelle loslassen — auch in eine andere Kategorie",
-  zusatzAn: "Zusatz dieses Status: erscheint beim Laden sichtbar, aber nicht angewählt — Klick nimmt ihn wieder raus",
-  zusatzAus: "Als Zusatz vormerken: wird mit „Als eigenen Status speichern“ dem Status mitgegeben und erscheint dann beim Laden sichtbar, aber nicht angewählt",
-  muskelnKnopf: "Muskeln (%s/%s)",
-  muskelnHinweis: "Einzelne Muskeln an- und abwählen — der Text nennt nur die gewählten",
-  muskelnKeine: "keine Defizite.",
-  merkmaleAlleAn: "alle wählen",
-  merkmaleAlleAb: "alle abwählen",
-  zusatzMuskelAn: "Zusatz-Muskel dieses Status: erscheint gelb markiert, aber nicht angewählt — Klick nimmt ihn wieder raus",
-  zusatzMuskelAus: "Als Zusatz-Muskel vormerken: wird mit „Als eigenen Status speichern“ dem Status mitgegeben",
-  tardocLesenKnopf: "Tardoc-Kriterien nachlesen",
-  tardocLesenTitel: "Tardoc-Kriterien (TARDOC 1.4c)",
-  tardocLesenEinleitung: "Von Claude zusammengefasst, eng am Original — zum Prüfen führt jeder Positions-Titel direkt auf die Position im LKAAT-Browser (öffnet in neuem Tab).",
-  tardocLesenB: "%s (%s): dokumentierte Untersuchung und Beurteilung von bis zu 3 der untenstehenden Gruppen%s.",
-  tardocLesenA: "%s (%s): dokumentierte Untersuchung und Beurteilung von 4 oder mehr Gruppen%s.",
-  tardocLesenMin: " — hinterlegt mit %s Minuten",
-  tardocLesenGruppe: "Gruppe %s · %s — mind. %s: ",
-  tardocLesenGruppeMuskeln: "Gruppe %s · %s — mind. %s Muskeln: ",
-  tardocLesenZu: "Schliessen",
-  tardocLesenGruppeKopf: "Gruppe — Mindestzahl",
-  tardocLesenGleich: "Was in einer Gruppe dokumentiert sein muss, ist bei B und A laut Tarif identisch (die Zellen sind darum in beiden Spalten gleich). Der Unterschied steht in der Kopfzeile: B verlangt bis zu 3 dieser Gruppen, A verlangt 4 oder mehr — bei entsprechend längerer hinterlegter Dauer.",
-  tardocLesenStand: "Stand der Zusammenfassung: 27.09.2026, Links 30.09.2026. Massgeblich ist immer der Originaltext des Tarifs.",
-  exportKnopf: "Status als Datei sichern",
-  exportHinweis: "Sichert Gesamtstatus und eigene Status als Datei — zum Aufheben oder zum Schicken an Claude, damit Deine Änderungen in die Grundausstattung einfliessen können.",
-  exportFertig: "Status-Datei erstellt: %s"
-};
+// Die sichtbaren Texte wohnen seit E11 in status-texte.js
+// (TB.statusTexte) — diese Datei war über die 600-Zeilen-Grenze gewachsen.
+
 
 TB.status = (function () {
-  var S = function () { return TB.speicher; };
+  var S = function () { return TB.speicher || TB.statusQuelle; };
 
   // ---- Ablage: Einstellungs-Werte, sie syncen wie alle Einstellungen --
   function master() {
@@ -127,13 +37,14 @@ TB.status = (function () {
     // gespeicherten Katalog sanft nachgezogen. Näds eigene Texte
     // bleiben unberührt: Nur wenn der Normalbefund noch dem der
     // Grundausstattung entspricht, kommen die Merkmale dazu.
-    if (m && m.stand !== TB.statusGrundlage.KATALOG_STAND) {
+    if (m && TB.speicher && m.stand !== TB.statusGrundlage.KATALOG_STAND) {
       m = umstellen();
     }
-    if (m) {
+    if (m && TB.speicher) {
       var a = migriereMerkmale(m);
       var b = migriereNeue(m);
-      if (a || b) speichereMaster(m);
+      var c = migriereHinweise(m);
+      if (a || b || c) speichereMaster(m);
     }
     return m;
   }
@@ -234,9 +145,101 @@ TB.status = (function () {
     });
     return geaendert;
   }
+  // Nachziehen (E11): Die Erklärzeilen (hinweis) der Grundausstattung —
+  // Hoehn & Yahr und mRS — werden id-gleich ergänzt, wo sie fehlen.
+  // Ein eigener hinweis-Text bleibt unberührt (analog migriereNeue).
+  function migriereHinweise(m) {
+    var frisch = TB.statusGrundlage.master();
+    var geaendert = false;
+    (m.untersuchungen || []).forEach(function (u) {
+      if (u.hinweis) return;
+      var g = frisch.untersuchungen.find(function (x) {
+        return x.id === u.id; });
+      if (g && g.hinweis) { u.hinweis = g.hinweis; geaendert = true; }
+    });
+    return geaendert;
+  }
   function speichereMaster(m) {
     S().setzeEinstellung("statusMaster", m);
     if (TB.abgleich) TB.abgleich.anstossen();
+  }
+  // Das Kürzel eines Status (E11): status + Name-Kleinbuchstaben; bei
+  // Kollision hängt eine Zahl an. Mit ;;kürzel öffnet der Arbeitsplatz
+  // das Status-Fenster direkt in KISIM bzw. Axenita.
+  function kuerzelFuerStatus(name, liste, eigenesId) {
+    var basis = "status" + String(name || "").toLowerCase()
+      .replace(/\u00e4/g, "ae").replace(/\u00f6/g, "oe").replace(/\u00fc/g, "ue")
+      .replace(/[^a-z0-9]/g, "").slice(0, 24);
+    if (basis === "status") basis = "statusneu";
+    var k = basis, nr = 1;
+    function belegt(x) {
+      return (liste || []).some(function (t) {
+        return t.id !== eigenesId &&
+          String(t.kuerzel || "").toLowerCase() === x; });
+    }
+    while (belegt(k)) { nr += 1; k = basis + nr; }
+    return k;
+  }
+  function teilmengeMitKuerzel(kuerzel) {
+    var k = String(kuerzel || "").toLowerCase();
+    if (!k) return null;
+    return teilmengen().find(function (t) {
+      return String(t.kuerzel || "").toLowerCase() === k; }) || null;
+  }
+  // Die PROD-HEBUNG (E11, rein — auch Selbsttest und Probelauf rufen sie):
+  // namensgleiche Teilmengen werden durch die Grundausstattung ERSETZT,
+  // wenn sie weder normalAb noch zusatz noch merkmalAb tragen (das sind
+  // die unberührten Chat-9-Startfassungen). Alles andere bleibt
+  // unangetastet; dort werden nur fehlender Spickzettel, ☆-Zusätze und
+  // das Kürzel ergänzt — und der Stroke-Status bekommt einmalig den
+  // mRS nachgereicht (Näds Auftrag, 3.10.).
+  function hatEigenes(t) {
+    return !!((t.normalAb && Object.keys(t.normalAb).length) ||
+              (t.zusatz && t.zusatz.length) ||
+              (t.merkmalAb && Object.keys(t.merkmalAb).length));
+  }
+  function hebeTeilmengen(liste) {
+    var geaendert = false;
+    var da = {};
+    liste.forEach(function (t, i) {
+      da[String(t.name).toLowerCase()] = i; });
+    TB.statusGrundlage.teilmengen().forEach(function (g) {
+      var pos = da[String(g.name).toLowerCase()];
+      if (pos === undefined) {
+        liste.push(JSON.parse(JSON.stringify(g)));
+        geaendert = true;
+        return;
+      }
+      var bekannt = liste[pos];
+      if (!hatEigenes(bekannt)) {
+        liste[pos] = JSON.parse(JSON.stringify(g));
+        geaendert = true;
+        return;
+      }
+      if (!bekannt.info && g.info) { bekannt.info = g.info; geaendert = true; }
+      (g.zusatz || []).forEach(function (id) {
+        if ((bekannt.punkte || []).indexOf(id) !== -1) return;
+        if (!bekannt.zusatz) bekannt.zusatz = [];
+        if (bekannt.zusatz.indexOf(id) === -1) {
+          bekannt.zusatz.push(id); geaendert = true; }
+      });
+      if (!bekannt.kuerzel && g.kuerzel) {
+        bekannt.kuerzel = g.kuerzel; geaendert = true; }
+      if (String(bekannt.name).toLowerCase() === "stroke" &&
+          (bekannt.punkte || []).indexOf("mrs") === -1) {
+        var beiN = bekannt.punkte.indexOf("nihss");
+        if (beiN === -1) bekannt.punkte.push("mrs");
+        else bekannt.punkte.splice(beiN + 1, 0, "mrs");
+        geaendert = true;
+      }
+    });
+    // Eigene Status ohne Kürzel bekommen eines aus ihrem Namen.
+    liste.forEach(function (t) {
+      if (t.kuerzel) return;
+      t.kuerzel = kuerzelFuerStatus(t.name, liste, t.id);
+      geaendert = true;
+    });
+    return geaendert;
   }
   var teilmengenGeprueft = false;
   function migriereTeilmengen() {
@@ -249,25 +252,7 @@ TB.status = (function () {
     // Die drei Probe-Status vom 2.10. räumen (Näd, 3.10.).
     var weg = { tmujo0aw3: 1, tmulcjtyu: 1, tmupyrmig: 1 };
     liste = liste.filter(function (t) { return !weg[t.id]; });
-    // Neue Start-Status anfügen — bestehende Namen bleiben unberührt.
-    var da = {};
-    liste.forEach(function (t) { da[String(t.name).toLowerCase()] = t; });
-    TB.statusGrundlage.teilmengen().forEach(function (g) {
-      var bekannt = da[String(g.name).toLowerCase()];
-      if (bekannt) {
-        // Bestehende Status bleiben unangetastet — nur ein fehlender
-        // Info-Spickzettel und neue ☆-Zusätze werden namensgleich
-        // ergänzt (3.10., Näd: "gerne auch noch anpassen").
-        if (!bekannt.info && g.info) bekannt.info = g.info;
-        (g.zusatz || []).forEach(function (id) {
-          if ((bekannt.punkte || []).indexOf(id) !== -1) return;
-          if (!bekannt.zusatz) bekannt.zusatz = [];
-          if (bekannt.zusatz.indexOf(id) === -1) bekannt.zusatz.push(id);
-        });
-        return;
-      }
-      liste.push(g);
-    });
+    hebeTeilmengen(liste);
     if (JSON.stringify(liste) !== vorher) speichereTeilmengen(liste);
     S().setzeEinstellung("statusTeilmengenStand", soll);
   }
@@ -518,6 +503,7 @@ TB.status = (function () {
     else {
       var eintrag = { id: "t" + Date.now().toString(36),
                       name: String(name), punkte: punkte.slice() };
+      eintrag.kuerzel = kuerzelFuerStatus(name, liste, eintrag.id);
       if (merkmalAb) eintrag.merkmalAb = merkmalAb;
       if (zu.length) eintrag.zusatz = zu;
       if (mz) eintrag.merkmalZusatz = mz;
@@ -597,6 +583,10 @@ TB.status = (function () {
            normalVon: normalVon, gewaehlteMerkmale: gewaehlteMerkmale,
            migriereMerkmale: migriereMerkmale,
            migriereNeue: migriereNeue,
+           migriereHinweise: migriereHinweise,
+           hebeTeilmengen: hebeTeilmengen, hatEigenes: hatEigenes,
+           kuerzelFuerStatus: kuerzelFuerStatus,
+           teilmengeMitKuerzel: teilmengeMitKuerzel,
            merkmalAn: merkmalAn,
            tardocKriterien: tardocKriterien,
            umschluessle: umschluessle,

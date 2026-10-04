@@ -815,6 +815,65 @@ TB.selbsttest = (function () {
     return faelle;
   }
 
+
+  // ---- Sammelrunde 17.0 (E11): Prod-Hebung, Hinweise, Kürzel ----------
+  // Rein auf der Grundausstattung und den reinen Funktionen — der echte
+  // Datenbestand wird nie angefasst.
+  function pruefeSammelrunde() {
+    var f = [];
+    var grund = TB.statusGrundlage.teilmengen();
+    var alleKuerzel = grund.every(function (t) { return !!t.kuerzel; });
+    var stroke = grund.find(function (t) { return t.id === "stroke"; });
+    f.push({ name: "Grundausstattung: 29 Status, alle mit Kürzel",
+      gut: grund.length === 29 && alleKuerzel,
+      detail: grund.length + " / Kürzel " + (alleKuerzel ? "ok" : "fehlen") });
+    f.push({ name: "mRS steht im Stroke-Status hinter dem NIHSS",
+      gut: !!stroke && stroke.punkte.indexOf("mrs") ===
+           stroke.punkte.indexOf("nihss") + 1,
+      detail: stroke ? stroke.punkte.slice(-3).join(",") : "kein stroke" });
+    var m = TB.statusGrundlage.master();
+    var hy = m.untersuchungen.find(function (u) { return u.id === "hoehnyahr"; });
+    var mrs = m.untersuchungen.find(function (u) { return u.id === "mrs"; });
+    f.push({ name: "Erklärzeilen (hinweis) bei Hoehn & Yahr und mRS",
+      gut: !!(hy && hy.hinweis && mrs && mrs.hinweis),
+      detail: (hy && hy.hinweis ? "HY ok" : "HY fehlt") + " / " +
+              (mrs && mrs.hinweis ? "mRS ok" : "mRS fehlt") });
+    var ft = TB.status.fliesstext(m, { mrs: true }, {}, {}, {});
+    f.push({ name: "Erklärzeile erscheint NIE im Befundtext",
+      gut: ft.text.indexOf("keine Symptome") === -1 &&
+           ft.html.indexOf("keine Symptome") === -1,
+      detail: ft.text });
+    // Prod-Hebung: unberührt wird ersetzt, Eigenes bleibt heil.
+    var liste = [
+      { id: "alt1", name: "CTS", punkte: ["az"] },
+      { id: "alt2", name: "Stroke", punkte: ["az", "nihss"],
+        normalAb: { az: "reduziert." } },
+      { id: "eig1", name: "Mein Spezialfall", punkte: ["az"] }
+    ];
+    TB.status.hebeTeilmengen(liste);
+    var cts = liste.find(function (t) { return t.name === "CTS"; });
+    var st = liste.find(function (t) { return t.name === "Stroke"; });
+    var eig = liste.find(function (t) { return t.name === "Mein Spezialfall"; });
+    f.push({ name: "Prod-Hebung ersetzt unberührte Startfassungen",
+      gut: !!cts && cts.id === "cts" && cts.punkte.length > 5 &&
+           cts.kuerzel === "statuscts",
+      detail: cts ? cts.id + "/" + cts.punkte.length : "weg" });
+    f.push({ name: "Prod-Hebung lässt eigene Fassungen unangetastet",
+      gut: !!st && st.id === "alt2" && st.normalAb &&
+           st.normalAb.az === "reduziert." &&
+           st.punkte.indexOf("mrs") === st.punkte.indexOf("nihss") + 1 &&
+           st.kuerzel === "statusstroke",
+      detail: st ? st.id + "/" + st.punkte.join(",") : "weg" });
+    f.push({ name: "Eigene Status bekommen ein freies Kürzel",
+      gut: !!eig && eig.kuerzel === "statusmeinspezialfall" &&
+           liste.length === 29 + 1,
+      detail: (eig ? eig.kuerzel : "weg") + " / " + liste.length });
+    f.push({ name: "Kürzel-Kollision weicht mit Zahl aus",
+      gut: TB.status.kuerzelFuerStatus("CTS", liste, "x") === "statuscts2",
+      detail: TB.status.kuerzelFuerStatus("CTS", liste, "x") });
+    return f;
+  }
+
   function alleTests() {
     return mitErgebniszeile([].concat(
       pruefeRechnen().map(function (f) { f.gruppe = "Rechnen"; return f; }),
@@ -825,6 +884,7 @@ TB.selbsttest = (function () {
       pruefeVarianten().map(function (f) { f.gruppe = "Standort-Fassungen"; return f; }),
       pruefeMasken().map(function (f) { f.gruppe = "Masken"; return f; }),
       pruefeStatus().map(function (f) { f.gruppe = "Status-Werk"; return f; }),
+      pruefeSammelrunde().map(function (f) { f.gruppe = "Sammelrunde 17.0"; return f; }),
       pruefeEeg().map(function (f) { f.gruppe = "EEG-Werk"; return f; }),
       pruefeBerichtMc().map(function (f) { f.gruppe = "Bericht Memory Clinic"; return f; })
     ));

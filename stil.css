@@ -703,3 +703,10 @@ input.eeg-feld-breit { flex: 1 1 24ch; min-width: 24ch; }
   color: #4a463d;
 }
 .status-info-eintrag + .status-info-eintrag { margin-top: 6px; }
+
+/* ---- Etappe 11: Status-Erklärzeilen, seltene Status, Pflege ---- */
+.status-hinweiszeile { color: #777; font-size: 0.82em; margin-top: 2px; }
+.status-chip.selten { opacity: 0.75; }
+.status-chip-schalter { font-style: italic; }
+.status-pflege-kuerzel { margin: 0 6px; }
+.status-pflege-selten { margin: 0 6px; white-space: nowrap; font-size: 0.9em; }
