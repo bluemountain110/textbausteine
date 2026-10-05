@@ -19,6 +19,14 @@ TB.ansichtStatus = (function () {
   var melde = function (t, w) { TB.ui.melde(t, w); };
 
   // Sitzungszustand — lebt nur im Speicher des Browsers, nie im Lager.
+  var fensterModus = false;    // URL-Fenster: NUR der gerufene Status
+  function setzeFensterModus(w) { fensterModus = !!w; }
+  function fensterTitel() {
+    var namen = TB.status.teilmengen().filter(function (t) {
+      return aktiveTeilmengen[t.id]; }).map(function (t) { return t.name; });
+    return namen.length ? "Status \u2014 " + namen.join(" + ")
+                        : TS().statusTitel;
+  }
   var aktiveTeilmengen = {};   // teilmengen-id -> true
   var normalUeber = {};        // untersuchung-id -> eigener Standardtext
                                // (aus den Teilmengen, normalAb)
@@ -80,14 +88,18 @@ TB.ansichtStatus = (function () {
     // oben fest, damit Ampeln und Suche immer erreichbar bleiben.
     var klebt = el("div", "status-sticky");
     var kopf = el("div", "status-kopf");
-    kopf.appendChild(el("h2", "", TS().statusTitel));
-    var pflege = el("button", "", TS().pflegeKnopf);
-    pflege.addEventListener("click", function () {
-      TB.ansichtStatusPflege.oeffne(); });
-    kopf.appendChild(pflege);
+    kopf.appendChild(el("h2", "",
+      fensterModus ? fensterTitel() : TS().statusTitel));
+    if (!fensterModus) {
+      var pflege = el("button", "", TS().pflegeKnopf);
+      pflege.addEventListener("click", function () {
+        TB.ansichtStatusPflege.oeffne(); });
+      kopf.appendChild(pflege);
+    }
+
     klebt.appendChild(kopf);
 
-    zeichneTeilmengen(klebt);
+    if (!fensterModus) zeichneTeilmengen(klebt);
     TB.ansichtStatusTardoc.zeichne(klebt, m, gewaehltAlsMenge(m),
       merkmalWahl);
 
@@ -471,6 +483,7 @@ TB.ansichtStatus = (function () {
       return menge[id]; }).length;
 
     var knoepfe = el("div", "status-knoepfe");
+    if (!fensterModus) {
     var kopieren = el("button", "status-kopieren", TS().kopierenKnopf);
     kopieren.addEventListener("click", function () {
       if (!anzahl) { melde(TS().nichtsGewaehlt, true); return; }
@@ -484,12 +497,14 @@ TB.ansichtStatus = (function () {
       });
     });
     knoepfe.appendChild(kopieren);
+    }
 
     var leeren = el("button", "", TS().zuruecksetzenKnopf);
     leeren.addEventListener("click", function () {
       allesLeeren(); melde(TS().zurueckgesetzt); neu(); });
     knoepfe.appendChild(leeren);
 
+    if (!fensterModus) {
     var speichern = el("button", "", TS().alsStatusKnopf);
     speichern.addEventListener("click", function () {
       if (!anzahl) { melde(TS().nichtsGewaehlt, true); return; }
@@ -534,6 +549,7 @@ TB.ansichtStatus = (function () {
       neu();
     });
     knoepfe.appendChild(speichern);
+    }
     rechts.appendChild(knoepfe);
 
     rechts.appendChild(el("div", "sammel-zaehler",
@@ -569,5 +585,6 @@ TB.ansichtStatus = (function () {
   }
   return { zeichne: zeichne,
            aktiviereTeilmenge: aktiviereTeilmenge,
-           aktuellerText: aktuellerText };
+           aktuellerText: aktuellerText,
+           setzeFensterModus: setzeFensterModus };
 })();

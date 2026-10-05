@@ -816,7 +816,7 @@ TB.selbsttest = (function () {
   }
 
 
-  // ---- Sammelrunde 17.1 (E11): Prod-Hebung, Hinweise, Kürzel ----------
+  // ---- Sammelrunde 17.2 (E11): Prod-Hebung, Hinweise, Kürzel ----------
   // Rein auf der Grundausstattung und den reinen Funktionen — der echte
   // Datenbestand wird nie angefasst.
   function pruefeSammelrunde() {
@@ -875,9 +875,12 @@ TB.selbsttest = (function () {
     f.push({ name: "Fenster-Übergabe bereit (URL-Weg fürs Skript)",
       ok: typeof TB.ansichtEeg.aktuelleFelder === "function" &&
           typeof TB.ansichtStatus.aktuellerText === "function" &&
+          typeof TB.ansichtEeg.setzeFensterModus === "function" &&
+          typeof TB.ansichtStatus.setzeFensterModus === "function" &&
           typeof TB.speicher.rtfHtml === "function" &&
+          typeof TB.abgleich.beiAenderung === "function" &&
           typeof TB.fensterModus === "object",
-      detail: "aktuelleFelder/aktuellerText/rtfHtml/fensterModus" });
+      detail: "Uebergabe-, Schlank- und Nachsync-Haken vorhanden" });
     f.push({ name: "Kürzel-Kollision weicht mit Zahl aus",
       ok: TB.status.kuerzelFuerStatus("CTS", liste, "x") === "statuscts2",
       detail: TB.status.kuerzelFuerStatus("CTS", liste, "x") });
@@ -894,7 +897,7 @@ TB.selbsttest = (function () {
       pruefeVarianten().map(function (f) { f.gruppe = "Standort-Fassungen"; return f; }),
       pruefeMasken().map(function (f) { f.gruppe = "Masken"; return f; }),
       pruefeStatus().map(function (f) { f.gruppe = "Status-Werk"; return f; }),
-      pruefeSammelrunde().map(function (f) { f.gruppe = "Sammelrunde 17.1"; return f; }),
+      pruefeSammelrunde().map(function (f) { f.gruppe = "Sammelrunde 17.2"; return f; }),
       pruefeEeg().map(function (f) { f.gruppe = "EEG-Werk"; return f; }),
       pruefeBerichtMc().map(function (f) { f.gruppe = "Bericht Memory Clinic"; return f; })
     ));

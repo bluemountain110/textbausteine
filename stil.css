@@ -723,3 +723,12 @@ body.nur-fenster { padding-bottom: 72px; }
   border-radius: 8px; padding: 10px 22px; font-size: 1.05em;
   font-weight: 700; cursor: pointer; }
 .fenster-knopf:disabled { opacity: 0.85; cursor: default; }
+
+/* ---- 17.2: Fenster-Modus-Feinschliff (Luecke weg, ruhiges Layout) ---- */
+body.nur-fenster { --kopf-h: 0px; }
+body.nur-fenster main { padding-top: 6px; }
+body.nur-fenster h2 { margin: 2px 0 8px; }
+body.nur-fenster .status-sticky { position: static; box-shadow: none;
+  padding-top: 0; }
+body.nur-fenster .status-sticky::before { display: none; }
+body.nur-fenster .status-rechts { top: 10px; }

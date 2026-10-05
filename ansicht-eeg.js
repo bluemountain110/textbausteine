@@ -34,6 +34,8 @@ TB.ansichtEeg = (function () {
   // Sitzungszustand — lebt nur im Speicher des Browsers, nie im Lager.
   var aktiveVorlagen = {};     // vorlagen-id -> true
   var manuellAn = {}, manuellAb = {};
+  var fensterModus = false;    // URL-Fenster: schlanke Ansicht
+  function setzeFensterModus(w) { fensterModus = !!w; }
   var werte = {};              // punkt-id -> { Label: Wert }
   var abweichungen = {};       // punkt-/auto-/zeilen-id -> überschrieben
   var angeheftet = {};         // punkt-id -> true (☆)
@@ -143,13 +145,15 @@ TB.ansichtEeg = (function () {
     var klebt = el("div", "status-sticky");
     var kopf = el("div", "status-kopf");
     kopf.appendChild(el("h2", "", TE().eegTitel));
-    var pflege = el("button", "", TE().pflegeKnopf);
-    pflege.addEventListener("click", function () {
-      TB.ansichtEegPflege.oeffne(); });
-    kopf.appendChild(pflege);
+    if (!fensterModus) {
+      var pflege = el("button", "", TE().pflegeKnopf);
+      pflege.addEventListener("click", function () {
+        TB.ansichtEegPflege.oeffne(); });
+      kopf.appendChild(pflege);
+    }
     klebt.appendChild(kopf);
 
-    zeichneVorlagen(klebt);
+    if (!fensterModus) zeichneVorlagen(klebt);
 
     var suchzeile = el("div", "status-suchzeile");
     var suche = el("input", "status-suche");
@@ -906,62 +910,66 @@ TB.ansichtEeg = (function () {
     var ueberschrieben = Object.keys(abweichungen).length;
 
     var knoepfe = el("div", "status-knoepfe");
-    knoepfe.appendChild(kopierKnopf(TE().kopierenIndikation,
-      function (f) { return f.indikation; }));
-    knoepfe.appendChild(kopierKnopf(TE().kopierenAnamnese,
-      function (f) { return f.anamnese; }));
-    knoepfe.appendChild(kopierKnopf(TE().kopierenBefund,
-      function (f) { return f.befund; }));
-    knoepfe.appendChild(kopierKnopf(TE().kopierenBeurteilung,
-      function (f) { return f.beurteilung; }));
-    knoepfe.appendChild(kopierKnopf(TE().kopierenBeides,
-      function (f) { return TB.eeg.block(f); }));
+    if (!fensterModus) {
+      knoepfe.appendChild(kopierKnopf(TE().kopierenIndikation,
+        function (f) { return f.indikation; }));
+      knoepfe.appendChild(kopierKnopf(TE().kopierenAnamnese,
+        function (f) { return f.anamnese; }));
+      knoepfe.appendChild(kopierKnopf(TE().kopierenBefund,
+        function (f) { return f.befund; }));
+      knoepfe.appendChild(kopierKnopf(TE().kopierenBeurteilung,
+        function (f) { return f.beurteilung; }));
+      knoepfe.appendChild(kopierKnopf(TE().kopierenBeides,
+        function (f) { return TB.eeg.block(f); }));
+    }
 
     var leeren = el("button", "", TE().zuruecksetzenKnopf);
     leeren.addEventListener("click", function () {
       allesLeeren(); melde(TE().zurueckgesetzt); neu(); });
     knoepfe.appendChild(leeren);
 
-    var speichern = el("button", "", TE().alsVorlageKnopf);
-    speichern.addEventListener("click", function () {
-      if (istLeer(m)) { melde(TE().nichtsGewaehlt, true); return; }
-      var name = prompt(TE().vorlageNameFrage, "");
-      if (!name || !name.trim()) return;
-      name = name.trim();
-      var alt = TB.eeg.vorlagen().find(function (v) {
-        return v.name.toLowerCase() === name.toLowerCase(); });
-      if (alt && !confirm(TE().vorlageErsetzen.replace("%s", name))) return;
-      var kuerzel = prompt(TE().vorlageKuerzelFrage,
-        alt ? (alt.kuerzel || "") : "");
-      if (kuerzel === null) return;
-      kuerzel = kuerzel.trim().toLowerCase();
-      if (kuerzel && TB.speicher.holenPerKuerzel &&
-          TB.speicher.holenPerKuerzel(kuerzel)) {
-        melde(TE().vorlageKuerzelBelegt.replace("%s", kuerzel), true);
-      }
-      var punkte = m.punkte.filter(function (p) {
-        return menge[p.id]; }).map(function (p) { return p.id; });
-      var zusatz = m.punkte.filter(function (p) {
-        return angeheftet[p.id] && !menge[p.id]; }).map(function (p) {
-          return p.id; });
-      // Nur Auswahl-Werte sichern — nie Feld-Werte (Grundsatz 1).
-      var w = {};
-      m.punkte.forEach(function (p) {
-        if (!menge[p.id] && zusatz.indexOf(p.id) === -1) return;
-        var je = werte[p.id]; if (!je) return;
-        var behalten = {};
-        TB.eeg.zerlege(p.text).forEach(function (s) {
-          if (s.art === "auswahl" && je[s.label] !== undefined &&
-              je[s.label] !== s.optionen[0]) behalten[s.label] = je[s.label];
+    if (!fensterModus) {
+      var speichern = el("button", "", TE().alsVorlageKnopf);
+      speichern.addEventListener("click", function () {
+        if (istLeer(m)) { melde(TE().nichtsGewaehlt, true); return; }
+        var name = prompt(TE().vorlageNameFrage, "");
+        if (!name || !name.trim()) return;
+        name = name.trim();
+        var alt = TB.eeg.vorlagen().find(function (v) {
+          return v.name.toLowerCase() === name.toLowerCase(); });
+        if (alt && !confirm(TE().vorlageErsetzen.replace("%s", name))) return;
+        var kuerzel = prompt(TE().vorlageKuerzelFrage,
+          alt ? (alt.kuerzel || "") : "");
+        if (kuerzel === null) return;
+        kuerzel = kuerzel.trim().toLowerCase();
+        if (kuerzel && TB.speicher.holenPerKuerzel &&
+            TB.speicher.holenPerKuerzel(kuerzel)) {
+          melde(TE().vorlageKuerzelBelegt.replace("%s", kuerzel), true);
+        }
+        var punkte = m.punkte.filter(function (p) {
+          return menge[p.id]; }).map(function (p) { return p.id; });
+        var zusatz = m.punkte.filter(function (p) {
+          return angeheftet[p.id] && !menge[p.id]; }).map(function (p) {
+            return p.id; });
+        // Nur Auswahl-Werte sichern — nie Feld-Werte (Grundsatz 1).
+        var w = {};
+        m.punkte.forEach(function (p) {
+          if (!menge[p.id] && zusatz.indexOf(p.id) === -1) return;
+          var je = werte[p.id]; if (!je) return;
+          var behalten = {};
+          TB.eeg.zerlege(p.text).forEach(function (s) {
+            if (s.art === "auswahl" && je[s.label] !== undefined &&
+                je[s.label] !== s.optionen[0]) behalten[s.label] = je[s.label];
+          });
+          if (Object.keys(behalten).length) w[p.id] = behalten;
         });
-        if (Object.keys(behalten).length) w[p.id] = behalten;
+        TB.eeg.vorlageSpeichern(name, kuerzel, punkte, zusatz, w,
+          aktiveZeilen());
+        melde(TE().vorlageFertig.replace("%s", name));
+        neu();
       });
-      TB.eeg.vorlageSpeichern(name, kuerzel, punkte, zusatz, w,
-        aktiveZeilen());
-      melde(TE().vorlageFertig.replace("%s", name));
-      neu();
-    });
     knoepfe.appendChild(speichern);
+    }
     rechts.appendChild(knoepfe);
 
     rechts.appendChild(el("div", "sammel-zaehler",
@@ -1005,5 +1013,6 @@ TB.ansichtEeg = (function () {
     return TB.eeg.fliesstext(m, gewaehltAlsMenge(m), werte, abweichungen,
                              aktiveZeilen());
   }
-  return { zeichne: zeichne, aktuelleFelder: aktuelleFelder };
+  return { zeichne: zeichne, aktuelleFelder: aktuelleFelder,
+           setzeFensterModus: setzeFensterModus };
 })();
