@@ -42,7 +42,7 @@ TB.ansichtStatusTardoc = (function () {
       details.appendChild(zeile);
     });
     var pfeil = el("button", "status-tardoc-pfeil",
-      offenDetails ? "▾" : "▸");
+      (offenDetails ? "▾ " : "▸ ") + TS().tardocPfeilWort);
     pfeil.title = TS().tardocPfeil;
     pfeil.addEventListener("click", function () {
       offenDetails = !offenDetails;

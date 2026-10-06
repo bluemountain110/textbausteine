@@ -95,8 +95,8 @@ TB.eegGrundlage = (function () {
       { name: "durchgehend schläfrig", wert: "durchgehend schläfrig" }
     ],
     artefaktKaestchen: ["art_augen", "art_muskel", "art_bewegung"],
-    herdeVorbereitet: 2,
-    entladungenVorbereitet: 1,
+    herdeVorbereitet: 0,
+    entladungenVorbereitet: 0,
     // Voranwahl der vorbereiteten Herd-Zeile: das Häufigste (Näd
     // 2.10. Abend) — intermittierend, Theta-Delta, temporal, KEINE
     // Seite vorausgewählt.

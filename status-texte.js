@@ -115,6 +115,7 @@ TB.statusTexte = {
   fensterHinweis: "Ausfüllen wie gewohnt — der Knopf übergibt alles ans Skript, das Fenster schliesst sich.",
   fensterKnopf: "An KISIM übergeben",
   tardocPfeil: "Einzelheiten ein-/ausblenden",
+  tardocPfeilWort: "Einzelheiten",
   fensterUebergeben: "Übergeben ✓ — Fenster schliesst sich …",
   fensterLeer: "Noch nichts zum Übergeben — bitte zuerst ausfüllen.",
   fensterFehler: "Die Zwischenablage liess sich nicht beschreiben — bitte noch einmal auf den Knopf drücken.",

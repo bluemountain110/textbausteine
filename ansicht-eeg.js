@@ -344,14 +344,6 @@ TB.ansichtEeg = (function () {
         frisch.lok = [c.lok, "", "", ""]; frisch.seite = c.seite;
         zeilen.transienten.push(frisch);
       }));
-      var tDazu = el("button", "eeg-zeile-dazu", TE().transDazu);
-      tDazu.addEventListener("click", function () {
-        var frisch = neueZeile("transienten");
-        frisch.aktiv = true;
-        zeilen.transienten.push(frisch);
-        neu();
-      });
-      kasten.appendChild(tDazu);
     }
     if (block.kategorie.id === "entladungen") {
       kasten.appendChild(erzeugerChips(R().entChips.map(function (f) {
@@ -633,7 +625,8 @@ TB.ansichtEeg = (function () {
       kasten.appendChild(zeilenEditor(art, z, idx));
     });
     var dazu = el("button", "eeg-zeile-dazu",
-      art === "herde" ? TE().herdDazu : TE().entDazu);
+      art === "herde" ? TE().herdDazu
+        : (art === "transienten" ? TE().transDazu : TE().entDazu));
     dazu.addEventListener("click", function () {
       var frisch = neueZeile(art);
       frisch.aktiv = true;

@@ -183,8 +183,16 @@ TB.status = (function () {
   function teilmengeMitKuerzel(kuerzel) {
     var k = String(kuerzel || "").toLowerCase();
     if (!k) return null;
-    return teilmengen().find(function (t) {
-      return String(t.kuerzel || "").toLowerCase() === k; }) || null;
+    var liste = teilmengen();
+    var finde = function (x) {
+      return liste.find(function (t) {
+        return String(t.kuerzel || "").toLowerCase() === x; }) || null;
+    };
+    var t = finde(k);
+    // 17.4c: Alt-Kuerzel aus der Zeit vor dem Umzug (;;statuscts)
+    // finden ihren Status weiterhin (;;statcts).
+    if (!t && k.indexOf("status") === 0) t = finde("stat" + k.slice(6));
+    return t;
   }
   // Die PROD-HEBUNG (E11, rein — auch Selbsttest und Probelauf rufen sie):
   // namensgleiche Teilmengen werden durch die Grundausstattung ERSETZT,
@@ -280,7 +288,18 @@ TB.status = (function () {
   }
   function teilmengen() {
     migriereTeilmengen();
-    return S().einstellung("statusTeilmengen", []) || [];
+    var liste = S().einstellung("statusTeilmengen", []) || [];
+    // 17.4c: Der Kuerzel-Umzug ;;status* -> ;;stat* prueft bei JEDEM
+    // Zugriff. Grund (Naed, Spital 6.10.): im frischen Fenster ist der
+    // Bestand beim allerersten Lauf oft noch leer und trifft erst
+    // danach per Abgleich ein — ein einmaliger Lauf verpasst ihn.
+    if (liste.some(function (t) {
+          return /^status/i.test(String(t.kuerzel || "")); }) &&
+        migriereKuerzel(liste)) {
+      S().setzeEinstellung("statusTeilmengen", liste);
+      if (TB.abgleich) TB.abgleich.anstossen();
+    }
+    return liste;
   }
   function speichereTeilmengen(liste) {
     S().setzeEinstellung("statusTeilmengen", liste);
