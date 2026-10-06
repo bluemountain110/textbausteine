@@ -114,6 +114,7 @@ TB.statusTexte = {
   kuerzelBelegt: "Achtung: Ein Baustein trägt schon das Kürzel „%s“ — der Baustein hat am Arbeitsplatz Vorrang.",
   fensterHinweis: "Ausfüllen wie gewohnt — der Knopf übergibt alles ans Skript, das Fenster schliesst sich.",
   fensterKnopf: "An KISIM übergeben",
+  tardocPfeil: "Einzelheiten ein-/ausblenden",
   fensterUebergeben: "Übergeben ✓ — Fenster schliesst sich …",
   fensterLeer: "Noch nichts zum Übergeben — bitte zuerst ausfüllen.",
   fensterFehler: "Die Zwischenablage liess sich nicht beschreiben — bitte noch einmal auf den Knopf drücken.",

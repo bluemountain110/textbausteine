@@ -320,7 +320,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "cts",
       "name": "CTS",
-      "kuerzel": "statuscts",
+      "kuerzel": "statcts",
       "punkte": [
         "az",
         "haendigkeit",
@@ -358,7 +358,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "pnp",
       "name": "Polyneuropathie",
-      "kuerzel": "statuspnp",
+      "kuerzel": "statpnp",
       "punkte": [
         "gangbild",
         "strichgang",
@@ -401,7 +401,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "stroke",
       "name": "Stroke",
-      "kuerzel": "statusstroke",
+      "kuerzel": "statstroke",
       "punkte": [
         "az",
         "vigilanz",
@@ -461,7 +461,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "myasthenie",
       "name": "Myasthenie",
-      "kuerzel": "statusmyasthenie",
+      "kuerzel": "statmyasthenie",
       "punkte": [
         "antrieb",
         "haendigkeit",
@@ -520,7 +520,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "parkinson",
       "name": "Parkinson",
-      "kuerzel": "statusparkinson",
+      "kuerzel": "statparkinson",
       "punkte": [
         "gangbild",
         "armschwung",
@@ -550,7 +550,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "schwindel",
       "name": "Schwindel",
-      "kuerzel": "statusschwindel",
+      "kuerzel": "statschwindel",
       "punkte": [
         "gangbild",
         "strichgang",
@@ -585,7 +585,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "memory",
       "name": "Demenz/Memory",
-      "kuerzel": "statusmemory",
+      "kuerzel": "statmemory",
       "punkte": [
         "az",
         "vigilanz",
@@ -623,7 +623,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "ms",
       "name": "MS",
-      "kuerzel": "statusms",
+      "kuerzel": "statms",
       "punkte": [
         "visus",
         "rotentsaettigung",
@@ -690,7 +690,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "kopfschmerz",
       "name": "Kopfschmerz",
-      "kuerzel": "statuskopf",
+      "kuerzel": "statkopf",
       "punkte": [
         "az",
         "blutdruckpuls",
@@ -723,7 +723,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "radc5",
       "name": "Radikulopathie C5",
-      "kuerzel": "statusc5",
+      "kuerzel": "statc5",
       "punkte": [
         "klopfdolenz",
         "halsbeweglichkeit",
@@ -766,7 +766,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "radc6",
       "name": "Radikulopathie C6",
-      "kuerzel": "statusc6",
+      "kuerzel": "statc6",
       "punkte": [
         "klopfdolenz",
         "halsbeweglichkeit",
@@ -811,7 +811,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "radc7",
       "name": "Radikulopathie C7",
-      "kuerzel": "statusc7",
+      "kuerzel": "statc7",
       "punkte": [
         "klopfdolenz",
         "halsbeweglichkeit",
@@ -854,7 +854,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "radc8",
       "name": "Radikulopathie C8",
-      "kuerzel": "statusc8",
+      "kuerzel": "statc8",
       "punkte": [
         "klopfdolenz",
         "halsbeweglichkeit",
@@ -897,7 +897,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "radth1",
       "name": "Radikulopathie Th1",
-      "kuerzel": "statusth1",
+      "kuerzel": "statth1",
       "punkte": [
         "klopfdolenz",
         "halsbeweglichkeit",
@@ -942,7 +942,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "radl3",
       "name": "Radikulopathie L3",
-      "kuerzel": "statusl3",
+      "kuerzel": "statl3",
       "punkte": [
         "klopfdolenz",
         "lasegue",
@@ -981,7 +981,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "radl4",
       "name": "Radikulopathie L4",
-      "kuerzel": "statusl4",
+      "kuerzel": "statl4",
       "punkte": [
         "klopfdolenz",
         "lasegue",
@@ -1020,7 +1020,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "radl5",
       "name": "Radikulopathie L5",
-      "kuerzel": "statusl5",
+      "kuerzel": "statl5",
       "punkte": [
         "klopfdolenz",
         "lasegue",
@@ -1057,7 +1057,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "rads1",
       "name": "Radikulopathie S1",
-      "kuerzel": "statuss1",
+      "kuerzel": "stats1",
       "punkte": [
         "klopfdolenz",
         "lasegue",
@@ -1094,7 +1094,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "enzephalitis",
       "name": "Enzephalitis",
-      "kuerzel": "statusenz",
+      "kuerzel": "statenz",
       "punkte": [
         "az",
         "vigilanz",
@@ -1130,7 +1130,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "sht",
       "name": "Schädel-Hirn-Trauma",
-      "kuerzel": "statussht",
+      "kuerzel": "statsht",
       "punkte": [
         "bewusstseinslage",
         "orientierung",
@@ -1161,7 +1161,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "ulnaris",
       "name": "Ulnarisneuropathie",
-      "kuerzel": "statusulnaris",
+      "kuerzel": "statulnaris",
       "punkte": [
         "atrophien",
         "kraftarme",
@@ -1200,7 +1200,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "peroneus",
       "name": "Peroneusparese",
-      "kuerzel": "statusperoneus",
+      "kuerzel": "statperoneus",
       "punkte": [
         "gangbild",
         "zehenfersengang",
@@ -1234,7 +1234,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "fazialis",
       "name": "Fazialisparese",
-      "kuerzel": "statusfazialis",
+      "kuerzel": "statfazialis",
       "punkte": [
         "mimik",
         "bell",
@@ -1259,7 +1259,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "anfall",
       "name": "Anfall/postiktal",
-      "kuerzel": "statusanfall",
+      "kuerzel": "statanfall",
       "punkte": [
         "vigilanz",
         "orientierung",
@@ -1287,7 +1287,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "tremorabkl",
       "name": "Tremor-Abklärung",
-      "kuerzel": "statustremor",
+      "kuerzel": "stattremor",
       "punkte": [
         "haendigkeit",
         "tremor",
@@ -1314,7 +1314,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "myelopathie",
       "name": "Myelopathie/spinal",
-      "kuerzel": "statusmyelo",
+      "kuerzel": "statmyelo",
       "punkte": [
         "gangbild",
         "strichgang",
@@ -1355,7 +1355,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "als",
       "name": "Motoneuron/ALS",
-      "kuerzel": "statusals",
+      "kuerzel": "statals",
       "punkte": [
         "zunge",
         "stimme",
@@ -1407,7 +1407,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "nph",
       "name": "NPH",
-      "kuerzel": "statusnph",
+      "kuerzel": "statnph",
       "punkte": [
         "gangbild",
         "anlauf",
@@ -1433,7 +1433,7 @@ TB.statusGrundlage = (function () {
     {
       "id": "funktionell",
       "name": "Funktionelle Störung",
-      "kuerzel": "statusfunk",
+      "kuerzel": "statfunk",
       "punkte": [
         "gangbild",
         "einbein",

@@ -114,13 +114,15 @@ TB.ansichtStatus = (function () {
       neu();
     });
     suchzeile.appendChild(suche);
-    var nurG = el("button",
-      "status-nurgew" + (nurGewaehlte ? " aktiv" : ""),
-      TS().nurGewaehlteKnopf);
-    nurG.addEventListener("click", function () {
-      nurGewaehlte = !nurGewaehlte; neu(); });
-    suchzeile.appendChild(nurG);
-    klebt.appendChild(suchzeile);
+    if (!fensterModus) {
+      var nurG = el("button",
+        "status-nurgew" + (nurGewaehlte ? " aktiv" : ""),
+        TS().nurGewaehlteKnopf);
+      nurG.addEventListener("click", function () {
+        nurGewaehlte = !nurGewaehlte; neu(); });
+      suchzeile.appendChild(nurG);
+      klebt.appendChild(suchzeile);
+    }
 
     // Nachbesserung 27.9.: Der klebende Kopf lebt in der LINKEN Spalte,
     // damit die rechte Spalte (Vorschau, Kopieren) ihr eigenes Kleben
@@ -129,11 +131,28 @@ TB.ansichtStatus = (function () {
     var linksSpalte = el("div", "status-linksspalte");
     linksSpalte.appendChild(klebt);
     var links = el("div", "status-maske");
-    TB.status.jeKategorie(m).forEach(function (block) {
-      zeichneKategorie(links, m, block); });
+    if (fensterModus) {
+      // 17.4 (Naed): oben NUR das Gewaehlte, dann die Suche, darunter
+      // alles Uebrige offen zum Ergaenzen.
+      TB.status.jeKategorie(m).forEach(function (block) {
+        zeichneKategorie(links, m, block, "gewaehlt"); });
+      links.appendChild(suchzeile);
+      TB.status.jeKategorie(m).forEach(function (block) {
+        zeichneKategorie(links, m, block, "rest"); });
+    } else {
+      TB.status.jeKategorie(m).forEach(function (block) {
+        zeichneKategorie(links, m, block); });
+    }
     linksSpalte.appendChild(links);
     flaeche.appendChild(linksSpalte);
-    flaeche.appendChild(zeichneRechts(m));
+    var rechts = zeichneRechts(m);
+    if (fensterModus) {
+      var gross = el("button", "fenster-knopf-gross", TS().fensterKnopf);
+      gross.addEventListener("click", function () {
+        TB.fensterModus.uebergeben(gross); });
+      rechts.appendChild(gross);
+    }
+    flaeche.appendChild(rechts);
     wurzel.appendChild(flaeche);
     // Höhe der App-Kopfzeile als CSS-Mass, damit beide klebenden Teile
     // exakt darunter andocken (am Handy ist die Kopfzeile nicht klebend).
@@ -272,14 +291,21 @@ TB.ansichtStatus = (function () {
 
   // Tardoc-Ampeln und Nachlese wohnen seit E11 in
   // ansicht-status-tardoc.js (600-Zeilen-Regel).
-  function zeichneKategorie(ziel, m, block) {
+  function zeichneKategorie(ziel, m, block, modus) {
     var sichtbar = function (u) {
+      if (modus === "gewaehlt")
+        return istGewaehlt(u.id) || !!angeheftet[u.id];
+      if (modus === "rest") {
+        if (istGewaehlt(u.id) || angeheftet[u.id]) return false;
+        return passtZurSuche(u);
+      }
       if (nurGewaehlte && !istGewaehlt(u.id) && !angeheftet[u.id]) return false;
       return passtZurSuche(u);
     };
     // Gewählte und Zusätze stehen immer offen da, auch wenn sie „selten“
     // sind — sonst müsste man sie erst aufklappen und heraussuchen.
     var vorne = function (u) {
+      if (modus === "gewaehlt") return true;
       return u.haeufig || istGewaehlt(u.id) || !!angeheftet[u.id]; };
     var haeufige = block.untersuchungen.filter(function (u) {
       return vorne(u) && sichtbar(u); });
@@ -293,13 +319,13 @@ TB.ansichtStatus = (function () {
 
     if (seltene.length) {
       var offen = !!offeneSelten[block.kategorie.id] || !!suchbegriff ||
-                  nurGewaehlte;
+                  (modus !== "rest" && nurGewaehlte);
       if (offen) {
         seltene.forEach(function (u) {
           var z = zeile(u); z.classList.add("selten");
           kasten.appendChild(z); });
       }
-      if (!suchbegriff && !nurGewaehlte) {
+      if (!suchbegriff && (modus === "rest" || !nurGewaehlte)) {
         var schalter = el("button", "status-weitere", offen
           ? TS().weitereAuf
           : TS().weitereZu.replace("%s", String(seltene.length)));

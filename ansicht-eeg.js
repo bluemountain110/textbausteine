@@ -127,7 +127,8 @@ TB.ansichtEeg = (function () {
     }
     if (art === "transienten") {
       return { aktiv: false, haeufigkeit: R().transHaeufigkeiten[0],
-               lok: ["temporal", "", "", ""], ausbreitung: "", seite: "" };
+               lok: ["temporal", "", "", ""], ausbreitung: "", seite: "",
+               eingelagert: false };
     }
     var ev = R().entVorwahl;
     return { aktiv: false, haeufigkeit: ev.haeufigkeit,
@@ -197,7 +198,15 @@ TB.ansichtEeg = (function () {
       zeichneKategorie(links, block); });
     linksSpalte.appendChild(links);
     flaeche.appendChild(linksSpalte);
-    flaeche.appendChild(zeichneRechts(m));
+    var rechts = zeichneRechts(m);
+    if (fensterModus) {
+      var gross = el("button", "fenster-knopf-gross",
+        TB.statusTexte.fensterKnopf);
+      gross.addEventListener("click", function () {
+        TB.fensterModus.uebergeben(gross); });
+      rechts.appendChild(gross);
+    }
+    flaeche.appendChild(rechts);
     wurzel.appendChild(flaeche);
     function messeKopf() {
       var kz = document.querySelector("header");
@@ -313,7 +322,6 @@ TB.ansichtEeg = (function () {
     if (block.kategorie.id === "anamnese") {
       kasten.appendChild(anamneseBlock());
       chipPunkte["ana_med"] = true;
-      return;   // die Kategorie besteht nur aus Kästchen und Zeilen
     }
     if (block.kategorie.id === "ableitung") {
       kasten.appendChild(ableitungsChips());
@@ -322,15 +330,47 @@ TB.ansichtEeg = (function () {
       kasten.appendChild(vigilanzChips());
       chipPunkte["vig_haupt"] = true;   // der Satz läuft über die Knöpfe
     }
+    if (block.kategorie.id === "verlangsamung") {
+      kasten.appendChild(erzeugerChips(R().herdChips, function (c) {
+        var frisch = neueZeile("herde");
+        frisch.aktiv = true; frisch.band = c.band;
+        zeilen.herde.push(frisch);
+      }));
+    }
+    if (block.kategorie.id === "transienten") {
+      kasten.appendChild(erzeugerChips(R().transChips, function (c) {
+        var frisch = neueZeile("transienten");
+        frisch.aktiv = true;
+        frisch.lok = [c.lok, "", "", ""]; frisch.seite = c.seite;
+        zeilen.transienten.push(frisch);
+      }));
+      var tDazu = el("button", "eeg-zeile-dazu", TE().transDazu);
+      tDazu.addEventListener("click", function () {
+        var frisch = neueZeile("transienten");
+        frisch.aktiv = true;
+        zeilen.transienten.push(frisch);
+        neu();
+      });
+      kasten.appendChild(tDazu);
+    }
+    if (block.kategorie.id === "entladungen") {
+      kasten.appendChild(erzeugerChips(R().entChips.map(function (f) {
+        return { name: f, form: f }; }), function (c) {
+        var frisch = neueZeile("entladungen");
+        frisch.aktiv = true; frisch.form = c.form;
+        zeilen.entladungen.push(frisch);
+      }));
+    }
     if (block.kategorie.id === "artefakte") {
       kasten.appendChild(artefaktChips());
       R().artefaktKaestchen.forEach(function (id) {
         chipPunkte[id] = true; });
     }
     var a = aktiveZeilen();
-    var mitZeilen = block.kategorie.zeilen &&
-      (a[block.kategorie.zeilen].length > 0 ||
-       (block.kategorie.zeilen === "herde" && a.transienten.length > 0));
+    var eigeneZeilen = block.kategorie.zeilen &&
+      block.kategorie.zeilen !== "medis";
+    var mitZeilen = eigeneZeilen &&
+      a[block.kategorie.zeilen].length > 0;
     var sichtbar = function (p) {
       if (chipPunkte[p.id]) return false;   // laufen über die Knopfzeile
       if (mitZeilen && (p.id === "vl_keine" || p.id === "ent_keine"))
@@ -338,7 +378,10 @@ TB.ansichtEeg = (function () {
       if (nurGewaehlte && !istGewaehlt(p.id) && !angeheftet[p.id]) return false;
       return passtZurSuche(p);
     };
+    var hinten = {};
+    (R().hinterPfeil || []).forEach(function (id) { hinten[id] = true; });
     var vorne = function (p) {
+      if (hinten[p.id]) return false;
       return p.haeufig || istGewaehlt(p.id) || !!angeheftet[p.id]; };
     var haeufige = block.punkte.filter(function (p) {
       return vorne(p) && sichtbar(p); });
@@ -351,28 +394,27 @@ TB.ansichtEeg = (function () {
     haeufige.filter(istKeine).forEach(function (p) {
       kasten.appendChild(zeile(p)); });
     var nachZeilen = haeufige.filter(function (p) { return !istKeine(p); });
-    if (!block.kategorie.zeilen) {
+    if (!eigeneZeilen) {
       nachZeilen.forEach(function (p) { kasten.appendChild(zeile(p)); });
       nachZeilen = [];
     }
-    if (block.kategorie.zeilen) {
+    if (eigeneZeilen) {
       zeichneZeilen(kasten, block.kategorie.zeilen);
       nachZeilen.forEach(function (p) { kasten.appendChild(zeile(p)); });
-      // Angefangene Transienten-Zeilen bleiben immer sichtbar.
-      if (block.kategorie.zeilen === "herde") {
-        zeilen.transienten.forEach(function (z, idx) {
-          kasten.appendChild(zeilenEditor("transienten", z, idx)); });
-      }
     }
-    if (seltene.length || block.kategorie.zeilen === "herde") {
+    if (seltene.length) {
       var offen = !!offeneSelten[block.kategorie.id] || !!suchbegriff ||
                   nurGewaehlte;
+      // hinterPfeil-Punkte zeigt erst das AUSDRUECKLICHE Aufklappen
+      // (oder die Suche) — nicht schon der Nur-Gewaehlte-Modus.
+      var offenHart = !!offeneSelten[block.kategorie.id] || !!suchbegriff;
       if (offen) {
         var stadien = {};
         R().schlafElemente.forEach(function (e) {
           stadien[e.id] = e.stadium; });
         var letzterTitel = null;
         seltene.forEach(function (p) {
+          if (hinten[p.id] && !offenHart) return;
           if (block.kategorie.id === "vigilanz" && stadien[p.id] &&
               stadien[p.id] !== letzterTitel) {
             letzterTitel = stadien[p.id];
@@ -381,20 +423,10 @@ TB.ansichtEeg = (function () {
           }
           var z = zeile(p); z.classList.add("selten");
           kasten.appendChild(z); });
-        if (block.kategorie.zeilen === "herde") {
-          var transDazu = el("button", "eeg-zeile-dazu selten",
-            TE().transDazu);
-          transDazu.addEventListener("click", function () {
-            var frisch = neueZeile("transienten");
-            frisch.aktiv = true;
-            zeilen.transienten.push(frisch);
-            koppleKeine();
-            neu();
-          });
-          kasten.appendChild(transDazu);
-        }
       }
-      if (!suchbegriff && !nurGewaehlte && seltene.length) {
+      if (!suchbegriff && seltene.length &&
+          (!nurGewaehlte || seltene.some(function (p) {
+             return hinten[p.id]; }))) {
         var schalter = el("button", "status-weitere", offen
           ? TE().weitereAuf
           : TE().weitereZu.replace("%s", String(seltene.length)));
@@ -406,6 +438,19 @@ TB.ansichtEeg = (function () {
         kasten.appendChild(schalter);
       }
     }
+  }
+
+  // 17.4: Erzeuger-Chips — jeder Klick erzeugt eine vorgefüllte Zeile
+  // (Naed: zwei Herde in Sekunden; loeschbar ueber das Kreuz der Zeile).
+  function erzeugerChips(liste, fuelle) {
+    var reihe = el("div", "status-chips");
+    (liste || []).forEach(function (c) {
+      var k = el("button", "status-chip", c.name);
+      k.addEventListener("click", function () {
+        fuelle(c); koppleKeine(); neu(); });
+      reihe.appendChild(k);
+    });
+    return reihe;
   }
 
   // ---- Dreiknopf-Zeilen und Artefakt-Kästchen --------------------------
@@ -674,19 +719,35 @@ TB.ansichtEeg = (function () {
       })(i);
     }
 
+    // 17.4 (Naed): Ausbreitung/Seite als eigene, eingerueckte zweite
+    // Zeile; Ausbreitungs-Platzhalter ist ein schlichtes "?".
+    var zwei = el("div", "eeg-zeile-zwei");
     if (z.lok[0] !== "generalisiert") {
-      var a = auswahl(R().ausbreitungen, z.ausbreitung || "", "— Ausbreitung");
+      var a = auswahl(R().ausbreitungen, z.ausbreitung || "", "?");
       a.title = "Ausbreitung";
       a.addEventListener("change", function () {
         z.ausbreitung = a.value; fasseAn(); neu(); });
-      rahmen.appendChild(a);
+      zwei.appendChild(a);
 
       var s = auswahl(R().seiten, z.seite || "", "— Seite");
       s.title = "Seite";
       s.addEventListener("change", function () {
         z.seite = s.value; fasseAn(); neu(); });
-      rahmen.appendChild(s);
+      zwei.appendChild(s);
     }
+    if (istTrans) {
+      var einLabel = el("label", "eeg-einge");
+      var ein = el("input");
+      ein.type = "checkbox";
+      ein.checked = !!z.eingelagert;
+      ein.addEventListener("change", function () {
+        z.eingelagert = ein.checked; fasseAn(); neu(); });
+      einLabel.appendChild(ein);
+      einLabel.appendChild(document.createTextNode(
+        " " + TE().transEingelagert));
+      zwei.appendChild(einLabel);
+    }
+    if (zwei.children.length) rahmen.appendChild(zwei);
 
     var weg = el("button", "eeg-zeile-weg", "✕");
     weg.title = TE().zeileWeg;
@@ -816,9 +877,18 @@ TB.ansichtEeg = (function () {
       // Stücke: feste Texte anklickbar (öffnet Überschreiben),
       // Auswahlen als Listen, Felder als Eingaben — direkt im Satz.
       var huelle = el("span", "eeg-stuecke");
+      // 17.4 (Naed): der Grundrhythmus-Satz steht links als EINE
+      // kompakte Zeile ("gut ausgeprägt, moduliert, 9 Hz"); der
+      // Befundtext selbst bleibt unverändert.
+      var kompakt = (p.id === "ga_grundrhythmus");
+      var kurz = { " ausgeprägter ": " ausgeprägt, ",
+                   " okzipitaler Grundrhythmus um ": ", ",
+                   " Hz.": " Hz" };
+      if (kompakt) huelle.classList.add("ga-kompakt");
       TB.eeg.zerlege(p.text).forEach(function (s) {
         if (s.art === "text") {
-          var st = el("span", "status-befund", s.wert);
+          var st = el("span", "status-befund",
+            (kompakt && kurz[s.wert] !== undefined) ? kurz[s.wert] : s.wert);
           st.title = TE().befundKlickHinweis;
           st.addEventListener("click", function () {
             bearbeiteId = p.id; neu(); });

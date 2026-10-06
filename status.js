@@ -167,10 +167,10 @@ TB.status = (function () {
   // Kollision hängt eine Zahl an. Mit ;;kürzel öffnet der Arbeitsplatz
   // das Status-Fenster direkt in KISIM bzw. Axenita.
   function kuerzelFuerStatus(name, liste, eigenesId) {
-    var basis = "status" + String(name || "").toLowerCase()
+    var basis = "stat" + String(name || "").toLowerCase()
       .replace(/\u00e4/g, "ae").replace(/\u00f6/g, "oe").replace(/\u00fc/g, "ue")
       .replace(/[^a-z0-9]/g, "").slice(0, 24);
-    if (basis === "status") basis = "statusneu";
+    if (basis === "stat") basis = "statneu";
     var k = basis, nr = 1;
     function belegt(x) {
       return (liste || []).some(function (t) {
@@ -241,10 +241,32 @@ TB.status = (function () {
     });
     return geaendert;
   }
+  // 17.4: der Kuerzel-Umzug ;;status* -> ;;stat* als eigene, auch im
+  // Selbsttest pruefbare Funktion. Gibt zurueck, ob etwas geaendert wurde.
+  function migriereKuerzel(liste) {
+    var geaendert = false;
+    (liste || []).forEach(function (t) {
+      var k = String(t.kuerzel || "");
+      if (k.toLowerCase().indexOf("status") !== 0) return;
+      var basisNeu = "stat" + k.slice(6);
+      if (basisNeu.toLowerCase() === "stat") basisNeu = "statneu";
+      var fertig = basisNeu, nr = 1;
+      while (liste.some(function (x) { return x !== t &&
+        String(x.kuerzel || "").toLowerCase() === fertig.toLowerCase(); })) {
+        nr += 1; fertig = basisNeu + nr; }
+      t.kuerzel = fertig; geaendert = true;
+    });
+    return geaendert;
+  }
   var teilmengenGeprueft = false;
   function migriereTeilmengen() {
     if (teilmengenGeprueft || !TB.speicher) return;
     teilmengenGeprueft = true;
+    // 17.4 (GROSSE MIGRATION, Naed 5.10.): ;;status* wird ;;stat*.
+    // Laeuft einmal ueber den Bestand, unabhaengig vom Stand-Gate.
+    var kliste = S().einstellung("statusTeilmengen", []) || [];
+    if (migriereKuerzel(kliste))
+      S().setzeEinstellung("statusTeilmengen", kliste);
     var soll = TB.statusGrundlage.TEILMENGEN_STAND;
     if (S().einstellung("statusTeilmengenStand", "") === soll) return;
     var liste = S().einstellung("statusTeilmengen", []) || [];
@@ -357,13 +379,11 @@ TB.status = (function () {
         stueckeT.push(satzT);
         var satzH;
         if (b.abweichend) {
-          // Sammelrunde 27.9. (Näd): Der Untersuchungsname bleibt
-          // normal; vom Befund wird nur der wirklich veränderte
-          // Wortbereich fett in Dunkelgrau hervorgehoben.
-          var d = wortUnterschied(b.normal, b.text);
-          satzH = schuetze(u.name) + ": " + schuetze(d.vor) +
-                  "<b><span style=\"color:" + ABWEICHFARBE + "\">" +
-                  schuetze(d.mitte) + "</span></b>" + schuetze(d.nach);
+          // 5.10. (Näd, am Beispiel Sulcus n. ulnaris): Bei einer
+          // Überschreibung wird die GANZE Angabe fett — Name UND
+          // kompletter Befund —, nicht nur der veränderte Wortbereich.
+          satzH = "<b><span style=\"color:" + ABWEICHFARBE + "\">" +
+                  schuetze(u.name + ": " + b.text) + "</span></b>";
         } else {
           satzH = schuetze(u.name) + ": " + schuetze(b.text);
         }
@@ -584,7 +604,8 @@ TB.status = (function () {
            migriereMerkmale: migriereMerkmale,
            migriereNeue: migriereNeue,
            migriereHinweise: migriereHinweise,
-           hebeTeilmengen: hebeTeilmengen, hatEigenes: hatEigenes,
+           hebeTeilmengen: hebeTeilmengen,
+           migriereKuerzel: migriereKuerzel, hatEigenes: hatEigenes,
            kuerzelFuerStatus: kuerzelFuerStatus,
            teilmengeMitKuerzel: teilmengeMitKuerzel,
            merkmalAn: merkmalAn,

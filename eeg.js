@@ -53,7 +53,8 @@ TB.eegTexte = {
   pflegeKnopf: "EEG-Pflege",
   seltenTitel: "Selten gebraucht (aufklappen):",
   herdDazu: "+ Herd",
-  transDazu: "+ steile Transienten",
+  transDazu: "+ Transient",
+  transEingelagert: "im Herd eingelagert",
   mediDazu: "+ Medikament",
   indikationTitel: "Indikation/Fragestellung",
   anamneseTitel: "Relevante Anamnese",
@@ -303,14 +304,20 @@ TB.eeg = (function () {
     if (kettenText(z.lok) === "generalisiert") return "";
     return ", mit Ausbreitung " + z.ausbreitung;
   }
-  function herdBefundSatz(z) {
+  function herdBefundSatz(z, einge) {
     var h = z.haeufigkeit || R().herdHaeufigkeiten[0];
-    return h + " eingelagerte Wellen aus dem " + bandVon(z.band).wort +
-      " " + lokMitSeite(z) + ausbreitungsText(z) + ".";
+    var satz = h + " eingelagerte Wellen aus dem " + bandVon(z.band).wort +
+      " " + lokMitSeite(z) + ausbreitungsText(z);
+    (einge || []).forEach(function (t) {
+      var th = (t.haeufigkeit || R().transHaeufigkeiten[0]).toLowerCase();
+      satz += ", " + R().transEinbau.replace("%s", th);
+    });
+    return satz + ".";
   }
-  function herdBeurteilungSatz(z) {
+  function herdBeurteilungSatz(z, hatEinge) {
     var b = bandVon(z.band);
-    var zusatz = b.zusatz || "";
+    var zusatz = (b.zusatz || "") +
+      (hatEinge ? R().transBeurtZusatz : "");
     if (kettenText(z.lok) === "generalisiert") {
       return b.gen + " " + R().verlangsamungGen + zusatz + ".";
     }
@@ -326,9 +333,31 @@ TB.eeg = (function () {
   }
   function transBefundSatz(z) {
     var h = z.haeufigkeit || R().transHaeufigkeiten[0];
+    var adj = (R().transAdjektiv || {})[h] || h;
     var lage = lokMitSeite(z);
-    return h + " " + R().transWort + (lage ? " " + lage : "") +
+    return adj + " " + R().transWort + (lage ? " " + lage : "") +
       ausbreitungsText(z) + R().transSchluss + ".";
+  }
+  function transBeurteilungSatz(z) {
+    var h = z.haeufigkeit || R().transHaeufigkeiten[0];
+    var adj = (R().transAdjektiv || {})[h] || h;
+    var lage = lokMitSeite(z);
+    return adj + " " + R().transWort + (lage ? " " + lage : "") +
+      R().transSchluss + ".";
+  }
+  // 17.4: Eingelagerte Transienten gehoeren in den Herd-Satz; Zuordnung
+  // ueber gleiche Lage, sonst zum ersten Herd. Ohne Herd gelten sie als
+  // eigenstaendig.
+  function verteileTransienten(herde, trans) {
+    var proHerd = {}, einzeln = [];
+    (trans || []).forEach(function (t) {
+      if (!t.eingelagert || !(herde || []).length) { einzeln.push(t); return; }
+      var idx = herde.findIndex(function (h) {
+        return lokMitSeite(h) === lokMitSeite(t); });
+      if (idx < 0) idx = 0;
+      (proHerd[idx] = proHerd[idx] || []).push(t);
+    });
+    return { proHerd: proHerd, einzeln: einzeln };
   }
   function entBeurteilungSatz(z) {
     if (kettenText(z.lok) === "generalisiert") {
@@ -408,9 +437,11 @@ TB.eeg = (function () {
       var wert = (werte && werte[pid] && werte[pid]["Befund"]) || "keine.";
       return tabelle[wert] || vorgabe;
     }
+    var verteilt = verteileTransienten(herde, z.transienten || []);
     if (herde.length) {
       herde.forEach(function (h, i) {
-        saetze.push({ id: "auto_h" + i, text: herdBeurteilungSatz(h) }); });
+        saetze.push({ id: "auto_h" + i,
+          text: herdBeurteilungSatz(h, !!verteilt.proHerd[i]) }); });
     } else if (gewaehlt["vl_keine"]) {
       saetze.push({ id: "auto_hkeine",
         text: keineSatz("vl_keine", R().keineVariantenHerde,
@@ -424,6 +455,9 @@ TB.eeg = (function () {
         text: keineSatz("ent_keine", R().keineVariantenEtp,
                         R().keineEtp) });
     }
+    verteilt.einzeln.forEach(function (t, i) {
+      saetze.push({ id: "auto_t" + i, text: transBeurteilungSatz(t) });
+    });
     return saetze;
   }
 
@@ -462,21 +496,23 @@ TB.eeg = (function () {
       }
       if (bereich === "befund" && block.kategorie.zeilen) {
         var liste = z[block.kategorie.zeilen] || [];
-        var trans = (block.kategorie.zeilen === "herde")
-          ? (z.transienten || []) : [];
-        if (liste.length || trans.length) {
+        var verteilt = verteileTransienten(z.herde || [], z.transienten || []);
+        if (block.kategorie.zeilen === "transienten")
+          liste = verteilt.einzeln;
+        if (liste.length) {
           // Zeilen ersetzen „keine." und stehen vor den Zusatz-Punkten.
           teile = teile.filter(function (p) {
             return p.id !== "vl_keine" && p.id !== "ent_keine"; });
           liste.forEach(function (zle, i) {
-            var satz = block.kategorie.zeilen === "herde"
-              ? herdBefundSatz(zle) : entBefundSatz(zle);
+            var satz;
+            if (block.kategorie.zeilen === "herde")
+              satz = herdBefundSatz(zle, verteilt.proHerd[i]);
+            else if (block.kategorie.zeilen === "transienten")
+              satz = transBefundSatz(zle);
+            else
+              satz = entBefundSatz(zle);
             zeilenSaetze.push({ id: "z_" + block.kategorie.zeilen + i,
                                 satz: satz });
-          });
-          trans.forEach(function (zle, i) {
-            zeilenSaetze.push({ id: "z_trans" + i,
-                                satz: transBefundSatz(zle) });
           });
         }
       }
@@ -604,5 +640,7 @@ TB.eeg = (function () {
            entBefundSatz: entBefundSatz,
            entBeurteilungSatz: entBeurteilungSatz,
            transBefundSatz: transBefundSatz,
+           transBeurteilungSatz: transBeurteilungSatz,
+           verteileTransienten: verteileTransienten,
            autoBeurteilung: autoBeurteilung, avSatz: avSatz };
 })();

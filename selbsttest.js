@@ -816,7 +816,7 @@ TB.selbsttest = (function () {
   }
 
 
-  // ---- Sammelrunde 17.2 (E11): Prod-Hebung, Hinweise, Kürzel ----------
+  // ---- Sammelrunde 17.3 (E11): Prod-Hebung, Hinweise, Kürzel ----------
   // Rein auf der Grundausstattung und den reinen Funktionen — der echte
   // Datenbestand wird nie angefasst.
   function pruefeSammelrunde() {
@@ -860,18 +860,23 @@ TB.selbsttest = (function () {
     var eig = liste.find(function (t) { return t.name === "Mein Spezialfall"; });
     f.push({ name: "Prod-Hebung ersetzt unberührte Startfassungen",
       ok: !!cts && cts.id === "cts" && cts.punkte.length > 5 &&
-           cts.kuerzel === "statuscts",
+           cts.kuerzel === "statcts",
       detail: cts ? cts.id + "/" + cts.punkte.length : "weg" });
     f.push({ name: "Prod-Hebung lässt eigene Fassungen unangetastet",
       ok: !!st && st.id === "alt2" && st.normalAb &&
            st.normalAb.az === "reduziert." &&
            st.punkte.indexOf("mrs") === st.punkte.indexOf("nihss") + 1 &&
-           st.kuerzel === "statusstroke",
+           st.kuerzel === "statstroke",
       detail: st ? st.id + "/" + st.punkte.join(",") : "weg" });
     f.push({ name: "Eigene Status bekommen ein freies Kürzel",
-      ok: !!eig && eig.kuerzel === "statusmeinspezialfall" &&
+      ok: !!eig && eig.kuerzel === "statmeinspezialfall" &&
            liste.length === 29 + 1,
       detail: (eig ? eig.kuerzel : "weg") + " / " + liste.length });
+    var fAbw = {}; fAbw["edss"] = "x y z";
+    var fFett = TB.status.fliesstext(m, { edss: true }, fAbw, {}, {});
+    f.push({ name: "Überschreibung macht die GANZE Angabe fett",
+      ok: /<b><span[^>]*>EDSS: x y z\.<\/span><\/b>/.test(fFett.html),
+      detail: "erwartet <b>EDSS: x y z.</b> im Status-Text" });
     f.push({ name: "Fenster-Übergabe bereit (URL-Weg fürs Skript)",
       ok: typeof TB.ansichtEeg.aktuelleFelder === "function" &&
           typeof TB.ansichtStatus.aktuellerText === "function" &&
@@ -879,10 +884,37 @@ TB.selbsttest = (function () {
           typeof TB.ansichtStatus.setzeFensterModus === "function" &&
           typeof TB.speicher.rtfHtml === "function" &&
           typeof TB.abgleich.beiAenderung === "function" &&
-          typeof TB.fensterModus === "object",
+          typeof TB.fensterModus === "object" &&
+          typeof TB.fensterModus.uebergeben === "function",
       detail: "Uebergabe-, Schlank- und Nachsync-Haken vorhanden" });
+    // ---- Sammelrunde 17.4 --------------------------------------------
+    var em = TB.eegGrundlage.master();
+    f.push({ name: "17.4: Steile Transienten sind ein eigenes Kapitel",
+      ok: (em.kategorien || []).some(function (k) {
+            return k.id === "transienten" && k.zeilen === "transienten"; }),
+      detail: "Kategorie transienten im EEG-Katalog" });
+    var probeT = TB.eeg.transBefundSatz({ haeufigkeit: "Vereinzelt",
+      lok: ["temporal", "", "", ""], seite: "links", ausbreitung: "" });
+    f.push({ name: "17.4: Transienten-Satz mit Kriterien-Formulierung",
+      ok: probeT === "Vereinzelte steilere Transienten temporal links, " +
+        "die die Kriterien für epilepsietypische Potentiale nicht " +
+        "vollständig erfüllen.",
+      detail: probeT });
+    var verteilt = TB.eeg.verteileTransienten(
+      [{ haeufigkeit: "Intermittierend", band: "theta-delta",
+         lok: ["temporal", "", "", ""], seite: "links", ausbreitung: "" }],
+      [{ haeufigkeit: "Vereinzelt", lok: ["temporal", "", "", ""],
+         seite: "links", ausbreitung: "", eingelagert: true }]);
+    var probeH = TB.eeg.herdBefundSatz(
+      { haeufigkeit: "Intermittierend", band: "theta-delta",
+        lok: ["temporal", "", "", ""], seite: "links", ausbreitung: "" },
+      verteilt.proHerd[0]);
+    f.push({ name: "17.4: Eingelagerte Transienten wandern in den Herdsatz",
+      ok: probeH.indexOf("mit vereinzelt eingelagerten steileren " +
+        "Transienten") !== -1 && verteilt.einzeln.length === 0,
+      detail: probeH });
     f.push({ name: "Kürzel-Kollision weicht mit Zahl aus",
-      ok: TB.status.kuerzelFuerStatus("CTS", liste, "x") === "statuscts2",
+      ok: TB.status.kuerzelFuerStatus("CTS", liste, "x") === "statcts2",
       detail: TB.status.kuerzelFuerStatus("CTS", liste, "x") });
     return f;
   }
@@ -897,7 +929,7 @@ TB.selbsttest = (function () {
       pruefeVarianten().map(function (f) { f.gruppe = "Standort-Fassungen"; return f; }),
       pruefeMasken().map(function (f) { f.gruppe = "Masken"; return f; }),
       pruefeStatus().map(function (f) { f.gruppe = "Status-Werk"; return f; }),
-      pruefeSammelrunde().map(function (f) { f.gruppe = "Sammelrunde 17.2"; return f; }),
+      pruefeSammelrunde().map(function (f) { f.gruppe = "Sammelrunde 17.4"; return f; }),
       pruefeEeg().map(function (f) { f.gruppe = "EEG-Werk"; return f; }),
       pruefeBerichtMc().map(function (f) { f.gruppe = "Bericht Memory Clinic"; return f; })
     ));

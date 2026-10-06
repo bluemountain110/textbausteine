@@ -5,7 +5,9 @@
 //        dann: (1) SOFORT die Fenster-Klasse und der schlanke Modus
 //        beider Werke \u2014 noch VOR dem ersten Zeichnen, damit keine
 //        Luecke durch die versteckte Kopfzeile entsteht \u2014, (2) das
-//        gerufene Werk, (3) unten die Uebergabe-Leiste. Nach jedem
+//        gerufene Werk, (3) der grosse Uebergeben-Knopf, den die
+//        Ansichten rechts unter der Vorschau zeichnen (17.4; die
+//        fruehere Fussleiste ist weg). Nach jedem
 //        Datenabgleich prueft ein Nachsyncer, ob der Master sich
 //        geaendert hat (frisch vom anderen Geraet), und zeichnet dann
 //        EINMAL neu \u2014 das behebt den Spital-Fall, in dem die
@@ -61,23 +63,6 @@ TB.fensterModus = (function () {
     } catch (e) { /* still */ }
   }
 
-  function leiste() {
-    var w = document.createElement("div");
-    w.className = "fenster-leiste";
-    var hinweis = document.createElement("span");
-    hinweis.className = "fenster-hinweis";
-    hinweis.textContent = T().fensterHinweis;
-    w.appendChild(hinweis);
-    var knopf = document.createElement("button");
-    knopf.className = "fenster-knopf";
-    knopf.textContent = T().fensterKnopf;
-    knopf.addEventListener("click", function () {
-      uebergeben(knopf);
-    });
-    w.appendChild(knopf);
-    document.body.appendChild(w);
-  }
-
   function feld(abschnitt) {
     return { text: abschnitt.text,
              rtf: TB.speicher.rtfHtml(abschnitt.html) || "" };
@@ -120,7 +105,6 @@ TB.fensterModus = (function () {
     TB.ansichtStatus.setzeFensterModus(true);
     zeigeWerk();
     gemerkt = fingerabdruck();
-    leiste();
     // Frische Daten holen und nach dem Abgleich EINMAL nachziehen.
     try {
       TB.abgleich.beiAenderung(pruefeNeu);
@@ -135,5 +119,5 @@ TB.fensterModus = (function () {
   else
     start();
 
-  return { start: start, pruefeNeu: pruefeNeu };
+  return { start: start, pruefeNeu: pruefeNeu, uebergeben: uebergeben };
 })();

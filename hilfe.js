@@ -251,7 +251,7 @@ TB.hilfe = (function () {
         ["Der Kürzel-Weg (so soll ALLES funktionieren)",
          "Jede Funktion der App ist am Arbeitsplatz über ihr Kürzel erreichbar — tippen, Leertaste, Fenster, fertig. Die App im Browser ist zum Pflegen, Testen und Vorbereiten da; gearbeitet wird am Kürzel."],
         ["Ein Status in KISIM",
-         "Tippe ;;statuscts (oder ;;statusstroke, ;;statusc7 … — jedes Kürzel steht in der Status-Pflege hinter dem Status). Es öffnet sich ein Browserfenster mit GENAU dieser App-Seite: Dein Status vorausgewählt, Deine Standardtexte als Normalbefund. Ausfüllen wie gewohnt, dann unten „An KISIM übergeben“ — das Fenster schliesst sich und der fertige Status steht an der Schreibmarke."],
+         "Tippe ;;statcts (oder ;;statstroke, ;;statc7 … — jedes Kürzel steht in der Status-Pflege hinter dem Status). Es öffnet sich ein Browserfenster mit GENAU dieser App-Seite: Dein Status vorausgewählt, Deine Standardtexte als Normalbefund. Ausfüllen wie gewohnt, dann unten „An KISIM übergeben“ — das Fenster schliesst sich und der fertige Status steht an der Schreibmarke."],
         ["Das EEG in KISIM",
          "Tippe ;;eeg in der EEG-Vorlage im Feld Indikation/Fragestellung. Es öffnet sich das echte EEG-Werk der App im Browserfenster. Ausfüllen wie gewohnt (fürs normale EEG genügt die Frequenz), dann „An KISIM übergeben“: das Skript schreibt Indikation, Anamnese, Befund und Beurteilung der Reihe nach in die vier KISIM-Felder und springt selbst mit Strg+Tab weiter; am Ende steht die Schreibmarke hinter der Beurteilung. In der Praxis (Axenita) öffnen dieselben Kürzel das Fenster direkt in der Seite."],
         ["Seltene Status",

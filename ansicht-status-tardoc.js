@@ -14,33 +14,51 @@ window.TB = window.TB || {};
 TB.ansichtStatusTardoc = (function () {
   var TS = function () { return TB.statusTexte; };
   var el = function (a, k, t) { return TB.ui.el(a, k, t); };
+  // 17.4 (Naed): kompakt — nur die zwei Pillen; Erklaertexte,
+  // Fusszeile und Nachlese-Knopf erst hinter dem Pfeil.
+  var offenDetails = false;
 
   function zeichne(wurzel, m, menge, merkmalWahl) {
     var stand = TB.status.tardoc(m, menge, merkmalWahl);
-    var kasten = el("div", "status-tardoc");
+    var kasten = el("div", "status-tardoc" +
+      (offenDetails ? "" : " kompakt"));
+    var kopfzeile = el("div", "status-tardoc-kompakt");
+    var details = el("div", "status-tardoc-details");
     Object.keys(stand).forEach(function (art) {
       var a = stand[art];
-      var zeile = el("div", "status-tardoc-zeile");
       var wort = a.stufe === "A"
         ? TS().tardocPilleA : (a.stufe === "B" ? TS().tardocPilleB
                                                : TS().tardocPilleLeer);
       var pille = el("span", "status-pille" +
         (a.stufe === "A" ? " gut" : (a.stufe === "B" ? " halb" : "")),
         wort.replace("%s", a.name).replace("%s", String(a.erfuellte)));
-      zeile.appendChild(pille);
+      kopfzeile.appendChild(pille);
       var hinweisText = TB.status.tardocFehltText(a);
+      var zeile = el("div", "status-tardoc-zeile");
       var hinweis = el("span", "klein-hinweis status-tardoc-hinweis",
         hinweisText);
       hinweis.title = hinweisText;
       zeile.appendChild(hinweis);
-      kasten.appendChild(zeile);
+      details.appendChild(zeile);
     });
-    var fuss = el("div", "status-tardoc-fuss",
-      TS().tardocHinweis.replace("%s", TB.tardocDaten.fassung));
-    var lesen = el("button", "status-tardoc-lesen", TS().tardocLesenKnopf);
-    lesen.addEventListener("click", zeigeKriterien);
-    fuss.appendChild(lesen);
-    kasten.appendChild(fuss);
+    var pfeil = el("button", "status-tardoc-pfeil",
+      offenDetails ? "▾" : "▸");
+    pfeil.title = TS().tardocPfeil;
+    pfeil.addEventListener("click", function () {
+      offenDetails = !offenDetails;
+      TB.oberflaeche.neu();
+    });
+    kopfzeile.appendChild(pfeil);
+    kasten.appendChild(kopfzeile);
+    if (offenDetails) {
+      var fuss = el("div", "status-tardoc-fuss",
+        TS().tardocHinweis.replace("%s", TB.tardocDaten.fassung));
+      var lesen = el("button", "status-tardoc-lesen", TS().tardocLesenKnopf);
+      lesen.addEventListener("click", zeigeKriterien);
+      fuss.appendChild(lesen);
+      details.appendChild(fuss);
+      kasten.appendChild(details);
+    }
     wurzel.appendChild(kasten);
   }
 

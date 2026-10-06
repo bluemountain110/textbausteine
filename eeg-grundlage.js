@@ -108,8 +108,27 @@ TB.eegGrundlage = (function () {
     // Steile Transienten als eigene Zeilen-Art (wie die Herde, mit
     // Kette und Seite), fester Schluss-Teil.
     transHaeufigkeiten: ["Vereinzelt", "Wiederholt"],
-    transSchluss: ", die Kriterien für epilepsietypische Potenziale jedoch nicht vollständig erfüllt",
-    transWort: "eingelagerte steilere Transienten",
+    herdChips: [
+      { name: "Leicht", band: "theta" },
+      { name: "Mässig", band: "theta-delta" },
+      { name: "Mittelschwer", band: "delta-theta" },
+      { name: "Schwer", band: "delta" }
+    ],
+    transChips: [
+      { name: "temporal links", lok: "temporal", seite: "links" },
+      { name: "temporal rechts", lok: "temporal", seite: "rechts" },
+      { name: "temporal beidseits", lok: "temporal", seite: "beidseits" },
+      { name: "frontal", lok: "frontal", seite: "" }
+    ],
+    entChips: ["Spikes", "Sharp-Wave-Komplexe", "Spike-Wave-Komplexe"],
+    // Punkte, die IMMER hinter dem Aufklapp-Pfeil stehen, auch wenn sie
+    // (etwa durch den Normalbefund) angewaehlt sind (Naed 5.10.).
+    hinterPfeil: ["abl_satz"],
+    transSchluss: ", die die Kriterien für epilepsietypische Potentiale nicht vollständig erfüllen",
+    transWort: "steilere Transienten",
+    transAdjektiv: { "Vereinzelt": "Vereinzelte", "Wiederholt": "Wiederholte" },
+    transEinbau: "mit %s eingelagerten steileren Transienten",
+    transBeurtZusatz: ", mit eingelagerten steileren Transienten, die die Kriterien für epilepsietypische Potentiale nicht vollständig erfüllen",
     // Eingeschränkte Beurteilbarkeit (aus dem Artefakt-Punkt) steht
     // GANZ VORN in der Beurteilung.
     grenzSatz: "%s eingeschränkte Beurteilbarkeit aufgrund von Artefakten.",
@@ -190,6 +209,7 @@ TB.eegGrundlage = (function () {
     { id: "grundaktivitaet", name: "Grundaktivität", bereich: "befund", titel: true, absatz: true, schnell: true },
     { id: "vigilanz", name: "Vigilanz", bereich: "befund", titel: true, absatz: false, schnell: true },
     { id: "verlangsamung", name: "Verlangsamungsherde", bereich: "befund", titel: true, absatz: false, schnell: true, zeilen: "herde" },
+    { id: "transienten", name: "Steile Transienten", bereich: "befund", titel: true, absatz: false, schnell: true, zeilen: "transienten" },
     { id: "entladungen", name: "Entladungen", bereich: "befund", titel: true, absatz: false, schnell: true, zeilen: "entladungen" },
     { id: "hyperventilation", name: "Hyperventilation", bereich: "befund", titel: true, absatz: true, schnell: true },
     { id: "photostimulation", name: "Photostimulation", bereich: "befund", titel: true, absatz: false, schnell: true },
@@ -217,7 +237,9 @@ TB.eegGrundlage = (function () {
     p("ana_med", "anamnese", true,
       "Aktuelle antikonvulsive Medikation:"),
     // ---- Ableitung (der Technik-Satz) ---------------------------------
-    p("abl_satz", "ableitung", true,
+    p("ana_frei", "anamnese", false,
+      "{{Feld:Ergänzung=}}"),
+    p("abl_satz", "ableitung", false,
       aw("Qualität", "Technisch gelungene|Technisch erschwerte") + " " +
       aw("Montage", "10/20 + 6 true temporal Elektroden-Ableitung|10/20-Ableitung") + " " +
       aw("Bedingungen", "unter Standardbedingungen im EEG Stuhl|im Bett auf der Intensivstation|auf der Notfallliege|im Bett auf Station") +
@@ -257,7 +279,7 @@ TB.eegGrundlage = (function () {
     p("ga_blockade", "grundaktivitaet", true,
       aw("Blockade", "Positive visuelle Blockade|Fehlende visuelle Blockade|Visuelle Blockade nicht beurteilbar (Augen nicht geöffnet)") + "."),
     p("ga_fgrda", "grundaktivitaet", true,
-      "Intermittierende frontal betonte rhythmische Delta-Aktivität."),
+      "Intermittierende frontal betonte rhythmische Delta-Aktivität (fGRDA)."),
     p("ga_seitendifferenz", "grundaktivitaet", false,
       "Seitendifferenz der Grundaktivität: {{Feld:Beschreibung=Amplitudenminderung links temporal}}."),
     p("ga_beta", "grundaktivitaet", false,
@@ -428,7 +450,7 @@ TB.eegGrundlage = (function () {
   // 16.1 hat den Katalog umgebaut (Schnell-Befund): stand-Wechsel löst
   // in eeg.js den einmaligen Vollersatz aus (eigene Punkte mit
   // id-Anfang "eig" überleben ihn).
-  var KATALOG_STAND = "2026-10-02e";
+  var KATALOG_STAND = "2026-10-05";
 
   function master() {
     return { stand: KATALOG_STAND,
