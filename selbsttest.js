@@ -464,7 +464,7 @@ TB.selbsttest = (function () {
         "Mässiggradiger Verlangsamungsherd temporal." &&
       TB.eeg.transBefundSatz({ haeufigkeit: "Vereinzelt",
         lok: ["temporal", "", "", ""], ausbreitung: "", seite: "" }) ===
-        "Vereinzelt eingelagerte steilere Transienten temporal, die Kriterien für epilepsietypische Potenziale jedoch nicht vollständig erfüllt.";
+        "Vereinzelte steilere Transienten temporal, die die Kriterien für epilepsietypische Potentiale nicht vollständig erfüllen.";
     var okAv = okSeiteLeer && TB.eeg.avSatz(8) === "Normaler Grundrhythmus." &&
       TB.eeg.avSatz(7.9) === "Leichte Allgemeinveränderung." &&
       TB.eeg.avSatz(6) === "Leichte Allgemeinveränderung." &&
@@ -651,10 +651,11 @@ TB.selbsttest = (function () {
           kr[0].linkB.indexOf("MP.00.0020") !== -1 &&
           kr[1].gruppen[9].merkmale.indexOf("Synophrys") !== -1,
       detail: JSON.stringify([kr[0].gruppen.length, kr[1].gruppen.length]) });
-    faelle.push({ name: "Teil-Hervorhebung im Fliesstext: Name bleibt normal",
-      ok: fT.html.indexOf("color:#444444\">malleolär 4/6,</span></b>") !== -1 &&
-          fT.html.indexOf("Pallästhesie") <
-          fT.html.indexOf("<b><span"),
+    // Revision 5.10. (Naed): im FLIESSTEXT ist die ueberschriebene
+    // Angabe GANZ fett (Name + Befund); die Wort-Teilmarkierung gilt
+    // nur in der Maske (eigene gruene Pruefung weiter oben).
+    faelle.push({ name: "Überschriebene Angabe im Fliesstext GANZ fett (Revision 5.10.)",
+      ok: /<b><span[^>]*>Pallästhesie[^<]*malleolär 4\/6,[^<]*<\/span><\/b>/.test(fT.html),
       detail: fT.html.slice(0, 200) });
 
     var wahl = {};
