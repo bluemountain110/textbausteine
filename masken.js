@@ -235,8 +235,41 @@ TB.masken = (function () {
   //          analysiere().kategorien), schon fertig aufgelöst.
   // Feld/Auswahl/Datum werden hier NICHT ersetzt — das macht danach
   // wie bisher TB.reichtext.auswerte.
+  // 17.6 (Naed, ;;ber): Ein LEERES Wenn-Paar "{{Wenn:X}}{{Ende}}" ist eine
+  // gewollte Leerzeile. Ein unsichtbarer Merker zwischen den beiden
+  // Marken laesst den Absatz die Heilung ueberleben; am Schluss wird
+  // daraus eine echte leere Zeile (<br>, kein Zeichen, kein Format).
+  // Faellt X weg, geht der Merker mit dem Abschnitt unter.
+  var LEERMERKER = "\uE000";
+  function leerzeilenMarkieren(wurzel) {
+    textknoten(wurzel).forEach(function (k) {
+      k.nodeValue = k.nodeValue.replace(
+        /(\{\{\s*Wenn(?:Nicht)?\s*:[^{}]*\}\})(\{\{\s*Ende\s*\}\})/g,
+        "$1" + LEERMERKER + "$2")
+      // Auch eine Kategorie-Zeile ohne gewaehlten Baustein bleibt als
+      // leere Schreibzeile stehen (;;ber: erste Zeile unter "Status").
+        .replace(/(\{\{\s*Aus Kategorie\s*:[^{}]*\}\})/g, "$1" + LEERMERKER);
+    });
+  }
+  function leerzeilenEinloesen(wurzel) {
+    textknoten(wurzel).forEach(function (k) {
+      if (k.nodeValue.indexOf(LEERMERKER) === -1) return;
+      k.nodeValue = k.nodeValue.split(LEERMERKER).join("");
+      var bl = k.parentNode;
+      while (bl && bl !== wurzel && !/^(P|DIV|LI)$/.test(bl.nodeName))
+        bl = bl.parentNode;
+      if (!bl || bl === wurzel) return;
+      if (bl.textContent.replace(/\u00a0/g, " ").trim() === "" &&
+          !bl.querySelector("br,table,img")) {
+        while (bl.firstChild) bl.removeChild(bl.firstChild);
+        bl.appendChild(wurzel.ownerDocument.createElement("br"));
+      }
+    });
+  }
+
   function wendeAn(html, zustand, kategorieInhalte) {
     var wurzel = baum(html);
+    leerzeilenMarkieren(wurzel);
     var tokens = sammleTokens(wurzel);
     var fehler = [];
 
@@ -344,6 +377,7 @@ TB.masken = (function () {
     });
 
     heile(wurzel);
+    leerzeilenEinloesen(wurzel);
     return { html: wurzel.innerHTML, fehler: fehler };
   }
 

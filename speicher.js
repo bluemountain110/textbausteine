@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "17.5 · Etappe 11 Nachbesserung 5 · 06.10.2026";
+TB.FASSUNG = "17.6 · Etappe 11 Nachbesserung 6 · 07.10.2026";
 
 TB.speicher = (function () {
 
@@ -295,6 +295,38 @@ TB.speicher = (function () {
     return gezaehlt;
   }
 
+  // ---- 17.6: ;;ber mit zwei Zeilen unter jedem Titel (Naed 7.10.) ----
+  // Einmaliger, gezielter Umbau: NUR wenn Standard- bzw. Spital-Fassung
+  // noch woertlich dem Stand vom 6.10. entsprechen (Export 07:36). Hat
+  // Naed ;;ber inzwischen selbst geaendert, bleibt alles unberuehrt und
+  // der Selbsttest meldet es. Gespeichert wird ueber den normalen Weg
+  // (RTF beider Fassungen frisch, Abgleich zu Spital und Praxis).
+  var BER_UMBAU = {
+    altStandard: "<p><b>Diagnosen</b></p><p></p><p><b>Fragestellung</b></p><p></p><p><b>Anamnese</b></p><p>{{Ankreuz:Fremdanamnese/aus}}{{Wenn:Fremdanamnese}}<u>Fremdanamnese</u>{{Ende}}</p><p>{{Wenn:Fremdanamnese}}&nbsp;{{Ende}}</p><p>{{Ankreuz:Anfallsanamnese/aus}}{{Wenn:Anfallsanamnese}}<u>Anfallsanamnese</u>{{Ende}}</p><p>{{Wenn:Anfallsanamnese}}&nbsp;{{Ende}}</p><p>{{Ankreuz:Semiologie/aus}}{{Wenn:Semiologie}}<u>Semiologie</u>{{Ende}}</p><p>{{Wenn:Semiologie}}&nbsp;{{Ende}}</p><p>{{Ankreuz:Systemanamnese}}{{Wenn:Systemanamnese}}<u>Systemanamnese</u>{{Ende}}</p><p>{{Wenn:Systemanamnese}}&nbsp;{{Ende}}</p><p>{{Ankreuz:Persönliche Anamnese}}{{Wenn:Persönliche Anamnese}}<u>Persönliche Anamnese</u>{{Ende}}</p><p>{{Wenn:Persönliche Anamnese}}&nbsp;{{Ende}}</p><p>{{Ankreuz:Psychiatrische Anamnese/aus}}{{Wenn:Psychiatrische Anamnese}}<u>Psychiatrische Anamnese</u>{{Ende}}</p><p>{{Wenn:Psychiatrische Anamnese}}&nbsp;{{Ende}}</p><p>{{Ankreuz:Sozialanamnese}}{{Wenn:Sozialanamnese}}<u>Sozialanamnese</u>{{Ende}}</p><p>{{Wenn:Sozialanamnese}}&nbsp;{{Ende}}</p><p>{{Ankreuz:Familienanamnese}}{{Wenn:Familienanamnese}}<u>Familienanamnese</u>{{Ende}}</p><p>{{Wenn:Familienanamnese}}&nbsp;{{Ende}}</p><p>{{Ankreuz:Medikamentenanamnese/aus}}{{Wenn:Medikamentenanamnese}}<u>Medikamentenanamnese</u>{{Ende}}</p><p>{{Wenn:Medikamentenanamnese}}&nbsp;{{Ende}}</p><p>{{Ankreuz:Aktuelle Medikamente}}{{Wenn:Aktuelle Medikamente}}<u>Aktuelle Medikamente</u>{{Ende}}</p><p>{{Wenn:Aktuelle Medikamente}}&nbsp;{{Ende}}</p><p><b>Status</b></p><p>{{Aus Kategorie:Status}}</p><p></p><p><b>Untersuchungen</b></p><p>{{Aus Kategorie:Untersuchungen}}</p><p></p><p><b>Beurteilung</b></p><p></p><p><b>Procedere</b></p><p></p>",
+    neuStandard: "<p><b>Diagnosen</b></p><p><br></p><p><br></p><p><b>Fragestellung</b></p><p><br></p><p><br></p><p><b>Anamnese</b></p><p><br></p><p><br></p><p>{{Ankreuz:Fremdanamnese/aus}}{{Wenn:Fremdanamnese}}<u>Fremdanamnese</u>{{Ende}}</p><p>{{Wenn:Fremdanamnese}}{{Ende}}</p><p>{{Wenn:Fremdanamnese}}{{Ende}}</p><p>{{Ankreuz:Anfallsanamnese/aus}}{{Wenn:Anfallsanamnese}}<u>Anfallsanamnese</u>{{Ende}}</p><p>{{Wenn:Anfallsanamnese}}{{Ende}}</p><p>{{Wenn:Anfallsanamnese}}{{Ende}}</p><p>{{Ankreuz:Semiologie/aus}}{{Wenn:Semiologie}}<u>Semiologie</u>{{Ende}}</p><p>{{Wenn:Semiologie}}{{Ende}}</p><p>{{Wenn:Semiologie}}{{Ende}}</p><p>{{Ankreuz:Systemanamnese}}{{Wenn:Systemanamnese}}<u>Systemanamnese</u>{{Ende}}</p><p>{{Wenn:Systemanamnese}}{{Ende}}</p><p>{{Wenn:Systemanamnese}}{{Ende}}</p><p>{{Ankreuz:Persönliche Anamnese}}{{Wenn:Persönliche Anamnese}}<u>Persönliche Anamnese</u>{{Ende}}</p><p>{{Wenn:Persönliche Anamnese}}{{Ende}}</p><p>{{Wenn:Persönliche Anamnese}}{{Ende}}</p><p>{{Ankreuz:Psychiatrische Anamnese/aus}}{{Wenn:Psychiatrische Anamnese}}<u>Psychiatrische Anamnese</u>{{Ende}}</p><p>{{Wenn:Psychiatrische Anamnese}}{{Ende}}</p><p>{{Wenn:Psychiatrische Anamnese}}{{Ende}}</p><p>{{Ankreuz:Sozialanamnese}}{{Wenn:Sozialanamnese}}<u>Sozialanamnese</u>{{Ende}}</p><p>{{Wenn:Sozialanamnese}}{{Ende}}</p><p>{{Wenn:Sozialanamnese}}{{Ende}}</p><p>{{Ankreuz:Familienanamnese}}{{Wenn:Familienanamnese}}<u>Familienanamnese</u>{{Ende}}</p><p>{{Wenn:Familienanamnese}}{{Ende}}</p><p>{{Wenn:Familienanamnese}}{{Ende}}</p><p>{{Ankreuz:Medikamentenanamnese/aus}}{{Wenn:Medikamentenanamnese}}<u>Medikamentenanamnese</u>{{Ende}}</p><p>{{Wenn:Medikamentenanamnese}}{{Ende}}</p><p>{{Wenn:Medikamentenanamnese}}{{Ende}}</p><p>{{Ankreuz:Aktuelle Medikamente}}{{Wenn:Aktuelle Medikamente}}<u>Aktuelle Medikamente</u>{{Ende}}</p><p>{{Wenn:Aktuelle Medikamente}}{{Ende}}</p><p>{{Wenn:Aktuelle Medikamente}}{{Ende}}</p><p><b>Status</b></p><p>{{Aus Kategorie:Status}}</p><p><br></p><p><b>Untersuchungen</b></p><p>{{Aus Kategorie:Untersuchungen}}</p><p><br></p><p><b>Beurteilung</b></p><p><br></p><p><br></p><p><b>Procedere</b></p><p><br></p>",
+    altSpital: "<p>{{Ankreuz:Fremdanamnese/aus}}{{Wenn:Fremdanamnese}}<u>Fremdanamnese</u>{{Ende}}</p><p>{{Wenn:Fremdanamnese}}&nbsp;{{Ende}}</p><p>{{Ankreuz:Anfallsanamnese/aus}}{{Wenn:Anfallsanamnese}}<u>Anfallsanamnese</u>{{Ende}}</p><p>{{Wenn:Anfallsanamnese}}&nbsp;{{Ende}}</p><p>{{Ankreuz:Semiologie/aus}}{{Wenn:Semiologie}}<u>Semiologie</u>{{Ende}}</p><p>{{Wenn:Semiologie}}&nbsp;{{Ende}}</p><p>{{Ankreuz:Systemanamnese}}{{Wenn:Systemanamnese}}<u>Systemanamnese</u>{{Ende}}</p><p>{{Wenn:Systemanamnese}}&nbsp;{{Ende}}</p><p>{{Ankreuz:Persönliche Anamnese}}{{Wenn:Persönliche Anamnese}}<u>Persönliche Anamnese</u>{{Ende}}</p><p>{{Wenn:Persönliche Anamnese}}&nbsp;{{Ende}}</p><p>{{Ankreuz:Psychiatrische Anamnese/aus}}{{Wenn:Psychiatrische Anamnese}}<u>Psychiatrische Anamnese</u>{{Ende}}</p><p>{{Wenn:Psychiatrische Anamnese}}&nbsp;{{Ende}}</p><p>{{Ankreuz:Sozialanamnese}}{{Wenn:Sozialanamnese}}<u>Sozialanamnese</u>{{Ende}}</p><p>{{Wenn:Sozialanamnese}}&nbsp;{{Ende}}</p><p>{{Ankreuz:Familienanamnese}}{{Wenn:Familienanamnese}}<u>Familienanamnese</u>{{Ende}}</p><p>{{Wenn:Familienanamnese}}&nbsp;{{Ende}}</p><p>{{Ankreuz:Medikamentenanamnese/aus}}{{Wenn:Medikamentenanamnese}}<u>Medikamentenanamnese</u>{{Ende}}</p><p>{{Wenn:Medikamentenanamnese}}&nbsp;{{Ende}}</p><p>{{Ankreuz:Aktuelle Medikamente}}{{Wenn:Aktuelle Medikamente}}<u>Aktuelle Medikamente</u>{{Ende}}</p><p>{{Wenn:Aktuelle Medikamente}}&nbsp;{{Ende}}</p><p>{{Sprung:2}}</p><p>{{Aus Kategorie:Status}}</p><p>{{Sprung:5}}</p><p>{{Aus Kategorie:Untersuchungen}}</p><p>{{Sprung:4}}</p><p>{{Sprung:2}}</p>",
+    neuSpital: "<p>{{Ankreuz:Fremdanamnese/aus}}{{Wenn:Fremdanamnese}}<u>Fremdanamnese</u>{{Ende}}</p><p>{{Wenn:Fremdanamnese}}{{Ende}}</p><p>{{Wenn:Fremdanamnese}}{{Ende}}</p><p>{{Ankreuz:Anfallsanamnese/aus}}{{Wenn:Anfallsanamnese}}<u>Anfallsanamnese</u>{{Ende}}</p><p>{{Wenn:Anfallsanamnese}}{{Ende}}</p><p>{{Wenn:Anfallsanamnese}}{{Ende}}</p><p>{{Ankreuz:Semiologie/aus}}{{Wenn:Semiologie}}<u>Semiologie</u>{{Ende}}</p><p>{{Wenn:Semiologie}}{{Ende}}</p><p>{{Wenn:Semiologie}}{{Ende}}</p><p>{{Ankreuz:Systemanamnese}}{{Wenn:Systemanamnese}}<u>Systemanamnese</u>{{Ende}}</p><p>{{Wenn:Systemanamnese}}{{Ende}}</p><p>{{Wenn:Systemanamnese}}{{Ende}}</p><p>{{Ankreuz:Persönliche Anamnese}}{{Wenn:Persönliche Anamnese}}<u>Persönliche Anamnese</u>{{Ende}}</p><p>{{Wenn:Persönliche Anamnese}}{{Ende}}</p><p>{{Wenn:Persönliche Anamnese}}{{Ende}}</p><p>{{Ankreuz:Psychiatrische Anamnese/aus}}{{Wenn:Psychiatrische Anamnese}}<u>Psychiatrische Anamnese</u>{{Ende}}</p><p>{{Wenn:Psychiatrische Anamnese}}{{Ende}}</p><p>{{Wenn:Psychiatrische Anamnese}}{{Ende}}</p><p>{{Ankreuz:Sozialanamnese}}{{Wenn:Sozialanamnese}}<u>Sozialanamnese</u>{{Ende}}</p><p>{{Wenn:Sozialanamnese}}{{Ende}}</p><p>{{Wenn:Sozialanamnese}}{{Ende}}</p><p>{{Ankreuz:Familienanamnese}}{{Wenn:Familienanamnese}}<u>Familienanamnese</u>{{Ende}}</p><p>{{Wenn:Familienanamnese}}{{Ende}}</p><p>{{Wenn:Familienanamnese}}{{Ende}}</p><p>{{Ankreuz:Medikamentenanamnese/aus}}{{Wenn:Medikamentenanamnese}}<u>Medikamentenanamnese</u>{{Ende}}</p><p>{{Wenn:Medikamentenanamnese}}{{Ende}}</p><p>{{Wenn:Medikamentenanamnese}}{{Ende}}</p><p>{{Ankreuz:Aktuelle Medikamente}}{{Wenn:Aktuelle Medikamente}}<u>Aktuelle Medikamente</u>{{Ende}}</p><p>{{Wenn:Aktuelle Medikamente}}{{Ende}}</p><p>{{Wenn:Aktuelle Medikamente}}{{Ende}}</p><p>{{Sprung:2}}</p><p>{{Aus Kategorie:Status}}</p><p>{{Sprung:5}}</p><p>{{Aus Kategorie:Untersuchungen}}</p><p>{{Sprung:4}}</p><p>{{Sprung:2}}</p>"
+  };
+  function berUmbauTexte() { return BER_UMBAU; }
+  function berZweiZeilen() {
+    laden();
+    var b = holenPerKuerzel("ber");
+    if (!b) return false;
+    var neu = { id: b.id }, geaendert = false;
+    if (b.text === BER_UMBAU.altStandard) {
+      neu.text = BER_UMBAU.neuStandard; geaendert = true;
+    }
+    var v = b.varianten && b.varianten["Spital Limmattal"];
+    if (v && v.text === BER_UMBAU.altSpital) {
+      var kopie = JSON.parse(JSON.stringify(b.varianten));
+      kopie["Spital Limmattal"].text = BER_UMBAU.neuSpital;
+      neu.varianten = kopie; geaendert = true;
+    }
+    if (!geaendert) return false;
+    speichern(neu);
+    return true;
+  }
+
   // Die EINE Erzeugungs-/Speicher-Funktion: setzt Kennung und Zeiten
   // und legt den Baustein in die Warteschlange fürs Hochladen.
   function speichern(eintrag) {
@@ -500,6 +532,7 @@ TB.speicher = (function () {
     rtfHtml: rtfHtml,
     speichern: speichern, merkeBenutzt: merkeBenutzt,
     rtfNachruesten: rtfNachruesten,
+    berZweiZeilen: berZweiZeilen, berUmbauTexte: berUmbauTexte,
     inPapierkorb: inPapierkorb, zurueckholen: zurueckholen,
     endgueltigLoeschen: endgueltigLoeschen,
     raeumePapierkorbAuf: raeumePapierkorbAuf,

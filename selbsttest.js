@@ -947,6 +947,38 @@ TB.selbsttest = (function () {
     f.push({ name: "17.5: Normal-Vorlage waehlt die Indikation Standard vor",
       ok: !!vN && vN.punkte.indexOf("ind_standard") !== -1,
       detail: vN && vN.punkte.join(",") });
+    // ---- 17.6 -------------------------------------------------------
+    var leerQ = "<p><b>T</b></p><p>{{Ankreuz:A}}{{Wenn:A}}<u>A</u>{{Ende}}</p>" +
+      "<p>{{Wenn:A}}{{Ende}}</p><p>{{Wenn:A}}{{Ende}}</p>" +
+      "<p>{{Ankreuz:B/aus}}{{Wenn:B}}<u>B</u>{{Ende}}</p>" +
+      "<p>{{Wenn:B}}{{Ende}}</p><p>{{Wenn:B}}{{Ende}}</p><p><b>U</b></p>";
+    var leerA = TB.masken.wendeAn(leerQ, { kaestchen: { A: true, B: false } }, []).html;
+    f.push({ name: "17.6: Zwei echte Leerzeilen unter dem Titel (ohne Zeichen, ohne Format)",
+      ok: leerA.indexOf("<u>A</u></p><p><br></p><p><br></p><p><b>U</b>") !== -1 &&
+          leerA.indexOf("\u00a0") === -1 && leerA.indexOf("&nbsp;") === -1 &&
+          leerA.indexOf("\uE000") === -1,
+      detail: leerA });
+    f.push({ name: "17.6: Abgewaehlter Abschnitt nimmt seine Leerzeilen mit",
+      ok: leerA.indexOf("<u>B</u>") === -1 &&
+          (leerA.match(/<p><br><\/p>/g) || []).length === 2,
+      detail: leerA });
+    var berT = TB.speicher.berUmbauTexte();
+    var berRtf = TB.speicher.rtfHtml(berT.neuSpital) || "";
+    f.push({ name: "17.6: ;;ber-Umbau ohne Leerzeichen-Zeilen (Standard und Spital)",
+      ok: berT.neuStandard.indexOf("&nbsp;") === -1 &&
+          berT.neuSpital.indexOf("&nbsp;") === -1 &&
+          berRtf.indexOf("\\~") === -1 &&
+          berRtf.indexOf("\\{\\{Wenn:Systemanamnese\\}\\}\\{\\{Ende\\}\\}") !== -1,
+      detail: berRtf.slice(0, 160) });
+    var berJetzt = TB.speicher.holenPerKuerzel("ber");
+    f.push({ name: "17.6: Dein ;;ber traegt die Zwei-Zeilen-Fassung",
+      ok: !berJetzt || (String(berJetzt.text || "").indexOf("&nbsp;{{Ende}}") === -1 &&
+          JSON.stringify(berJetzt.varianten || {}).indexOf("&nbsp;{{Ende}}") === -1),
+      detail: berJetzt ? "noch alte Fassung \u2014 bitte Claude melden" : "kein ;;ber vorhanden" });
+    f.push({ name: "17.6: Fenster-Knopf nennt das Zielprogramm",
+      ok: typeof TB.fensterModus.knopfText === "function" &&
+          !!TB.statusTexte.fensterKnopfAxenita,
+      detail: TB.statusTexte.fensterKnopfAxenita });
     f.push({ name: "Kürzel-Kollision weicht mit Zahl aus",
       ok: TB.status.kuerzelFuerStatus("CTS", liste, "x") === "statcts2",
       detail: TB.status.kuerzelFuerStatus("CTS", liste, "x") });
@@ -963,7 +995,7 @@ TB.selbsttest = (function () {
       pruefeVarianten().map(function (f) { f.gruppe = "Standort-Fassungen"; return f; }),
       pruefeMasken().map(function (f) { f.gruppe = "Masken"; return f; }),
       pruefeStatus().map(function (f) { f.gruppe = "Status-Werk"; return f; }),
-      pruefeSammelrunde().map(function (f) { f.gruppe = "Sammelrunde 17.5"; return f; }),
+      pruefeSammelrunde().map(function (f) { f.gruppe = "Sammelrunde 17.6"; return f; }),
       pruefeEeg().map(function (f) { f.gruppe = "EEG-Werk"; return f; }),
       pruefeBerichtMc().map(function (f) { f.gruppe = "Bericht Memory Clinic"; return f; })
     ));

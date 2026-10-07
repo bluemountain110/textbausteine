@@ -201,7 +201,7 @@ TB.ansichtEeg = (function () {
     var rechts = zeichneRechts(m);
     if (fensterModus) {
       var gross = el("button", "fenster-knopf-gross",
-        TB.statusTexte.fensterKnopf);
+        TB.fensterModus.knopfText());
       gross.addEventListener("click", function () {
         TB.fensterModus.uebergeben(gross); });
       rechts.appendChild(gross);

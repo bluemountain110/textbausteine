@@ -22,6 +22,14 @@ window.TB = window.TB || {};
 TB.fensterModus = (function () {
   var T = function () { return TB.statusTexte; };
   var art = "", kuerzel = "", nonce = "", gemerkt = "";
+  // 17.6: Wohin geht der Text? "kisim" (Spital, Skript holt ihn aus der
+  // Zwischenablage) oder "axenita" (Praxis, die Erweiterung nimmt ihn
+  // ueber ihre Bruecke in diesem Fenster entgegen). Fuer Naed sieht
+  // beides gleich aus — nur der Knopf nennt das Zielprogramm.
+  var ziel = "kisim";
+  function knopfText() {
+    return ziel === "axenita" ? T().fensterKnopfAxenita : T().fensterKnopf;
+  }
 
   function merkeAdresse() {
     try {
@@ -69,8 +77,49 @@ TB.fensterModus = (function () {
   }
 
   function feld(abschnitt) {
-    return { text: abschnitt.text,
+    return { text: abschnitt.text, html: abschnitt.html,
              rtf: TB.speicher.rtfHtml(abschnitt.html) || "" };
+  }
+  // Praxis: Axenita hat EIN Feld — dorthin kommt, was rechts in der
+  // Vorschau steht (Indikation, Anamnese, Befund, Beurteilung).
+  function eegBlockFuerAxenita(f) {
+    var E = TB.eegTexte, html = "", text = [];
+    [[E.indikationTitel, f.indikation], [E.anamneseTitel, f.anamnese]]
+      .forEach(function (paar) {
+        if (!paar[1] || !String(paar[1].text || "").trim()) return;
+        html += "<p><u>" + paar[0] + "</u></p>" + paar[1].html + "<p><br></p>";
+        text.push(paar[0] + "\n" + paar[1].text + "\n");
+      });
+    var b = TB.eeg.block(f);
+    return { html: html + b.html, text: text.join("\n") + b.text };
+  }
+  function anErweiterung(paket, knopf) {
+    if (!document.documentElement.hasAttribute("data-tb-bruecke")) {
+      TB.ui.melde(T().fensterErwFehlt, true); return;
+    }
+    var fertig = false;
+    function antwort(ev) {
+      if (ev.source !== window) return;
+      var d = ev.data;
+      if (!d || d.tbFensterAck !== 1 || d.nonce !== nonce) return;
+      fertig = true;
+      window.removeEventListener("message", antwort);
+      if (d.ok) {
+        knopf.textContent = T().fensterUebergeben;
+        knopf.disabled = true;
+        setTimeout(function () { try { window.close(); } catch (e) {} }, 300);
+      } else {
+        TB.ui.melde(T().fensterErwFehler, true);
+      }
+    }
+    window.addEventListener("message", antwort);
+    window.postMessage({ tbFensterPaket: 1, nonce: nonce, paket: paket },
+                       location.origin);
+    setTimeout(function () {
+      if (fertig) return;
+      window.removeEventListener("message", antwort);
+      TB.ui.melde(T().fensterErwFehler, true);
+    }, 5000);
   }
   function uebergeben(knopf) {
     var felder;
@@ -79,10 +128,15 @@ TB.fensterModus = (function () {
       if (!f) { TB.ui.melde(T().fensterLeer, true); return; }
       felder = { indikation: feld(f.indikation), anamnese: feld(f.anamnese),
                  befund: feld(f.befund), beurteilung: feld(f.beurteilung) };
+      if (ziel === "axenita") felder.block = eegBlockFuerAxenita(f);
     } else {
       var s = TB.ansichtStatus.aktuellerText();
       if (!s || !s.text) { TB.ui.melde(T().fensterLeer, true); return; }
       felder = { block: feld(s) };
+    }
+    if (ziel === "axenita") {
+      anErweiterung({ art: art, felder: felder }, knopf);
+      return;
     }
     var paket = "TBFENSTER1:" + JSON.stringify(
       { art: art, nonce: nonce, felder: felder });
@@ -102,6 +156,7 @@ TB.fensterModus = (function () {
     if (art !== "eeg" && art !== "status") return;
     kuerzel = p.get("kuerzel") || "";
     nonce = p.get("nonce") || "";
+    ziel = (p.get("ziel") === "axenita") ? "axenita" : "kisim";
     document.title = "Textbausteine-Fenster " + nonce;
     // VOR dem ersten Zeichnen: Fenster-Klasse und schlanker Modus,
     // damit Masse (Kopfhoehe) und Inhalt von Anfang an stimmen.
@@ -124,5 +179,6 @@ TB.fensterModus = (function () {
   else
     start();
 
-  return { start: start, pruefeNeu: pruefeNeu, uebergeben: uebergeben };
+  return { start: start, pruefeNeu: pruefeNeu, uebergeben: uebergeben,
+           knopfText: knopfText };
 })();

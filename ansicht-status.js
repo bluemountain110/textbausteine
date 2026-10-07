@@ -132,7 +132,8 @@ TB.ansichtStatus = (function () {
     flaeche.appendChild(linksSpalte);
     var rechts = zeichneRechts(m);
     if (fensterModus) {
-      var gross = el("button", "fenster-knopf-gross", TS().fensterKnopf);
+      var gross = el("button", "fenster-knopf-gross",
+        TB.fensterModus.knopfText());
       gross.addEventListener("click", function () {
         TB.fensterModus.uebergeben(gross); });
       rechts.appendChild(gross);

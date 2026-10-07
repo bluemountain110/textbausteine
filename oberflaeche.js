@@ -400,6 +400,11 @@ TB.oberflaeche = (function () {
       console.log("RTF-Vorrat: " + nachgeruestet + " Baustein(e) nachgerüstet.");
       TB.abgleich.anstossen();
     }
+    // 17.6: ;;ber bekommt einmalig die Zwei-Zeilen-Fassung (Naed 7.10.).
+    if (S.berZweiZeilen && S.berZweiZeilen()) {
+      console.log(";;ber: Zwei-Zeilen-Fassung eingespielt.");
+      TB.abgleich.anstossen();
+    }
     setzeKopf();
     document.addEventListener("keydown", function (ev) {
       // Steht der Cursor in einem Feld, mischt sich die App nicht ein —
