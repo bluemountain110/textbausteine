@@ -123,7 +123,7 @@ TB.eegGrundlage = (function () {
     entChips: ["Spikes", "Sharp-Wave-Komplexe", "Spike-Wave-Komplexe"],
     // Punkte, die IMMER hinter dem Aufklapp-Pfeil stehen, auch wenn sie
     // (etwa durch den Normalbefund) angewaehlt sind (Naed 5.10.).
-    hinterPfeil: ["abl_satz"],
+    hinterPfeil: ["abl_satz", "nv_variante", "kl_breach"],
     transSchluss: ", die die Kriterien für epilepsietypische Potentiale nicht vollständig erfüllen",
     transWort: "steilere Transienten",
     transAdjektiv: { "Vereinzelt": "Vereinzelte", "Wiederholt": "Wiederholte" },
@@ -395,12 +395,12 @@ TB.eegGrundlage = (function () {
     p("se_acns", "se", false,
       "ACNS-Zeitkriterium eines elektrographischen Status erfüllt (mindestens 10 Minuten kontinuierlich bzw. 20 % einer Ableitungsstunde)."),
     // ---- Normvarianten ------------------------------------------------
-    p("nv_variante", "normvarianten", true,
+    p("nv_variante", "normvarianten", false,
       aw("Variante", "Mu-Rhythmus zentral, blockiert durch Bewegung|Lambda-Wellen okzipital|POSTS|Wicket-Spikes temporal|BETS (benigne epileptiforme Transienten des Schlafs, small sharp spikes)|RMTD (rhythmische mitteltemporale Theta-Aktivität)|14-und-6/s-positive Spitzen|6/s-Spike-Wave (Phantom-Spike-Wave)|SREDA") +
       aw("Seite", "| links| rechts| bds.") +
       " — einer Normvariante ohne pathologische Bedeutung entsprechend."),
     // ---- Knochenlücke -------------------------------------------------
-    p("kl_breach", "knochenluecke", true,
+    p("kl_breach", "knochenluecke", false,
       "Breach-Rhythmus über der Knochenlücke " + aw("Ort", ORT) + " " + aw("Seite", SEITE) +
       ": amplitudenerhöhte, teils steiler konfigurierte Aktivität — dort nicht sicher als epilepsietypisch zu werten."),
     // ---- Klinische Ereignisse -----------------------------------------
@@ -426,7 +426,7 @@ TB.eegGrundlage = (function () {
   function vorlagen() {
     return [
       { id: "v_eeg", name: "Normal", kuerzel: "eeg",
-        punkte: ["abl_satz", "ga_grundrhythmus", "ga_blockade",
+        punkte: ["ind_standard", "abl_satz", "ga_grundrhythmus", "ga_blockade",
                  "vig_haupt", "vl_keine", "ent_keine", "hv_haupt",
                  "ps_haupt", "ekg_haupt"],
         zusatz: ["ga_beta", "vl_irda", "nv_variante", "kl_breach"],
@@ -450,7 +450,7 @@ TB.eegGrundlage = (function () {
   // 16.1 hat den Katalog umgebaut (Schnell-Befund): stand-Wechsel löst
   // in eeg.js den einmaligen Vollersatz aus (eigene Punkte mit
   // id-Anfang "eig" überleben ihn).
-  var KATALOG_STAND = "2026-10-05";
+  var KATALOG_STAND = "2026-10-06";
 
   function master() {
     return { stand: KATALOG_STAND,

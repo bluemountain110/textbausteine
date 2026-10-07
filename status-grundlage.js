@@ -33,6 +33,16 @@ TB.statusGrundlage = (function () {
   // Einzelmerkmale der Kraftprüfungen (Nachbesserung 27.9., Näd):
   // an-/abwählbar; der Text nennt nur die Gewählten, die Untergruppen
   // (gruppe) sind reine Zwischentitel in der Auswahl.
+  // 17.5 (Naed): Muskeleigenreflexe einzeln an-/abwaehlbar wie die
+  // Einzelkraftpruefung; wert ersetzt das Kraft-Suffix.
+  var MERKREFLEXE = [
+      { id: "bsr", name: "BSR", wert: "+/+", gruppe: "Arme" },
+      { id: "tsr", name: "TSR", wert: "+/+", gruppe: "Arme" },
+      { id: "rpr", name: "RPR", wert: "+/+", gruppe: "Arme" },
+      { id: "psr", name: "PSR", wert: "+/+", gruppe: "Beine" },
+      { id: "asr", name: "ASR", wert: "+/+", gruppe: "Beine" },
+      { id: "addukt", name: "Adduktorenreflex", wert: "+/+", gruppe: "Beine" }
+  ];
   var MERKARME = [
       { id: "pect", name: "Mm. pectorales", gruppe: "Schultergürtel" },
       { id: "innenrot", name: "Arminnenrotation", gruppe: "Schultergürtel" },
@@ -219,7 +229,7 @@ TB.statusGrundlage = (function () {
     u("myotonie", "motorik", "Myotone Zeichen", "keine verlängerte Anspannung nach Faustschluss, keine Perkussionsmyotonie.", false, [n(2, ["Bewegungsmuster"])]),
     u("belastungstest", "motorik", "Repetitiver Belastungstest", "20× Faustschluss ohne Dekrement, Armvorhalte ohne Ermüdung.", false, [n(4, ["Muskelausdauerbelastung"])]),
     // ---- Reflexe -----------------------------------------------------
-    u("mer", "reflexe", "Muskeleigenreflexe (re/li)", "BSR +/+, TSR +/+, RPR +/+, PSR +/+, ASR +/+, Adduktorenreflex +/+.", true, [n(2, ["Reflexprüfung"]), n(3, ["Reflexprüfung"])]),
+    u("mer", "reflexe", "Muskeleigenreflexe (re/li)", "BSR +/+, TSR +/+, RPR +/+, PSR +/+, ASR +/+, Adduktorenreflex +/+.", true, [n(2, ["Reflexprüfung"]), n(3, ["Reflexprüfung"])], MERKREFLEXE),
     u("troemner", "reflexe", "Trömner", "-/-.", true, [n(2, ["Reflexprüfung"])]),
     u("babinski", "reflexe", "Babinski-Zeichen", "-/-.", true, [n(3, ["Reflexprüfung"])]),
     u("pyramidenzeichen", "reflexe", "Weitere Pyramidenbahnzeichen", "Chaddock, Oppenheim und Gordon bds. negativ; Rossolimo -/-.", false, [n(12, ["Gordon","Oppenheim"])]),
@@ -333,6 +343,7 @@ TB.statusGrundlage = (function () {
         "troemner"
       ],
       "merkmalAb": {
+        "mer": ["psr", "asr", "addukt"],
         "kraftarme": [
           "pect",
           "innenrot",
@@ -350,7 +361,6 @@ TB.statusGrundlage = (function () {
       ],
       "normalAb": {
         "beruehrung": "an Armen und Händen symmetrisch normal.",
-        "mer": "BSR +/+, TSR +/+, RPR +/+.",
         "pallaesthesie": "radial 8/8"
       },
       "info": "Typisch: Thenaratrophie und APB-Schwäche (Daumenabduktion/-opposition), Tinel über dem Karpaltunnel, Phalen positiv; Sensibilitätsstörung Dig. I–III mit Spaltung des Ringfingers. DD C6/C7-Radikulopathie und Ulnarisneuropathie."
@@ -453,9 +463,9 @@ TB.statusGrundlage = (function () {
         "nachsprechen",
         "aufforderungen"
       ],
-      "merkmalAb": {},
+      "merkmalAb": {
+        "mer": ["tsr", "addukt"],},
       "normalAb": {
-        "mer": "BSR +/+, RPR +/+, PSR +/+, ASR +/+."
       }
     },
     {
@@ -1471,7 +1481,7 @@ TB.statusGrundlage = (function () {
     }
   ];
 
-  var KATALOG_STAND = "2026-10-03";
+  var KATALOG_STAND = "2026-10-06";
   var TEILMENGEN_STAND = "2026-10-03c";
 
   function master() {

@@ -34,7 +34,6 @@ TB.ansichtStatus = (function () {
   var abweichungen = {};       // untersuchungs-id -> überschriebener Befund
   var offeneSelten = {};       // kategorie-id -> true
   var suchbegriff = "";
-  var nurGewaehlte = false;   // Schalter „Nur Gewählte" (Sammelrunde 27.9.)
   var bearbeiteId = null;      // Untersuchung, deren Befund gerade offen ist
   var merkmalWahl = {};        // uid -> { merkmal-id: true = ABgewählt }
   var offeneMerkmale = {};     // uid -> true (Muskel-Auswahl aufgeklappt)
@@ -101,7 +100,7 @@ TB.ansichtStatus = (function () {
 
     if (!fensterModus) zeichneTeilmengen(klebt);
     TB.ansichtStatusTardoc.zeichne(klebt, m, gewaehltAlsMenge(m),
-      merkmalWahl);
+      merkmalWahl, function () { neu(); });
 
     var suchzeile = el("div", "status-suchzeile");
     var suche = el("input", "status-suche");
@@ -114,15 +113,6 @@ TB.ansichtStatus = (function () {
       neu();
     });
     suchzeile.appendChild(suche);
-    if (!fensterModus) {
-      var nurG = el("button",
-        "status-nurgew" + (nurGewaehlte ? " aktiv" : ""),
-        TS().nurGewaehlteKnopf);
-      nurG.addEventListener("click", function () {
-        nurGewaehlte = !nurGewaehlte; neu(); });
-      suchzeile.appendChild(nurG);
-      klebt.appendChild(suchzeile);
-    }
 
     // Nachbesserung 27.9.: Der klebende Kopf lebt in der LINKEN Spalte,
     // damit die rechte Spalte (Vorschau, Kopieren) ihr eigenes Kleben
@@ -131,18 +121,13 @@ TB.ansichtStatus = (function () {
     var linksSpalte = el("div", "status-linksspalte");
     linksSpalte.appendChild(klebt);
     var links = el("div", "status-maske");
-    if (fensterModus) {
-      // 17.4 (Naed): oben NUR das Gewaehlte, dann die Suche, darunter
-      // alles Uebrige offen zum Ergaenzen.
-      TB.status.jeKategorie(m).forEach(function (block) {
-        zeichneKategorie(links, m, block, "gewaehlt"); });
-      links.appendChild(suchzeile);
-      TB.status.jeKategorie(m).forEach(function (block) {
-        zeichneKategorie(links, m, block, "rest"); });
-    } else {
-      TB.status.jeKategorie(m).forEach(function (block) {
-        zeichneKategorie(links, m, block); });
-    }
+    // 17.5 (Naed): Zwei-Block-Aufbau UEBERALL — oben nur das Gewaehlte,
+    // dann die Suche, darunter alles Uebrige offen zum Ergaenzen.
+    TB.status.jeKategorie(m).forEach(function (block) {
+      zeichneKategorie(links, m, block, "gewaehlt"); });
+    links.appendChild(suchzeile);
+    TB.status.jeKategorie(m).forEach(function (block) {
+      zeichneKategorie(links, m, block, "rest"); });
     linksSpalte.appendChild(links);
     flaeche.appendChild(linksSpalte);
     var rechts = zeichneRechts(m);
@@ -218,7 +203,6 @@ TB.ansichtStatus = (function () {
       merkmalZusatz[uid] = zs;
       offeneMerkmale[uid] = true;
     });
-    nurGewaehlte = true;
     // Gespeicherte Muskel-Auswahl dieses Status anwenden (27.9.)
     Object.keys(t.merkmalAb || {}).forEach(function (uid) {
       var ab = {};
@@ -295,11 +279,7 @@ TB.ansichtStatus = (function () {
     var sichtbar = function (u) {
       if (modus === "gewaehlt")
         return istGewaehlt(u.id) || !!angeheftet[u.id];
-      if (modus === "rest") {
-        if (istGewaehlt(u.id) || angeheftet[u.id]) return false;
-        return passtZurSuche(u);
-      }
-      if (nurGewaehlte && !istGewaehlt(u.id) && !angeheftet[u.id]) return false;
+      if (istGewaehlt(u.id) || angeheftet[u.id]) return false;
       return passtZurSuche(u);
     };
     // Gewählte und Zusätze stehen immer offen da, auch wenn sie „selten“
@@ -318,14 +298,13 @@ TB.ansichtStatus = (function () {
     haeufige.forEach(function (u) { kasten.appendChild(zeile(u)); });
 
     if (seltene.length) {
-      var offen = !!offeneSelten[block.kategorie.id] || !!suchbegriff ||
-                  (modus !== "rest" && nurGewaehlte);
+      var offen = !!offeneSelten[block.kategorie.id] || !!suchbegriff;
       if (offen) {
         seltene.forEach(function (u) {
           var z = zeile(u); z.classList.add("selten");
           kasten.appendChild(z); });
       }
-      if (!suchbegriff && (modus === "rest" || !nurGewaehlte)) {
+      if (!suchbegriff) {
         var schalter = el("button", "status-weitere", offen
           ? TS().weitereAuf
           : TS().weitereZu.replace("%s", String(seltene.length)));
@@ -435,7 +414,7 @@ TB.ansichtStatus = (function () {
     var an = TB.status.gewaehlteMerkmale(u, merkmalWahl).length;
     var sterne = Object.keys(merkmalZusatz[u.id] || {}).length;
     var knopf = el("button", "status-merkmal-knopf",
-      TS().muskelnKnopf.replace("%s", an).replace("%s", u.merkmale.length) +
+      (u.id === "mer" ? TS().reflexeKnopf : TS().muskelnKnopf).replace("%s", an).replace("%s", u.merkmale.length) +
       (sterne ? "  \u2605" + sterne : ""));
     knopf.title = TS().muskelnHinweis;
     knopf.addEventListener("click", function () {

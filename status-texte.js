@@ -84,6 +84,7 @@ TB.statusTexte = {
   zusatzAn: "Zusatz dieses Status: erscheint beim Laden sichtbar, aber nicht angewählt — Klick nimmt ihn wieder raus",
   zusatzAus: "Als Zusatz vormerken: wird mit „Als eigenen Status speichern“ dem Status mitgegeben und erscheint dann beim Laden sichtbar, aber nicht angewählt",
   muskelnKnopf: "Muskeln (%s/%s)",
+  reflexeKnopf: "Reflexe (%s/%s)",
   muskelnHinweis: "Einzelne Muskeln an- und abwählen — der Text nennt nur die gewählten",
   muskelnKeine: "keine Defizite.",
   merkmaleAlleAn: "alle wählen",

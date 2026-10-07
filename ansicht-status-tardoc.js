@@ -18,7 +18,7 @@ TB.ansichtStatusTardoc = (function () {
   // Fusszeile und Nachlese-Knopf erst hinter dem Pfeil.
   var offenDetails = false;
 
-  function zeichne(wurzel, m, menge, merkmalWahl) {
+  function zeichne(wurzel, m, menge, merkmalWahl, neuZeichnen) {
     var stand = TB.status.tardoc(m, menge, merkmalWahl);
     var kasten = el("div", "status-tardoc" +
       (offenDetails ? "" : " kompakt"));
@@ -46,7 +46,9 @@ TB.ansichtStatusTardoc = (function () {
     pfeil.title = TS().tardocPfeil;
     pfeil.addEventListener("click", function () {
       offenDetails = !offenDetails;
-      TB.oberflaeche.neu();
+      // 17.5: Neuzeichnen ueber den Aufrufer — TB.oberflaeche.neu gibt
+      // es nicht; genau daran scheiterte der Knopf (Naed 6.10.).
+      if (typeof neuZeichnen === "function") neuZeichnen();
     });
     kopfzeile.appendChild(pfeil);
     kasten.appendChild(kopfzeile);

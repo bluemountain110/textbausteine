@@ -39,6 +39,11 @@ TB.fensterModus = (function () {
         TB.oberflaeche.geheZu("status");
       }
     } else {
+      // 17.5: das EEG-Fenster startet mit der Vorlage des Kuerzels
+      // (ohne Kuerzel: Normal), damit der Normalbefund vorsteht.
+      try {
+        TB.ansichtEeg.aktiviereVorlagePerKuerzel(kuerzel || "eeg");
+      } catch (e) { /* Vorlage fehlt — leer starten */ }
       TB.oberflaeche.geheZu("eeg");
     }
   }

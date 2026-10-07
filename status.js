@@ -336,7 +336,7 @@ TB.status = (function () {
   // ---- Fliesstext (HTML und reiner Text) ------------------------------
   // Kategorien unterstrichen, jede auf neuer Zeile; Untersuchungen als
   // „Name: Befund.“; Überschriebenes fett in Dunkelgrau (Näd 26.9.).
-  var ABWEICHFARBE = "#444444";
+  var ABWEICHFARBE = "#000000";
   function schuetze(t) {
     return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
@@ -371,7 +371,7 @@ TB.status = (function () {
     var an = gewaehlteMerkmale(u, merkmalWahl);
     if (!an.length) return "xx.";
     return an.map(function (mk) {
-      return mk.name + " M5/M5"; }).join(", ") + ".";
+      return mk.name + " " + (mk.wert || "M5/M5"); }).join(", ") + ".";
   }
 
   function befundVon(u, abweichungen, merkmalWahl, normalUeber) {

@@ -716,17 +716,19 @@ TB.ansichtEeg = (function () {
     // Zeile; Ausbreitungs-Platzhalter ist ein schlichtes "?".
     var zwei = el("div", "eeg-zeile-zwei");
     if (z.lok[0] !== "generalisiert") {
-      var a = auswahl(R().ausbreitungen, z.ausbreitung || "", "?");
-      a.title = "Ausbreitung";
-      a.addEventListener("change", function () {
-        z.ausbreitung = a.value; fasseAn(); neu(); });
-      zwei.appendChild(a);
-
-      var s = auswahl(R().seiten, z.seite || "", "— Seite");
+      // 17.5 (Naed): zuerst die Seite, dann die Ausbreitung — beide
+      // mit Fragezeichen-Platzhalter.
+      var s = auswahl(R().seiten, z.seite || "", "Seite?");
       s.title = "Seite";
       s.addEventListener("change", function () {
         z.seite = s.value; fasseAn(); neu(); });
       zwei.appendChild(s);
+
+      var a = auswahl(R().ausbreitungen, z.ausbreitung || "", "Ausbreitung?");
+      a.title = "Ausbreitung";
+      a.addEventListener("change", function () {
+        z.ausbreitung = a.value; fasseAn(); neu(); });
+      zwei.appendChild(a);
     }
     if (istTrans) {
       var einLabel = el("label", "eeg-einge");
@@ -1076,6 +1078,17 @@ TB.ansichtEeg = (function () {
     return TB.eeg.fliesstext(m, gewaehltAlsMenge(m), werte, abweichungen,
                              aktiveZeilen());
   }
-  return { zeichne: zeichne, aktuelleFelder: aktuelleFelder,
+  // 17.5: Vorlage von aussen (Fenster-Weg, Uebersicht) per Kuerzel.
+  function aktiviereVorlagePerKuerzel(k) {
+    var kk = String(k || "eeg").toLowerCase();
+    var v = (TB.eeg.vorlagen() || []).find(function (x) {
+      return String(x.kuerzel || "").toLowerCase() === kk; });
+    if (!v) return false;
+    vorlageAktivieren(v, true);
+    return true;
+  }
+
+  return { aktiviereVorlagePerKuerzel: aktiviereVorlagePerKuerzel,
+           zeichne: zeichne, aktuelleFelder: aktuelleFelder,
            setzeFensterModus: setzeFensterModus };
 })();

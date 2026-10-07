@@ -25,10 +25,60 @@ TB.ansichtUebersicht = (function () {
     leer: "Noch keine fertigen Bausteine.",
     ohneKategorie: "(ohne Kategorie)",
     ohneKuerzel: "—",
-    nie: "nie benutzt"
+    nie: "nie benutzt",
+    werk: "Werk",
+    werkStatus: "Status (Werk)",
+    werkEeg: "EEG (Werk)",
+    werkBerichte: "Berichte (Werk)"
   };
   var sortierung = "kategorie";
 
+  // 17.5 (Naed): Alles mit ;;Kuerzel gehoert in die Uebersicht — auch
+  // die Werke (Status-Teilmengen, EEG-Vorlagen, MC-Bericht).
+  function werkGruppen() {
+    var g = [];
+    try {
+      var st = (TB.status.teilmengen() || []).map(function (t) {
+        return { kuerzel: t.kuerzel || "", titel: t.name || "?",
+                 zeile: (t.punkte || []).length + " Untersuchungen",
+                 klick: function () {
+                   TB.ansichtStatus.aktiviereTeilmenge(t.kuerzel); } };
+      });
+      if (st.length) g.push({ name: TU.werkStatus, zeilen: st });
+    } catch (e) { /* Status-Werk nicht bereit */ }
+    try {
+      var ee = (TB.eeg.vorlagen() || []).map(function (v) {
+        return { kuerzel: v.kuerzel || "", titel: "EEG — " + (v.name || "?"),
+                 zeile: (v.punkte || []).length + " Punkte",
+                 klick: function () {
+                   TB.ansichtEeg.aktiviereVorlagePerKuerzel(v.kuerzel);
+                   TB.oberflaeche.geheZu("eeg"); } };
+      });
+      if (ee.length) g.push({ name: TU.werkEeg, zeilen: ee });
+    } catch (e) { /* EEG-Werk nicht bereit */ }
+    g.push({ name: TU.werkBerichte, zeilen: [
+      { kuerzel: "bermc", titel: "Bericht Memory Clinic",
+        zeile: "Strg+Alt+B am Arbeitsplatz",
+        klick: function () {
+          try { TB.oberflaeche.geheZu("berichte"); } catch (e) {} } }
+    ] });
+    return g;
+  }
+  function werkeAnhaengen(ziel) {
+    werkGruppen().forEach(function (gruppe) {
+      ziel.appendChild(el("h3", "", gruppe.name));
+      gruppe.zeilen.forEach(function (w) {
+        var z = el("div", "uebersicht-zeile");
+        z.addEventListener("click", w.klick);
+        z.appendChild(el("span", "uebersicht-kuerzel",
+          w.kuerzel ? ";;" + w.kuerzel : TU.ohneKuerzel));
+        z.appendChild(el("span", "uebersicht-titel", w.titel));
+        z.appendChild(el("span", "uebersicht-text", w.zeile));
+        z.appendChild(el("span", "uebersicht-benutzt", TU.werk));
+        ziel.appendChild(z);
+      });
+    });
+  }
   function fertige() {
     return TB.speicher.alleAktiven().filter(function (b) {
       return !b.entwurf && b.art !== "idee"; });
@@ -77,6 +127,14 @@ TB.ansichtUebersicht = (function () {
       zeilen.push((b.kuerzel ? ";;" + b.kuerzel : TU.ohneKuerzel) +
         "  " + (b.titel || "?") + "  —  " + ersteZeile(b));
     });
+    werkGruppen().forEach(function (gruppe) {
+      if (zeilen.length) zeilen.push("");
+      zeilen.push("== " + gruppe.name + " ==");
+      gruppe.zeilen.forEach(function (w) {
+        zeilen.push((w.kuerzel ? ";;" + w.kuerzel : TU.ohneKuerzel) +
+          "  " + w.titel + "  —  " + w.zeile);
+      });
+    });
     return zeilen.join("\n");
   }
 
@@ -106,11 +164,10 @@ TB.ansichtUebersicht = (function () {
     leiste.appendChild(pdf);
     wurzel.appendChild(leiste);
 
+    var tabelle = el("div", "uebersicht-tabelle");
     if (!liste.length) {
       wurzel.appendChild(el("p", "klein-hinweis", TU.leer));
-      return;
     }
-    var tabelle = el("div", "uebersicht-tabelle");
     var kategorie = null;
     liste.forEach(function (b) {
       if (sortierung === "kategorie") {
@@ -132,6 +189,7 @@ TB.ansichtUebersicht = (function () {
       z.appendChild(el("span", "uebersicht-benutzt", benutztText(b)));
       tabelle.appendChild(z);
     });
+    werkeAnhaengen(tabelle);
     wurzel.appendChild(tabelle);
   }
 

@@ -540,7 +540,7 @@ TB.selbsttest = (function () {
           f.text === "Kopf und Hirnnerven: Meningismus: angedeutet endgradig.",
       detail: f.text });
     faelle.push({ name: "Fliesstext: Abweichung fett in Dunkelgrau",
-      ok: f.html.indexOf("<b><span style=\"color:#444444\">") !== -1,
+      ok: f.html.indexOf("<b><span style=\"color:#000000\">") !== -1,
       detail: f.html.slice(0, 120) });
     var teilA = "radial 8/8, patellär 8/8, malleolär 8/8, Grosszehengrundgelenk 8/8.";
     var teilB = "radial 8/8, patellär 8/8, malleolär 4/6, Grosszehengrundgelenk 8/8.";
@@ -914,6 +914,39 @@ TB.selbsttest = (function () {
       ok: probeH.indexOf("mit vereinzelt eingelagerten steileren " +
         "Transienten") !== -1 && verteilt.einzeln.length === 0,
       detail: probeH });
+    // ---- 17.5 -------------------------------------------------------
+    var sm = TB.status.master() || TB.statusGrundlage.master();
+    var merU = (sm.untersuchungen || []).find(function (x) {
+      return x.id === "mer"; });
+    f.push({ name: "17.5: Muskeleigenreflexe einzeln waehlbar (6 Merkmale)",
+      ok: !!merU && !!merU.merkmale && merU.merkmale.length === 6 &&
+          merU.merkmale[0].wert === "+/+",
+      detail: merU && JSON.stringify((merU.merkmale || []).map(
+        function (x) { return x.id; })) });
+    var merText = TB.status.fliesstext(sm, { mer: true }, {},
+      { mer: { psr: true, asr: true, addukt: true } }, {});
+    f.push({ name: "17.5: Reflex-Text nennt nur die Gewaehlten",
+      ok: merText.text.indexOf("BSR +/+, TSR +/+, RPR +/+.") !== -1 &&
+          merText.text.indexOf("PSR") === -1,
+      detail: merText.text });
+    var ctsT5 = (TB.statusGrundlage.teilmengen() || []).find(function (t) {
+      return t.id === "cts"; });
+    f.push({ name: "17.5: CTS traegt die Reflex-Auswahl als Merkmale",
+      ok: !!ctsT5 && !!ctsT5.merkmalAb && !!ctsT5.merkmalAb.mer &&
+          !(ctsT5.normalAb && ctsT5.normalAb.mer !== undefined),
+      detail: ctsT5 && JSON.stringify(ctsT5.merkmalAb &&
+        ctsT5.merkmalAb.mer) });
+    var fettT = TB.status.fliesstext(sm, { edss: true },
+      { edss: "x y z" }, {}, {});
+    f.push({ name: "17.5: Ueberschreibung fett in Schwarz (kein Grau)",
+      ok: fettT.html.indexOf("#000000") !== -1 &&
+          fettT.html.indexOf("#444444") === -1,
+      detail: fettT.html.slice(0, 160) });
+    var vN = (TB.eegGrundlage.vorlagen() || []).find(function (v) {
+      return v.id === "v_eeg"; });
+    f.push({ name: "17.5: Normal-Vorlage waehlt die Indikation Standard vor",
+      ok: !!vN && vN.punkte.indexOf("ind_standard") !== -1,
+      detail: vN && vN.punkte.join(",") });
     f.push({ name: "Kürzel-Kollision weicht mit Zahl aus",
       ok: TB.status.kuerzelFuerStatus("CTS", liste, "x") === "statcts2",
       detail: TB.status.kuerzelFuerStatus("CTS", liste, "x") });
@@ -930,7 +963,7 @@ TB.selbsttest = (function () {
       pruefeVarianten().map(function (f) { f.gruppe = "Standort-Fassungen"; return f; }),
       pruefeMasken().map(function (f) { f.gruppe = "Masken"; return f; }),
       pruefeStatus().map(function (f) { f.gruppe = "Status-Werk"; return f; }),
-      pruefeSammelrunde().map(function (f) { f.gruppe = "Sammelrunde 17.4"; return f; }),
+      pruefeSammelrunde().map(function (f) { f.gruppe = "Sammelrunde 17.5"; return f; }),
       pruefeEeg().map(function (f) { f.gruppe = "EEG-Werk"; return f; }),
       pruefeBerichtMc().map(function (f) { f.gruppe = "Bericht Memory Clinic"; return f; })
     ));
