@@ -975,6 +975,39 @@ TB.selbsttest = (function () {
       ok: !berJetzt || (String(berJetzt.text || "").indexOf("&nbsp;{{Ende}}") === -1 &&
           JSON.stringify(berJetzt.varianten || {}).indexOf("&nbsp;{{Ende}}") === -1),
       detail: berJetzt ? "noch alte Fassung \u2014 bitte Claude melden" : "kein ;;ber vorhanden" });
+    var berJ = TB.speicher.holenPerKuerzel("ber");
+    f.push({ name: "17.7: Dein ;;ber hat die neue Reihenfolge (Psychiatrische nach Familienanamnese)",
+      ok: !berJ || String(berJ.text || "").indexOf("<u>Familienanamnese</u>") <
+                   String(berJ.text || "").indexOf("<u>Psychiatrische Anamnese</u>"),
+      detail: berJ ? "noch alte Reihenfolge \u2014 bitte Claude melden" : "kein ;;ber vorhanden" });
+    var smR = TB.status.master() || TB.statusGrundlage.master();
+    var merR = (smR.untersuchungen || []).find(function (x) { return x.id === "mer"; });
+    f.push({ name: "17.7: Adduktorenreflex heisst AddR",
+      ok: !!merR && JSON.stringify(merR).indexOf("Adduktorenreflex") === -1 &&
+          JSON.stringify(merR).indexOf("AddR") !== -1,
+      detail: merR && merR.normal });
+    var hdAbw = {}; hdAbw.haendigkeit = "links.";
+    var hdF = TB.status.fliesstext(smR, { haendigkeit: true }, hdAbw, {}, {});
+    f.push({ name: "17.7: Überschriebene Händigkeit bleibt normal (nicht fett)",
+      ok: hdF.html.indexOf("<b>") === -1 && hdF.text.indexOf("links.") !== -1,
+      detail: hdF.html });
+    var tz = { herde: [], entladungen: [], medis: [],
+      transienten: [{ aktiv: true, haeufigkeit: "Vereinzelt", lok: ["temporal", "", "", ""],
+                      seite: "links", ausbreitung: "", eingelagert: false }] };
+    var bt = TB.eeg.autoBeurteilung({ ent_keine: true }, {}, tz)
+      .map(function (x) { return x.text; }).join(" ");
+    f.push({ name: "17.7: Mit steilen Transienten entfällt „Keine epilepsietypischen Potentiale“",
+      ok: bt.indexOf("Keine epilepsietypischen") === -1 && bt.indexOf("steilere Transienten") !== -1,
+      detail: bt });
+    var bt2 = TB.eeg.autoBeurteilung({ ent_keine: true }, {}, { herde: [], entladungen: [] })
+      .map(function (x) { return x.text; }).join(" ");
+    f.push({ name: "17.7: Ohne Transienten bleibt „Keine epilepsietypischen Potentiale“",
+      ok: bt2.indexOf("Keine epilepsietypischen Potentiale") !== -1, detail: bt2 });
+    var blk = TB.eeg.block({ befund: { html: "<p>x</p>", text: "x" },
+                             beurteilung: { html: "<p>y</p>", text: "y" } });
+    f.push({ name: "17.7: EEG-Block mit fetten, nicht unterstrichenen Titeln",
+      ok: blk.html.indexOf("<b>Befund</b>") !== -1 && blk.html.indexOf("<u>") === -1,
+      detail: blk.html });
     f.push({ name: "17.6: Fenster-Knopf nennt das Zielprogramm",
       ok: typeof TB.fensterModus.knopfText === "function" &&
           !!TB.statusTexte.fensterKnopfAxenita,
@@ -995,7 +1028,7 @@ TB.selbsttest = (function () {
       pruefeVarianten().map(function (f) { f.gruppe = "Standort-Fassungen"; return f; }),
       pruefeMasken().map(function (f) { f.gruppe = "Masken"; return f; }),
       pruefeStatus().map(function (f) { f.gruppe = "Status-Werk"; return f; }),
-      pruefeSammelrunde().map(function (f) { f.gruppe = "Sammelrunde 17.6"; return f; }),
+      pruefeSammelrunde().map(function (f) { f.gruppe = "Sammelrunde 17.7"; return f; }),
       pruefeEeg().map(function (f) { f.gruppe = "EEG-Werk"; return f; }),
       pruefeBerichtMc().map(function (f) { f.gruppe = "Bericht Memory Clinic"; return f; })
     ));

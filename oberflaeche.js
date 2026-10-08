@@ -402,7 +402,7 @@ TB.oberflaeche = (function () {
     }
     // 17.6: ;;ber bekommt einmalig die Zwei-Zeilen-Fassung (Naed 7.10.).
     if (S.berZweiZeilen && S.berZweiZeilen()) {
-      console.log(";;ber: Zwei-Zeilen-Fassung eingespielt.");
+      console.log(";;ber: neueste Fassung eingespielt.");
       TB.abgleich.anstossen();
     }
     setzeKopf();

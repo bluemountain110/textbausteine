@@ -140,14 +140,25 @@ TB.wolke = (function () {
 
   // Holt bei Bedarf ein frisches Zugangszeichen. Läuft still.
   function frischHalten() {
+    // 17.7 (Spital: Fenster verlangte erneut die Anmeldung): Zuerst die
+    // NEUESTE Sitzung aus dem Speicher holen — ein anderes App-Fenster
+    // hat sie vielleicht schon erneuert. Mit einem veralteten
+    // Erneuerungs-Schlüssel meldet der Dienst sonst ALLE Fenster ab.
+    ladeSitzung();
     if (!angemeldet()) return Promise.resolve({ ok: false, fehler: TB.T.wolkeFehlerAbgemeldet });
     if (sitzung.ablauf - Date.now() > 120000) return Promise.resolve({ ok: true });
+    var benutzt = sitzung.refresh_token;
     return ruf("/auth/v1/token?grant_type=refresh_token", {
       methode: "POST", mitAnmeldung: false,
       koerper: { refresh_token: sitzung.refresh_token }
     }).then(function (a) {
       if (!a.ok) {
-        if (a.status === 400 || a.status === 401) { sitzung = null; sichereSitzung(); }
+        if (a.status === 400 || a.status === 401) {
+          // Hat ein anderes Fenster gerade erneuert, gilt dessen Sitzung.
+          ladeSitzung();
+          if (sitzung && sitzung.refresh_token !== benutzt) return { ok: true };
+          sitzung = null; sichereSitzung();
+        }
         return { ok: false, fehler: a.fehler };
       }
       sitzung.access_token = a.daten.access_token;

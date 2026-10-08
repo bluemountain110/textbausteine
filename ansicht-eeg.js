@@ -193,7 +193,8 @@ TB.ansichtEeg = (function () {
         zeichneEingeklappt(links, block); });
     }
     links.appendChild(el("h3", "eeg-beurteilung-titel", TE().beurteilungTitel));
-    zeichneAutoBeurteilung(links, m);
+    // 17.7 (Naed): Der Automatik-Block links ist redundant (rechts in
+    // der Vorschau steht dieselbe Beurteilung) und entfällt.
     TB.eeg.jeKategorie(m, "beurteilung").forEach(function (block) {
       zeichneKategorie(links, block); });
     linksSpalte.appendChild(links);
@@ -307,7 +308,8 @@ TB.ansichtEeg = (function () {
 
   function zeichneKategorie(ziel, block) {
     var kasten = el("section", "status-kategorie");
-    kasten.appendChild(el("h3", "", block.kategorie.name));
+    kasten.appendChild(el("h3", "", block.kategorie.id === "beurteilung"
+      ? TE().beurteilungZusatzTitel : block.kategorie.name));
     fuelleKategorie(kasten, block);
     if (kasten.children.length > 1) ziel.appendChild(kasten);
   }

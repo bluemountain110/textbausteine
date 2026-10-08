@@ -87,7 +87,7 @@ TB.fensterModus = (function () {
     [[E.indikationTitel, f.indikation], [E.anamneseTitel, f.anamnese]]
       .forEach(function (paar) {
         if (!paar[1] || !String(paar[1].text || "").trim()) return;
-        html += "<p><u>" + paar[0] + "</u></p>" + paar[1].html + "<p><br></p>";
+        html += "<p><b>" + paar[0] + "</b></p>" + paar[1].html + "<p><br></p>";
         text.push(paar[0] + "\n" + paar[1].text + "\n");
       });
     var b = TB.eeg.block(f);

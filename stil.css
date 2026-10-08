@@ -418,7 +418,7 @@ dialog.maske { width: min(720px, 94vw); }
 /* Übersicht */
 .uebersicht-tabelle h3 { margin: 12px 0 4px; }
 .uebersicht-zeile { display: grid;
-  grid-template-columns: 110px 220px minmax(0, 1fr) 90px;
+  grid-template-columns: 22ch 240px minmax(0, 1fr) 90px;
   gap: 10px; padding: 3px 0; border-bottom: 1px solid #eef1f2;
   align-items: baseline; }
 @media (max-width: 800px) {
@@ -426,7 +426,7 @@ dialog.maske { width: min(720px, 94vw); }
   .uebersicht-text, .uebersicht-benutzt { display: none; }
 }
 .uebersicht-kuerzel { font-family: ui-monospace, Consolas, monospace;
-  color: #2c7a7b; }
+  color: #2c7a7b; overflow-wrap: anywhere; }
 .uebersicht-titel { font-weight: 600; }
 .uebersicht-text { color: #5c6a6e; font-size: 0.88em; overflow: hidden;
   text-overflow: ellipsis; white-space: nowrap; }

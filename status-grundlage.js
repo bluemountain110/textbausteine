@@ -41,7 +41,7 @@ TB.statusGrundlage = (function () {
       { id: "rpr", name: "RPR", wert: "+/+", gruppe: "Arme" },
       { id: "psr", name: "PSR", wert: "+/+", gruppe: "Beine" },
       { id: "asr", name: "ASR", wert: "+/+", gruppe: "Beine" },
-      { id: "addukt", name: "Adduktorenreflex", wert: "+/+", gruppe: "Beine" }
+      { id: "addukt", name: "AddR", wert: "+/+", gruppe: "Beine" }
   ];
   var MERKARME = [
       { id: "pect", name: "Mm. pectorales", gruppe: "Schultergürtel" },
@@ -229,7 +229,7 @@ TB.statusGrundlage = (function () {
     u("myotonie", "motorik", "Myotone Zeichen", "keine verlängerte Anspannung nach Faustschluss, keine Perkussionsmyotonie.", false, [n(2, ["Bewegungsmuster"])]),
     u("belastungstest", "motorik", "Repetitiver Belastungstest", "20× Faustschluss ohne Dekrement, Armvorhalte ohne Ermüdung.", false, [n(4, ["Muskelausdauerbelastung"])]),
     // ---- Reflexe -----------------------------------------------------
-    u("mer", "reflexe", "Muskeleigenreflexe (re/li)", "BSR +/+, TSR +/+, RPR +/+, PSR +/+, ASR +/+, Adduktorenreflex +/+.", true, [n(2, ["Reflexprüfung"]), n(3, ["Reflexprüfung"])], MERKREFLEXE),
+    u("mer", "reflexe", "Muskeleigenreflexe (re/li)", "BSR +/+, TSR +/+, RPR +/+, PSR +/+, ASR +/+, AddR +/+.", true, [n(2, ["Reflexprüfung"]), n(3, ["Reflexprüfung"])], MERKREFLEXE),
     u("troemner", "reflexe", "Trömner", "-/-.", true, [n(2, ["Reflexprüfung"])]),
     u("babinski", "reflexe", "Babinski-Zeichen", "-/-.", true, [n(3, ["Reflexprüfung"])]),
     u("pyramidenzeichen", "reflexe", "Weitere Pyramidenbahnzeichen", "Chaddock, Oppenheim und Gordon bds. negativ; Rossolimo -/-.", false, [n(12, ["Gordon","Oppenheim"])]),
@@ -1481,7 +1481,7 @@ TB.statusGrundlage = (function () {
     }
   ];
 
-  var KATALOG_STAND = "2026-10-06";
+  var KATALOG_STAND = "2026-10-07";
   var TEILMENGEN_STAND = "2026-10-03c";
 
   function master() {
@@ -1491,7 +1491,11 @@ TB.statusGrundlage = (function () {
   }
   function teilmengen() { return JSON.parse(JSON.stringify(TEILMENGEN)); }
 
+  // 17.7 (Naed): Diese Angaben werden beim Ueberschreiben NICHT fett —
+  // eine andere Haendigkeit ist kein auffaelliger Befund.
+  var NIE_FETT = { haendigkeit: true };
   return { master: master, teilmengen: teilmengen, KATALOG_STAND: KATALOG_STAND,
+           NIE_FETT: NIE_FETT,
            TEILMENGEN_STAND: TEILMENGEN_STAND,
            UMSCHLUESSEL: {"weberrinne":["weber","rinne"],"gaumensegel":["gaumensegel","wuergreflex"],"lasegue":["lasegue","lasegueumgekehrt"],"kernig":["kernig","brudzinski"],"proximal":["aufstehenhocke","einbeinhuepfen","trendelenburg"],"merarme":["mer"],"merbeine":["mer"],"fnv":["fnv","ffv"],"sprache":["sprache","nachsprechen","aufforderungen"]} };
 })();

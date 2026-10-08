@@ -397,7 +397,8 @@ TB.status = (function () {
         var satzT = u.name + ": " + b.text;
         stueckeT.push(satzT);
         var satzH;
-        if (b.abweichend) {
+        var nieFett = !!(TB.statusGrundlage.NIE_FETT || {})[u.id];
+        if (b.abweichend && !nieFett) {
           // 5.10. (Näd, am Beispiel Sulcus n. ulnaris): Bei einer
           // Überschreibung wird die GANZE Angabe fett — Name UND
           // kompletter Befund —, nicht nur der veränderte Wortbereich.

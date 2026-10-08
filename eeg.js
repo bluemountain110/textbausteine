@@ -57,6 +57,7 @@ TB.eegTexte = {
   transEingelagert: "im Herd eingelagert",
   mediDazu: "+ Medikament",
   indikationTitel: "Indikation/Fragestellung",
+  beurteilungZusatzTitel: "Zusätzlich für Beurteilung",
   anamneseTitel: "Relevante Anamnese",
   kopierenIndikation: "Indikation kopieren",
   kopierenAnamnese: "Anamnese kopieren",
@@ -450,7 +451,9 @@ TB.eeg = (function () {
     if (ent.length) {
       ent.forEach(function (e, i) {
         saetze.push({ id: "auto_e" + i, text: entBeurteilungSatz(e) }); });
-    } else if (gewaehlt["ent_keine"]) {
+    } else if (gewaehlt["ent_keine"] && !(z.transienten || []).length) {
+      // 17.7 (Naed): Mit steilen Transienten entfaellt der Satz
+      // „Keine epilepsietypischen Potentiale".
       saetze.push({ id: "auto_ekeine",
         text: keineSatz("ent_keine", R().keineVariantenEtp,
                         R().keineEtp) });
@@ -584,8 +587,9 @@ TB.eeg = (function () {
   // unterstrichene Titel „Befund" und „Beurteilung", Leerzeile dazwischen.
   function block(f) {
     var T = TB.eegTexte;
-    var html = "<p><u>" + T.befundTitel + "</u></p>" + f.befund.html +
-      "<p>&nbsp;</p><p><u>" + T.beurteilungTitel + "</u></p>" + f.beurteilung.html;
+    // 17.7 (Naed): Titel fett, nicht unterstrichen — wie die KISIM-Felder.
+    var html = "<p><b>" + T.befundTitel + "</b></p>" + f.befund.html +
+      "<p><br></p><p><b>" + T.beurteilungTitel + "</b></p>" + f.beurteilung.html;
     var text = T.befundTitel + "\n" + f.befund.text + "\n\n" +
       T.beurteilungTitel + "\n" + f.beurteilung.text;
     return { html: html, text: text };
