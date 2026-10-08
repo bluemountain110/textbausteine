@@ -39,9 +39,12 @@ TB.statusGrundlage = (function () {
       { id: "bsr", name: "BSR", wert: "+/+", gruppe: "Arme" },
       { id: "tsr", name: "TSR", wert: "+/+", gruppe: "Arme" },
       { id: "rpr", name: "RPR", wert: "+/+", gruppe: "Arme" },
+      // 17.8 (Naed): Beine in der Reihenfolge AddR, PSR, TPR, ASR;
+      // TPR (Tibialis-posterior-Reflex) neu und ueberall angewaehlt.
+      { id: "addukt", name: "AddR", wert: "+/+", gruppe: "Beine" },
       { id: "psr", name: "PSR", wert: "+/+", gruppe: "Beine" },
-      { id: "asr", name: "ASR", wert: "+/+", gruppe: "Beine" },
-      { id: "addukt", name: "AddR", wert: "+/+", gruppe: "Beine" }
+      { id: "tpr", name: "TPR", wert: "+/+", gruppe: "Beine" },
+      { id: "asr", name: "ASR", wert: "+/+", gruppe: "Beine" }
   ];
   var MERKARME = [
       { id: "pect", name: "Mm. pectorales", gruppe: "Schultergürtel" },
@@ -229,7 +232,7 @@ TB.statusGrundlage = (function () {
     u("myotonie", "motorik", "Myotone Zeichen", "keine verlängerte Anspannung nach Faustschluss, keine Perkussionsmyotonie.", false, [n(2, ["Bewegungsmuster"])]),
     u("belastungstest", "motorik", "Repetitiver Belastungstest", "20× Faustschluss ohne Dekrement, Armvorhalte ohne Ermüdung.", false, [n(4, ["Muskelausdauerbelastung"])]),
     // ---- Reflexe -----------------------------------------------------
-    u("mer", "reflexe", "Muskeleigenreflexe (re/li)", "BSR +/+, TSR +/+, RPR +/+, PSR +/+, ASR +/+, AddR +/+.", true, [n(2, ["Reflexprüfung"]), n(3, ["Reflexprüfung"])], MERKREFLEXE),
+    u("mer", "reflexe", "Muskeleigenreflexe (re/li)", "BSR +/+, TSR +/+, RPR +/+, AddR +/+, PSR +/+, TPR +/+, ASR +/+.", true, [n(2, ["Reflexprüfung"]), n(3, ["Reflexprüfung"])], MERKREFLEXE),
     u("troemner", "reflexe", "Trömner", "-/-.", true, [n(2, ["Reflexprüfung"])]),
     u("babinski", "reflexe", "Babinski-Zeichen", "-/-.", true, [n(3, ["Reflexprüfung"])]),
     u("pyramidenzeichen", "reflexe", "Weitere Pyramidenbahnzeichen", "Chaddock, Oppenheim und Gordon bds. negativ; Rossolimo -/-.", false, [n(12, ["Gordon","Oppenheim"])]),
@@ -1481,7 +1484,7 @@ TB.statusGrundlage = (function () {
     }
   ];
 
-  var KATALOG_STAND = "2026-10-07";
+  var KATALOG_STAND = "2026-10-08";
   var TEILMENGEN_STAND = "2026-10-03c";
 
   function master() {

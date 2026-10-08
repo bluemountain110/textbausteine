@@ -918,13 +918,13 @@ TB.selbsttest = (function () {
     var sm = TB.status.master() || TB.statusGrundlage.master();
     var merU = (sm.untersuchungen || []).find(function (x) {
       return x.id === "mer"; });
-    f.push({ name: "17.5: Muskeleigenreflexe einzeln waehlbar (6 Merkmale)",
-      ok: !!merU && !!merU.merkmale && merU.merkmale.length === 6 &&
+    f.push({ name: "17.5: Muskeleigenreflexe einzeln waehlbar (7 Merkmale seit 17.8)",
+      ok: !!merU && !!merU.merkmale && merU.merkmale.length === 7 &&
           merU.merkmale[0].wert === "+/+",
       detail: merU && JSON.stringify((merU.merkmale || []).map(
         function (x) { return x.id; })) });
     var merText = TB.status.fliesstext(sm, { mer: true }, {},
-      { mer: { psr: true, asr: true, addukt: true } }, {});
+      { mer: { psr: true, asr: true, addukt: true, tpr: true } }, {});
     f.push({ name: "17.5: Reflex-Text nennt nur die Gewaehlten",
       ok: merText.text.indexOf("BSR +/+, TSR +/+, RPR +/+.") !== -1 &&
           merText.text.indexOf("PSR") === -1,
@@ -986,6 +986,10 @@ TB.selbsttest = (function () {
       ok: !!merR && JSON.stringify(merR).indexOf("Adduktorenreflex") === -1 &&
           JSON.stringify(merR).indexOf("AddR") !== -1,
       detail: merR && merR.normal });
+    var merAlle = TB.status.fliesstext(smR, { mer: true }, {}, {}, {}).text;
+    f.push({ name: "17.8: Reflexe in der Reihenfolge BSR, TSR, RPR, AddR, PSR, TPR, ASR",
+      ok: merAlle.indexOf("BSR +/+, TSR +/+, RPR +/+, AddR +/+, PSR +/+, TPR +/+, ASR +/+.") !== -1,
+      detail: merAlle });
     var hdAbw = {}; hdAbw.haendigkeit = "links.";
     var hdF = TB.status.fliesstext(smR, { haendigkeit: true }, hdAbw, {}, {});
     f.push({ name: "17.7: Überschriebene Händigkeit bleibt normal (nicht fett)",
@@ -1028,7 +1032,7 @@ TB.selbsttest = (function () {
       pruefeVarianten().map(function (f) { f.gruppe = "Standort-Fassungen"; return f; }),
       pruefeMasken().map(function (f) { f.gruppe = "Masken"; return f; }),
       pruefeStatus().map(function (f) { f.gruppe = "Status-Werk"; return f; }),
-      pruefeSammelrunde().map(function (f) { f.gruppe = "Sammelrunde 17.7"; return f; }),
+      pruefeSammelrunde().map(function (f) { f.gruppe = "Sammelrunde 17.8"; return f; }),
       pruefeEeg().map(function (f) { f.gruppe = "EEG-Werk"; return f; }),
       pruefeBerichtMc().map(function (f) { f.gruppe = "Bericht Memory Clinic"; return f; })
     ));
