@@ -751,3 +751,40 @@ body.nur-fenster .status-rechts { top: 10px; }
 .status-tardoc-pfeil { border: none; background: none; cursor: pointer;
   font-size: 1rem; padding: 2px 6px; color: #555; }
 .status-tardoc.kompakt { padding-top: 6px; padding-bottom: 6px; }
+
+/* ---- Etappe 12: ENMG-Werk ------------------------------------------- */
+.enmg-drop { border: 2px dashed var(--rand, #9ab5ad); border-radius: 10px;
+  padding: 18px; text-align: center; cursor: pointer; margin: 10px 0;
+  background: rgba(47, 93, 80, 0.04); }
+.enmg-drop-aktiv { border-color: #0b7a66; background: rgba(11,122,102,0.10); }
+.enmg-drop-text { margin-bottom: 8px; }
+.enmg-drop-datei { font-weight: 600; margin-bottom: 8px; }
+.enmg-patient { font-size: 1.05rem; font-weight: 700; margin: 12px 0 4px; }
+.enmg-warnung { color: #8a5a00; background: #fff4dd; border-radius: 8px;
+  padding: 8px 12px; margin: 6px 0; }
+.enmg-nerv { font-weight: 600; text-decoration: underline; margin: 10px 0 4px; }
+.enmg-marke-warn { background: #fff4dd; color: #8a5a00; margin-left: 8px;
+  text-decoration: none; }
+.enmg-tabelle { border-collapse: collapse; margin-bottom: 6px; }
+.enmg-tabelle th, .enmg-tabelle td { border: 1px solid #b8c6c1;
+  padding: 3px 8px; text-align: right; font-variant-numeric: tabular-nums; }
+.enmg-tabelle th { background: #eef3f1; text-align: left; font-weight: 600; }
+.enmg-tabelle td.enmg-segment { text-align: left; }
+.enmg-rot { color: #c00000; font-weight: 700; }
+.enmg-gruen { color: #1a7a1a; }
+.enmg-grenze { color: #808080; font-size: 0.78em; margin-left: 5px; }
+.enmg-reste { background: #f6f6f6; border-radius: 8px; padding: 8px 12px;
+  margin: 8px 0; font-size: 0.9em; }
+.enmg-reste-titel { font-weight: 600; margin-bottom: 4px; }
+.enmg-legende { color: #555; font-size: 0.9em; margin-top: 10px; }
+.enmg-quelle { color: #808080; font-size: 0.85em; margin: 4px 0 10px; }
+.enmg-pflege-tabelle td { padding: 1px 3px; }
+.enmg-pflege-feld { width: 56px; text-align: right; border: 1px solid #c6d2cd;
+  border-radius: 4px; padding: 2px 4px; font: inherit; }
+.enmg-pflege-einheit { white-space: nowrap; color: #555; }
+.enmg-pflege-fest { color: #555; }
+.enmg-pflege-quelle { margin: 10px 0; display: flex; gap: 10px;
+  align-items: center; flex-wrap: wrap; }
+.enmg-pflege-quelle-feld { flex: 1; min-width: 260px; border: 1px solid #c6d2cd;
+  border-radius: 6px; padding: 6px 8px; font: inherit; }
+body.nur-fenster .enmg-drop { padding: 10px; }

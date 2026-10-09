@@ -41,7 +41,11 @@ TB.fensterModus = (function () {
   }
 
   function zeigeWerk() {
-    if (art === "status") {
+    if (art === "enmg") {
+      // ENMG: Die Daten kommen aus der hineingezogenen Datei, nicht aus
+      // dem Abgleich — es gibt nichts vorzubelegen.
+      TB.oberflaeche.geheZu("enmg");
+    } else if (art === "status") {
       if (!TB.ansichtStatus.aktiviereTeilmenge(kuerzel)) {
         TB.ui.melde(T().fensterKeinStatus.replace("%s", kuerzel), true);
         TB.oberflaeche.geheZu("status");
@@ -57,6 +61,9 @@ TB.fensterModus = (function () {
   }
 
   function fingerabdruck() {
+    // ENMG hängt nicht am Abgleich: konstanter Abdruck, damit ein
+    // Datenabgleich die eingelesene Datei nie aus der Ansicht wirft.
+    if (art === "enmg") return "enmg";
     var m = (art === "eeg") ? TB.eeg.master() : TB.status.master();
     var teil = (art === "status")
       ? TB.status.teilmengen().map(function (t) {
@@ -129,6 +136,12 @@ TB.fensterModus = (function () {
       felder = { indikation: feld(f.indikation), anamnese: feld(f.anamnese),
                  befund: feld(f.befund), beurteilung: feld(f.beurteilung) };
       if (ziel === "axenita") felder.block = eegBlockFuerAxenita(f);
+    } else if (art === "enmg") {
+      var e = TB.ansichtEnmg.aktuellerText();
+      if (!e || !e.text) {
+        TB.ui.melde(TB.enmgTexte.fensterLeer, true); return;
+      }
+      felder = { block: feld(e) };
     } else {
       var s = TB.ansichtStatus.aktuellerText();
       if (!s || !s.text) { TB.ui.melde(T().fensterLeer, true); return; }
@@ -153,7 +166,7 @@ TB.fensterModus = (function () {
     merkeAdresse();
     var p = new URLSearchParams(location.search);
     art = p.get("fenster") || "";
-    if (art !== "eeg" && art !== "status") return;
+    if (art !== "eeg" && art !== "status" && art !== "enmg") return;
     kuerzel = p.get("kuerzel") || "";
     nonce = p.get("nonce") || "";
     ziel = (p.get("ziel") === "axenita") ? "axenita" : "kisim";
@@ -163,6 +176,7 @@ TB.fensterModus = (function () {
     document.body.classList.add("nur-fenster");
     TB.ansichtEeg.setzeFensterModus(true);
     TB.ansichtStatus.setzeFensterModus(true);
+    TB.ansichtEnmg.setzeFensterModus(true);
     zeigeWerk();
     gemerkt = fingerabdruck();
     // Frische Daten holen und nach dem Abgleich EINMAL nachziehen.

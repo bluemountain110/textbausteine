@@ -108,6 +108,7 @@ TB.oberflaeche = (function () {
     ["bausteine", function () { return T.bereichBausteine; }],
     ["status", function () { return TB.statusTexte.bereichStatus; }],
     ["eeg", function () { return TB.eegTexte.bereichEeg; }],
+    ["enmg", function () { return TB.enmgTexte.bereichEnmg; }],
     ["berichte", function () { return TB.berichtMcTexte.bereichBerichte; }],
     ["entwuerfe", function () {
       var n = TB.bausteine.alleEntwuerfe().length;
@@ -372,6 +373,7 @@ TB.oberflaeche = (function () {
     if (ansicht === "bausteine") zeichneBausteine(wurzel);
     else if (ansicht === "status") TB.ansichtStatus.zeichne(wurzel);
     else if (ansicht === "eeg") TB.ansichtEeg.zeichne(wurzel);
+    else if (ansicht === "enmg") TB.ansichtEnmg.zeichne(wurzel);
     else if (ansicht === "berichte") TB.ansichtBerichtMc.zeichne(wurzel);
     else if (ansicht === "uebersicht") TB.ansichtUebersicht.zeichne(wurzel);
     else if (ansicht === "entwuerfe") TB.ansichtEntwuerfe.zeichne(wurzel);

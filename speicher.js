@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "17.9 · Etappe 11 Abschluss · 08.10.2026";
+TB.FASSUNG = "18.0 · Etappe 12 ENMG Runde 1 · 08.10.2026";
 
 TB.speicher = (function () {
 

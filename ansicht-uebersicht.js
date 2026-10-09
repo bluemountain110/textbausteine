@@ -29,6 +29,7 @@ TB.ansichtUebersicht = (function () {
     werk: "Werk",
     werkStatus: "Status (Werk)",
     werkEeg: "EEG (Werk)",
+    werkEnmg: "ENMG (Werk)",
     werkBerichte: "Berichte (Werk)"
   };
   var sortierung = "kategorie";
@@ -56,6 +57,12 @@ TB.ansichtUebersicht = (function () {
       });
       if (ee.length) g.push({ name: TU.werkEeg, zeilen: ee });
     } catch (e) { /* EEG-Werk nicht bereit */ }
+    g.push({ name: TU.werkEnmg, zeilen: [
+      { kuerzel: "enmg", titel: "ENMG-Bericht (Export einlesen)",
+        zeile: "PDF- oder Word-Export hineinziehen",
+        klick: function () {
+          try { TB.oberflaeche.geheZu("enmg"); } catch (e) {} } }
+    ] });
     g.push({ name: TU.werkBerichte, zeilen: [
       { kuerzel: "bermc", titel: "Bericht Memory Clinic",
         zeile: "Strg+Alt+B am Arbeitsplatz",

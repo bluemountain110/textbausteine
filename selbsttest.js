@@ -1028,6 +1028,126 @@ TB.selbsttest = (function () {
     return f;
   }
 
+  // ---- Etappe 12: das ENMG-Werk (Normwerte, Leser-Deuter, Färbung) ----
+  function pruefeEnmg() {
+    var f = [];
+    function fall(name, ok, detail) {
+      f.push({ name: name, ok: !!ok, detail: detail || "" });
+    }
+    try {
+      var n = TB.enmg.normwerte();
+      var soll = { medianus: 9, ulnaris: 10, radialis: 2, suralis: 2,
+                   peronaeus: 6, tibialis: 5 };
+      var zaehlOk = true, detail = [];
+      Object.keys(soll).forEach(function (id) {
+        var nerv = null;
+        (n.nerven || []).forEach(function (x) { if (x.id === id) nerv = x; });
+        var ist = nerv ? nerv.zeilen.length : 0;
+        detail.push(id + ":" + ist);
+        if (ist !== soll[id]) zaehlOk = false;
+      });
+      fall("Normwerte: 6 Nerven mit allen Zeilen", zaehlOk, detail.join(" "));
+      var reihenOk = true;
+      (n.nerven || []).forEach(function (nerv) {
+        nerv.zeilen.forEach(function (z) {
+          if (typeof z.fest === "number") return;
+          if (!z.werte || z.werte.length !== (n.alter || []).length)
+            reihenOk = false;
+          (z.werte || []).forEach(function (w) {
+            if (typeof w !== "number" || isNaN(w)) reihenOk = false; });
+        });
+      });
+      fall("Normwerte: jede Reihe 13 Zahlen oder fester Wert", reihenOk);
+      var med = TB.enmg.erkenneNerv("Medianus Motorisch Rechts");
+      var g63 = TB.enmg.grenzeFuer(TB.enmg.zeileVonNerv(med, "va"), 63);
+      fall("Zwischenalter linear: Medianus VA bei 63 = 43.34",
+        Math.abs(g63 - 43.34) < 0.01, String(g63));
+      var g18 = TB.enmg.grenzeFuer(TB.enmg.zeileVonNerv(med, "va"), 18);
+      var g85 = TB.enmg.grenzeFuer(TB.enmg.zeileVonNerv(med, "va"), 85);
+      fall("Ränder geklammert: 18 wie 20, 85 wie 80",
+        g18 === 53.2 && g85 === 39.4, g18 + " / " + g85);
+      var bMax = TB.enmg.bewertung(med, "dml", 4.5, 50);
+      var bMax2 = TB.enmg.bewertung(med, "dml", 3.5, 50);
+      fall("Obere Grenze: Latenz 4.5 rot, 3.5 grün (50 J.)",
+        bMax && bMax.farbe === "rot" && bMax2 && bMax2.farbe === "gruen",
+        JSON.stringify([bMax && bMax.farbe, bMax2 && bMax2.farbe]));
+      var sur = TB.enmg.erkenneNerv("Suralis Sensorisch Links");
+      var bMin = TB.enmg.bewertung(sur, "snlg", 41, 50);
+      var bMin2 = TB.enmg.bewertung(sur, "snlg", 44.5, 50);
+      fall("Untere Grenze: NLG 41 rot, 44.5 grün (50 J.)",
+        bMin && bMin.farbe === "rot" && bMin2 && bMin2.farbe === "gruen",
+        JSON.stringify([bMin && bMin.farbe, bMin2 && bMin2.farbe]));
+      fall("Alter: 22.02.1961 → 01.10.2026 = 65; vor dem Geburtstag 64",
+        TB.enmg.alterAusDaten("22.02.1961", "01.10.2026") === 65 &&
+        TB.enmg.alterAusDaten("22.02.1961", "01.01.2026") === 64,
+        String(TB.enmg.alterAusDaten("22.02.1961", "01.10.2026")));
+      // Deuter: ein synthetischer Export (kein Patientenbezug).
+      var motorZeilen = [
+        ["Nerve", "Lat", "Amp", "Dur", "NLG", "F Lat"],
+        ["", "ms", "Norm", "mV", "ms", "m/s", "Norm", "ms", "Norm"],
+        ["Medianus Motorisch Rechts"],
+        ["HG - APB | APB", "3.2", "< 4.0", "8.1", "5.0", "", "", "26.5", ""],
+        ["Ellenbogen - HG | APB", "7.9", "", "7.9", "5.2", "55.1", "> 46.3", "", ""],
+        ["Nerve", "Abstand", "Lat", "Amp", "NLG", "Stimulus"],
+        ["", "mm", "ms", "uV", "m/s", "mA"],
+        ["Suralis Sensorisch Links"],
+        ["Malleolus lat. - Crural", "120", "3.4", "2.0", "41.0", "20"]
+      ];
+      var texte = ["Name: Probe, Prüfung", "Geburtsdatum: 01.01.1976",
+        "Datum der Untersuchung: 01.01.2026"];
+      var erg = TB.enmgLeser.deute(motorZeilen, texte);
+      TB.enmg.bewerte(erg);
+      fall("Deuter: 2 Blöcke, Kopf gelesen, Alter 50",
+        erg.bloecke.length === 2 && erg.patient.geburtsdatum === "01.01.1976" &&
+        erg.alter === 50, JSON.stringify([erg.bloecke.length, erg.alter]));
+      var m0 = erg.bloecke[0], m1 = erg.bloecke[1];
+      fall("Deuter: Motor-Werte am richtigen Platz",
+        m0.art === "motor" && m0.nervId === "medianus" &&
+        m0.zeilen[0].werte.lat === 3.2 && m0.zeilen[0].werte.fLat === 26.5 &&
+        m0.zeilen[0].geraetNorm.lat === "< 4.0" &&
+        m0.zeilen[1].werte.nlg === 55.1,
+        JSON.stringify(m0.zeilen[0].werte));
+      fall("Färbung: dist. Latenz grün, F-Welle grün, VA-NLG grün",
+        m0.zeilen[0].bew.lat.farbe === "gruen" &&
+        m0.zeilen[0].bew.fLat.farbe === "gruen" &&
+        m0.zeilen[1].bew.nlg.farbe === "gruen" &&
+        m0.zeilen[1].bew.nlg.zeileName === "motor. Vorderarm (VA)",
+        JSON.stringify(m0.zeilen[1].bew.nlg));
+      fall("Färbung: Suralis NLG 41 rot, AMP 2.0 rot (50 J.)",
+        m1.art === "sens" && m1.zeilen[0].bew.nlg.farbe === "rot" &&
+        m1.zeilen[0].bew.amp.farbe === "rot",
+        JSON.stringify(m1.zeilen[0].bew));
+      var ht = TB.enmg.tabelleHtmlText(erg);
+      fall("Ausgabe trägt ihr Aussehen selbst (Inline-Stile, keine Klassen)",
+        ht.html.indexOf('style="') !== -1 && ht.html.indexOf("class=") === -1 &&
+        ht.text.indexOf("Suralis") !== -1, "");
+      fall("PDF-Zeichen: Oktal-Umlaut und Windows-Sonderzeichen",
+        TB.enmgLeserPdf.dekodiere("\\344h") === "äh" &&
+        TB.enmgLeserPdf.dekodiere("\\200") === "€",
+        TB.enmgLeserPdf.dekodiere("\\344h"));
+      fall("Fenster-Weg verdrahtet (Ansicht kennt Fenster-Modus und Übergabe)",
+        typeof TB.ansichtEnmg.setzeFensterModus === "function" &&
+        typeof TB.ansichtEnmg.aktuellerText === "function", "");
+      fall("Zugesichert: unzugeordnete Werte bleiben schwarz",
+        (function () {
+          var fremd = TB.enmgLeser.deute([
+            ["Nerve", "Abstand", "Lat", "Amp", "NLG", "Stimulus"],
+            ["", "mm", "ms", "uV", "m/s", "mA"],
+            ["Saphenus Sensorisch Rechts"],
+            ["Unterschenkel", "120", "3.4", "4.0", "44.0", "20"]
+          ], texte);
+          TB.enmg.bewerte(fremd);
+          var z = fremd.bloecke[0].zeilen[0];
+          return fremd.bloecke[0].nervId === null &&
+            !(z.bew && (z.bew.nlg || z.bew.amp));
+        })(), "");
+    } catch (e) {
+      f.push({ name: "ENMG-Prüfungen liefen durch", ok: false,
+        detail: String(e && e.message || e) });
+    }
+    return f;
+  }
+
   function alleTests() {
     return mitErgebniszeile([].concat(
       pruefeRechnen().map(function (f) { f.gruppe = "Rechnen"; return f; }),
@@ -1040,6 +1160,7 @@ TB.selbsttest = (function () {
       pruefeStatus().map(function (f) { f.gruppe = "Status-Werk"; return f; }),
       pruefeSammelrunde().map(function (f) { f.gruppe = "Etappe 11"; return f; }),
       pruefeEeg().map(function (f) { f.gruppe = "EEG-Werk"; return f; }),
+      pruefeEnmg().map(function (f) { f.gruppe = "Etappe 12"; return f; }),
       pruefeBerichtMc().map(function (f) { f.gruppe = "Bericht Memory Clinic"; return f; })
     ));
   }
