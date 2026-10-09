@@ -1012,6 +1012,12 @@ TB.selbsttest = (function () {
     f.push({ name: "17.7: EEG-Block mit fetten, nicht unterstrichenen Titeln",
       ok: blk.html.indexOf("<b>Befund</b>") !== -1 && blk.html.indexOf("<u>") === -1,
       detail: blk.html });
+    var hilfeKapitel = TB.hilfe.inhalt().map(function (k) { return k[0]; });
+    var chronikErst = TB.chronik.eintraege()[0][1];
+    f.push({ name: "17.9: Anleitung erklärt den Datenfluss, Chronik kennt Etappe 11",
+      ok: hilfeKapitel.indexOf("Welche Daten fliessen wohin") !== -1 &&
+          chronikErst.indexOf("Etappe 11") === 0,
+      detail: chronikErst });
     f.push({ name: "17.6: Fenster-Knopf nennt das Zielprogramm",
       ok: typeof TB.fensterModus.knopfText === "function" &&
           !!TB.statusTexte.fensterKnopfAxenita,
@@ -1032,7 +1038,7 @@ TB.selbsttest = (function () {
       pruefeVarianten().map(function (f) { f.gruppe = "Standort-Fassungen"; return f; }),
       pruefeMasken().map(function (f) { f.gruppe = "Masken"; return f; }),
       pruefeStatus().map(function (f) { f.gruppe = "Status-Werk"; return f; }),
-      pruefeSammelrunde().map(function (f) { f.gruppe = "Sammelrunde 17.8"; return f; }),
+      pruefeSammelrunde().map(function (f) { f.gruppe = "Etappe 11"; return f; }),
       pruefeEeg().map(function (f) { f.gruppe = "EEG-Werk"; return f; }),
       pruefeBerichtMc().map(function (f) { f.gruppe = "Bericht Memory Clinic"; return f; })
     ));
