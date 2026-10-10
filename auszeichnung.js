@@ -348,6 +348,36 @@ TB.auszeichnung = (function () {
     return aus;
   }
 
+  // Verschachtelte Aufzählungen (Etappe 13, Diagnoseblock): Unterpunkte
+  // rücken je Ebene mit \tab ein und wechseln die Marke (• → ◦ → ▪).
+  // Ebene 0 bleibt BYTE-GLEICH zur bisherigen Ausgabe (in KISIM
+  // bewiesen) — nur echte Unterlisten erzeugen Neues.
+  var LISTENMARKEN = ["\\u8226?", "\\u9702?", "\\u9642?"];
+  function listeNachRtf(w, knoten, tiefe) {
+    var nummeriert = knoten.tagName.toUpperCase() === "OL";
+    var aus = "", n = 0;
+    Array.prototype.forEach.call(knoten.children, function (li) {
+      if (li.tagName.toUpperCase() !== "LI") return;
+      n += 1;
+      var marke = nummeriert ? zeichen(n + ".")
+        : LISTENMARKEN[Math.min(tiefe, LISTENMARKEN.length - 1)];
+      var einzug = "";
+      for (var i = 0; i < tiefe; i++) einzug += "\\tab ";
+      var innen = "", unterlisten = "";
+      Array.prototype.forEach.call(blockKinder(li), function (k) {
+        if (k.nodeType === 1 &&
+            /^(UL|OL)$/.test(k.tagName.toUpperCase())) {
+          unterlisten += listeNachRtf(w, k, tiefe + 1);
+        } else {
+          innen += knotenNachRtf(w, k, true);
+        }
+      });
+      aus += "\\par {\\pntext " + einzug + marke + "\\tab}" + innen +
+             unterlisten;
+    });
+    return aus;
+  }
+
   // Das Zeilenmodell (19.9.): Jeder Absatz beginnt mit \par statt zu
   // enden — so stimmt auch die nackte erste Zeile des Schreibfelds,
   // und ein leerer Absatz (nur <br> darin) ist genau EIN Umbruch.
@@ -361,16 +391,7 @@ TB.auszeichnung = (function () {
 
     if (name === "BR") return "\\par ";
     if (name === "UL" || name === "OL") {
-      var aus = "";
-      var n = 0;
-      Array.prototype.forEach.call(knoten.children, function (li) {
-        if (li.tagName.toUpperCase() !== "LI") return;
-        n += 1;
-        var marke = (name === "OL") ? zeichen(n + ".") : "\\u8226?";
-        aus += "\\par {\\pntext " + marke + "\\tab}" +
-               kinderNachRtf(w, blockKinder(li), true);
-      });
-      return aus;
+      return listeNachRtf(w, knoten, 0);
     }
     if (name === "LI") {
       return "\\par {\\pntext \\u8226?\\tab}" +

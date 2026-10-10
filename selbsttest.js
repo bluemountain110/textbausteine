@@ -1014,9 +1014,9 @@ TB.selbsttest = (function () {
       detail: blk.html });
     var hilfeKapitel = TB.hilfe.inhalt().map(function (k) { return k[0]; });
     var chronikErst = TB.chronik.eintraege()[0][1];
-    f.push({ name: "17.9: Anleitung erklärt den Datenfluss, Chronik kennt Etappe 11",
+    f.push({ name: "17.9: Anleitung erklärt den Datenfluss, Chronik beginnt mit der neusten Etappe",
       ok: hilfeKapitel.indexOf("Welche Daten fliessen wohin") !== -1 &&
-          chronikErst.indexOf("Etappe 11") === 0,
+          chronikErst.indexOf("Etappe 13") === 0,
       detail: chronikErst });
     f.push({ name: "17.6: Fenster-Knopf nennt das Zielprogramm",
       ok: typeof TB.fensterModus.knopfText === "function" &&
@@ -1148,6 +1148,75 @@ TB.selbsttest = (function () {
     return f;
   }
 
+  // ---- Etappe 13: Kisunla-Bausteine und Diagnose-Grundstein ------------
+  function pruefeKisunla() {
+    var f = [];
+    function fall(name, ok, detail) {
+      f.push({ name: name, ok: !!ok, detail: detail || "" });
+    }
+    try {
+      fall("diagnose.js vorhanden", !!(TB.diagnose && TB.diagnose.erkenneScores));
+      var bericht = "Demenz-Scores vom 12.09.2026:\nMMS 27/30, MoCA 22/30 Punkte, Uhrentest 5/7";
+      var z1 = TB.diagnose.erkenneScores(bericht).zeile;
+      fall("Scores aus Berichtstext (Datum aus dem vom-Satz)",
+        z1 === "MMS 09/2026: 27/30; MoCA 09/2026: 22/30; Uhrentest 09/2026: 5/7", z1);
+      var dxzeile = "MMS 08/2026: 29/30; MMS 02/2026: 30/30; MoCA 11/2024: 25/30; MMS 02/2026: 30/30";
+      var z2 = TB.diagnose.erkenneScores(dxzeile).zeile;
+      fall("Scores aus Diagnosezeile: neuste zuerst, ohne Doppelte",
+        z2 === "MMS 08/2026: 29/30; MMS 02/2026: 30/30; MoCA 11/2024: 25/30", z2);
+      fall("Kurze Handeingabe wird nicht ersetzt",
+        TB.diagnose.scoresZeileFuerFeld("MMS 08/2026: 29/30") === null, "");
+      var rtf = TB.auszeichnung.ausHtml(
+        "<ul><li>a<ul><li>b<ul><li>c</li></ul></li></ul></li></ul>");
+      fall("Aufzählung Ebene 1: Punkt wie bisher",
+        rtf.indexOf("{\\pntext \\u8226?\\tab}a") !== -1, rtf);
+      fall("Aufzählung Ebene 2: Kreis mit Einzug",
+        rtf.indexOf("{\\pntext \\tab \\u9702?\\tab}b") !== -1, rtf);
+      fall("Aufzählung Ebene 3: Quadrat mit zwei Einzügen",
+        rtf.indexOf("{\\pntext \\tab \\tab \\u9642?\\tab}c") !== -1, rtf);
+      var flach = TB.auszeichnung.ausHtml("<ul><li>a</li><li>b</li></ul>");
+      fall("Einfache Aufzählung bleibt unverändert (bewiesene KISIM-Form)",
+        flach.indexOf("\\u9702") === -1 &&
+        flach.indexOf("{\\pntext \\u8226?\\tab}a") !== -1, flach);
+      var mini = "<ul><li>{{Ankreuz:Kisunla/aus}}{{Wenn:Kisunla}}Kisunla ab {{Feld:Ab=X}}<ul><li><b>CAVE</b></li></ul>{{Ende}}</li><li>fix</li></ul>";
+      var an = TB.masken.wendeAn(mini,
+        { kaestchen: { Kisunla: true }, antworten: {}, texte: {} }, []).html;
+      var aus = TB.masken.wendeAn(mini,
+        { kaestchen: { Kisunla: false }, antworten: {}, texte: {} }, []).html;
+      fall("Kisunla angekreuzt: CAVE-Unterzeile da",
+        /CAVE/.test(an) && /Kisunla ab/.test(an), an);
+      fall("Kisunla abgewählt: Zeile samt CAVE rückstandslos weg",
+        !/CAVE/.test(aus) && !/<li>\s*<\/li>/.test(aus), aus);
+      var kopf = "<p><b>{{Auswahl:Stadium:A|B}}</b></p><p>{{Wenn:Stadium=B}}nur bei B{{Ende}}</p>";
+      var kb = TB.masken.wendeAn(kopf,
+        { kaestchen: {}, antworten: { Stadium: "B" }, texte: {} }, []).html;
+      var ka = TB.masken.wendeAn(kopf,
+        { kaestchen: {}, antworten: { Stadium: "A" }, texte: {} }, []).html;
+      fall("Stadium-Wahl steuert den Zusatzabsatz",
+        /nur bei B/.test(kb) && !/nur bei B/.test(ka), kb);
+      ["kismri1", "kismri", "kisauf", "kisew", "kiskogu", "kisverl", "dxkis"]
+        .forEach(function (k) {
+          var bst = TB.speicher.holenPerKuerzel(k);
+          if (!bst) {
+            fall(";;" + k + " noch nicht importiert — Prüfung folgt nach dem Import",
+              true, "");
+            return;
+          }
+          var ma = TB.masken.analysiere(bst.text);
+          var mk = TB.makros.analysiere(bst.text, TB.einstellungen.makroUmgebung());
+          var rt = TB.masken.rtfTauglich(bst.textRtf ||
+            TB.speicher.rtfHtml(bst.text));
+          fall(";;" + k + ": Platzhalter und RTF in Ordnung",
+            ma.fehler.length === 0 && mk.fehler.length === 0 && rt.ok,
+            ma.fehler.concat(mk.fehler, rt.fehler).join(" · "));
+        });
+    } catch (e) {
+      f.push({ name: "Etappe-13-Prüfungen liefen durch", ok: false,
+        detail: String(e && e.message || e) });
+    }
+    return f;
+  }
+
   function alleTests() {
     return mitErgebniszeile([].concat(
       pruefeRechnen().map(function (f) { f.gruppe = "Rechnen"; return f; }),
@@ -1161,6 +1230,7 @@ TB.selbsttest = (function () {
       pruefeSammelrunde().map(function (f) { f.gruppe = "Etappe 11"; return f; }),
       pruefeEeg().map(function (f) { f.gruppe = "EEG-Werk"; return f; }),
       pruefeEnmg().map(function (f) { f.gruppe = "Etappe 12"; return f; }),
+      pruefeKisunla().map(function (f) { f.gruppe = "Etappe 13"; return f; }),
       pruefeBerichtMc().map(function (f) { f.gruppe = "Bericht Memory Clinic"; return f; })
     ));
   }

@@ -81,6 +81,9 @@ TB.ansichtAusfuellen = (function () {
       } else {
         feld = el("input"); feld.type = "text"; feld.value = l.vorgabe || "";
         if (i === 0) setTimeout(function () { feld.select(); }, 0);
+        // Etappe 13: Ein „Scores…“-Feld erkennt einen hineinkopierten
+        // Vorbericht und macht daraus die kompakte Score-Zeile.
+        if (TB.diagnose) TB.diagnose.feldVeredeln(l.beschriftung, feld, zeile, aktualisiere);
       }
       eingaben[l.beschriftung] = feld;
       zeile.appendChild(feld);
@@ -159,6 +162,9 @@ TB.ansichtAusfuellen = (function () {
         zeile.appendChild(el("label", "", z.name));
         var e = el("input"); e.type = "text"; e.value = z.vorgabe || "";
         zeile.appendChild(e); antwortFeld[z.name] = e; felder.push(e);
+        // Etappe 13: Ein „Scores…“-Feld erkennt einen hineinkopierten
+        // Vorbericht und macht daraus die kompakte Score-Zeile.
+        if (TB.diagnose) TB.diagnose.feldVeredeln(z.name, e, zeile, aktualisiere);
       } else if (z.typ === "kategorie") {
         zeile.appendChild(el("label", "", T.maskeKategorie.replace("%s", z.kategorie)));
         var passende = TB.bausteine.alleFertigen().filter(function (x) {

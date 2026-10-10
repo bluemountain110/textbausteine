@@ -235,11 +235,31 @@ TB.hilfe = (function () {
         ["Über die App statt das Skript",
          "Derselbe Bericht geht auch in der App (Bereich „Bericht MC“): einlesen, „Kopieren“, in KISIM Strg+V. Das funktioniert nur direkt am Spital-Rechner, nicht über die Fernsitzung vom Mac (deren Zwischenablage trägt nur reinen Text). Auf diesem Weg ist die Einrückung der Score-Liste noch nicht perfekt — der Weg über ;;bermc ist der vollständige."]
       ]],
+      ["Das ENMG-Werk — gefärbte Messwerte aus dem Geräte-Export", [
+        ["Was es tut",
+         "Bereich „ENMG“: Du ziehst den Export der EMG-Maschine (PDF oder Word) auf die Ablagefläche. Die App liest Patient, Geburtsdatum und Untersuchungsdatum, rechnet das Alter aus und zeigt die Messwert-Tabellen: rot, was ausserhalb Deiner Grenzwerte liegt, grün, was innerhalb liegt, schwarz, wofür es (noch) keinen Grenzwert gibt. Die angewandte Grenze steht klein neben jedem Wert."],
+        ["Die Normwerte gehören Dir",
+         "Unter „Normwert-Pflege“ liegen Deine kontrollierten Grenzwert-Tabellen (Medianus, Ulnaris, Radialis superficialis, Suralis, Peronaeus, Tibialis; Alter 20–80 in Fünferschritten, dazwischen wird linear gerechnet). Jeder Wert ist änderbar, „Grundausstattung“ stellt den gelieferten Stand wieder her, und der Name Deiner Quelle erscheint unter jeder Tabelle."],
+        ["Was NIE passiert",
+         "Die eingelesene Export-Datei wird nie gespeichert und nie abgeglichen — sie lebt nur im Fenster, bis Du es schliesst. In die Datenablage wandern nur Deine Normwert-Tabellen und Zählwerte."],
+        ["Was noch folgt",
+         "Der Befund-Fliesstext nach Deinem Musterbericht, die Norm-Spalte im Bericht, Balken und Zweitquellen (Buschbacher/Leis) im Fenster sowie ;;enmg am Arbeitsplatz — gesammelt in der ENMG-Sammelrunde, sobald Deine Beispiele und der Musterbericht da sind."]
+      ]],
+      ["Kisunla und der erste Diagnoseblock", [
+        ["Die Kisunla-Familie",
+         "Sieben Bausteine in der Kategorie „Kisunla“, alle am Kürzel: ;;kismri1 (MRI-Verordnung vor Therapiebeginn), ;;kismri (Verlaufs-MRI mit ARIA-Graduierung), ;;kisauf (Aufklärungsgespräch — nur Patient/Patientin wählen, alle Beugungen sitzen), ;;kisew (Einwilligungserklärung, gestrafft für 2 Seiten mit Briefkopf, drei Unterschriftszeilen), ;;kiskogu (Kostengutsprache-Gesuch nach Art. 71b KVV als Maske), ;;kisverl (Verlaufsbericht an die Krankenkasse) und ;;dxkis (der Diagnoseblock, siehe unten)."],
+        ["Das KoGu-Gesuch ;;kiskogu",
+         "Im Fenster wählst Du Patient/Patientin und das Stadium (MCI blendet den Zusatzabschnitt zur Frühintervention ein), trägst Datum der Testung und MMS ein (MoCA und Uhrentest zuschaltbar), wählst den ApoE4-Status samt Genotyp und den CDR-Score — der fertige Brief kommt ohne Farbmarkierungen und ohne Nacharbeit aus dem Fenster."],
+        ["Der Diagnoseblock ;;dxkis",
+         "Erste Zeile fett (MCI oder leichte Demenz, die DSM-5-Zeile folgt automatisch), darunter die Aufzählung: Diagnostik und Therapien zum Ankreuzen, je mit kleinen Feldern. Wird Kisunla angekreuzt, hängt sich die fette CAVE-Zeile (Antikoagulations- und Lyse-Verbot) als Unterpunkt an. Neu können Aufzählungen Unterpunkte tragen (• → ◦ → ▪) — auch beim Kopieren nach KISIM und Word."],
+        ["Scores aus dem Vorbericht",
+         "Ins Feld „Scores …“ des Diagnoseblocks kannst Du einfach den TEXT eines Vorberichts einfügen (markieren, kopieren, im Feld Strg+V): Die App erkennt MMS, MoCA und Uhrentest samt Datum und macht daraus die kompakte Zeile „MMS 08/2026: 29/30; …“, neuste zuerst. Erkennt sie nichts, bleibt Dein Text unverändert — und von Hand tippen geht immer."]
+      ]],
       ["Die Bausteine-Übersicht", [
         ["Spickzettel und Inventar",
          "Bereich „Übersicht“: alle fertigen Bausteine als Liste, sortierbar nach Kategorie, Titel, Kürzel oder „zuletzt benutzt“, mit der ersten Textzeile — und als PDF ausgebbar, zum Ausdrucken neben KISIM oder zum Aufräumen."],
         ["Auch die Werke stehen drin",
-         "Alles, was Du mit einem ;;kürzel aufrufen kannst, ist ein Baustein und steht in der Übersicht. Darum folgen nach den Bausteinen drei eigene Blöcke: Status (Werk) mit jedem ;;stat…-Kürzel, EEG (Werk) mit ;;eeg, ;;eegips und Deinen eigenen EEG-Vorlagen, Berichte (Werk) mit ;;bermc. Ein künftiges Werk (ENMG) kommt automatisch dazu."]
+         "Alles, was Du mit einem ;;kürzel aufrufen kannst, ist ein Baustein und steht in der Übersicht. Darum folgen nach den Bausteinen drei eigene Blöcke: Status (Werk) mit jedem ;;stat…-Kürzel, EEG (Werk) mit ;;eeg, ;;eegips und Deinen eigenen EEG-Vorlagen, Berichte (Werk) mit ;;bermc — und ENMG (Werk) mit ;;enmg."]
       ]],
       ["Tastatur und Bedienung", [
         ["Tastenkürzel in der App",

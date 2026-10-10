@@ -67,6 +67,7 @@ TB.T = {
   kopiertMarken: "Kopiert — einfügen, dann die Marken der Reihe nach andiktieren.",
   kopierenFehlgeschlagen: "Kopieren fehlgeschlagen — Text markieren und von Hand kopieren.",
   vorschauTitel: "So sieht der Text aus:",
+  scoresErkannt: "Scores aus dem eingefügten Text erkannt — bitte kurz prüfen.",
 
   // Papierkorb
   papierkorbLeer: "Der Papierkorb ist leer. Gelöschte Bausteine bleiben hier 30 Tage.",
