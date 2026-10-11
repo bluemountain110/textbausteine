@@ -174,12 +174,16 @@ TB.diagnose = (function () {
     else if (/Leichte Demenz|Major Neurocognitive/i.test(block)) stadium = DX_DEM;
     if (stadium) gefunden += 1;
 
-    var em = /\bEM\b[:\s]*(?:ca\.\s*)?(\d{4})/.exec(block);
-    if (em) setze(null, "EM (Jahr)", em[1]);
+    // EM frei: Jahr, „ca. 2019" oder „unklar" (18.3); „ca." bleibt dran.
+    var em = /\bEM\b[.:\s]*((?:ca\.\s*)?\d{4}|unklar)/i.exec(block);
+    if (em) setze(null, "EM", em[1].replace(/\s+/g, " "));
+    // ED: Erstdiagnose als Monat/Jahr, Datum, Jahr oder „unklar" (18.3).
+    var ed = /\bED\b[.:\s]*((?:ca\.\s*)?(?:\d{1,2}\/\d{4}|\d{1,2}\.\d{1,2}\.\d{4}|\d{4})|unklar)/i.exec(block);
+    if (ed) setze(null, "ED (Monat/Jahr)", ed[1].replace(/\s+/g, " "));
 
     // Neuropsych-Profil: ab der Schlüsselzeile, Folgezeilen hängen an,
     // bis eine andere bekannte Zeile beginnt.
-    var ANDERE = /^(MMS|MMSE|MoCA|Uhrentest|Liquor|ApoE|c?MRI\b|Therapien|Negative Co|Kisunla|CAVE|DSM|EM\b|Diagnostik|\d+\.)/i;
+    var ANDERE = /^(MMS|MMSE|MoCA|Uhrentest|Liquor|ApoE|c?MRI\b|Therapien|Negative Co|Kisunla|CAVE|DSM|EM\b|ED\b|Diagnostik|\d+\.)/i;
     for (var k = 0; k < zeilen.length; k++) {
       var np = /Neuropsychologisches Profil:\s*(.*)$/i.exec(zeilen[k]);
       if (!np) continue;

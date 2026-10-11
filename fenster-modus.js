@@ -43,14 +43,19 @@ TB.fensterModus = (function () {
   function zeigeWerk() {
     if (art === "kisew") {
       // Einwilligungs-Druckseite: kein Übergeben — Näd druckt und
-      // schliesst das Fenster selbst.
+      // schliesst das Fenster selbst. Ist der Baustein auf diesem
+      // Gerät noch nicht angekommen (frisches Fenster vor dem ersten
+      // Abgleich — der ;;kisew-Fehler vom 11.10.), wartet pruefeNeu
+      // und öffnet, sobald der Abgleich ihn bringt.
       TB.oberflaeche.geheZu("bausteine");
+      if (!TB.speicher.holenPerKuerzel("kisew")) return;
       TB.ansichtKisunla.oeffneEinwilligung();
     } else if (art === "kisbest") {
       TB.oberflaeche.geheZu("bausteine");
+      if (!TB.speicher.holenPerKuerzel("kisbest")) return;
       TB.ansichtKisunla.oeffneBestellung();
     } else if (art === "baustein") {
-      // Ein reicher Baustein (z. B. ;;dxkis) als echtes App-Fenster:
+      // Ein reicher Baustein (z. B. ;;dxad) als echtes App-Fenster:
       // das Ausfüll-Fenster öffnet sofort, der Haupt-Knopf heisst
       // „An KISIM/Axenita übergeben" und packt das Paket.
       TB.oberflaeche.geheZu("bausteine");
@@ -86,7 +91,11 @@ TB.fensterModus = (function () {
   function fingerabdruck() {
     // ENMG hängt nicht am Abgleich: konstanter Abdruck, damit ein
     // Datenabgleich die eingelesene Datei nie aus der Ansicht wirft.
-    if (art === "enmg" || art === "kisew" || art === "kisbest") return art;
+    if (art === "enmg") return art;
+    if (art === "kisew" || art === "kisbest") {
+      // Erst „da", wenn der Baustein angekommen ist (s. zeigeWerk).
+      return art + "|" + (TB.speicher.holenPerKuerzel(art) ? "1" : "0");
+    }
     if (art === "baustein") {
       // Erst „da", wenn der Baustein angekommen ist — dann öffnet
       // pruefeNeu das Ausfüll-Fenster genau EINMAL.

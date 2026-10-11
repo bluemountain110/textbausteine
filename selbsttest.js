@@ -1166,18 +1166,25 @@ TB.selbsttest = (function () {
         z2 === "MMS 08/2026: 29/30; MMS 02/2026: 30/30; MoCA 11/2024: 25/30", z2);
       fall("Kurze Handeingabe wird nicht ersetzt",
         TB.diagnose.scoresZeileFuerFeld("MMS 08/2026: 29/30") === null, "");
+      // Seit 18.3 in der in KISIM BEWIESENEN Form (fenster-bericht-mc):
+      // jeder Punkt setzt seine Aufzähl-Eigenschaften selbst.
       var rtf = TB.auszeichnung.ausHtml(
         "<ul><li>a<ul><li>b<ul><li>c</li></ul></li></ul></li></ul>");
-      fall("Aufzählung Ebene 1: Punkt wie bisher",
-        rtf.indexOf("{\\pntext \\u8226?\\tab}a") !== -1, rtf);
-      fall("Aufzählung Ebene 2: Kreis mit Einzug",
-        rtf.indexOf("{\\pntext \\tab \\u9702?\\tab}b") !== -1, rtf);
-      fall("Aufzählung Ebene 3: Quadrat mit zwei Einzügen",
-        rtf.indexOf("{\\pntext \\tab \\tab \\u9642?\\tab}c") !== -1, rtf);
+      fall("Aufzählung Ebene 1: Punkt in der bewiesenen KISIM-Form",
+        rtf.indexOf("{\\pntxtb \\'95}}\\fi-283\\li283 a") !== -1, rtf);
+      fall("Aufzählung Ebene 2: Kreis, Einzug 566",
+        rtf.indexOf("{\\pntxtb o}}\\fi-283\\li566 b") !== -1, rtf);
+      fall("Aufzählung Ebene 3: Strich, Einzug 849",
+        rtf.indexOf("{\\pntxtb -}}\\fi-283\\li849 c") !== -1, rtf);
       var flach = TB.auszeichnung.ausHtml("<ul><li>a</li><li>b</li></ul>");
-      fall("Einfache Aufzählung bleibt unverändert (bewiesene KISIM-Form)",
-        flach.indexOf("\\u9702") === -1 &&
-        flach.indexOf("{\\pntext \\u8226?\\tab}a") !== -1, flach);
+      fall("Einfache Aufzählung: beide Punkte Ebene 1, keine tiefere",
+        flach.indexOf("\\li566") === -1 &&
+        flach.indexOf("{\\pntxtb \\'95}}\\fi-283\\li283 a") !== -1 &&
+        flach.indexOf("{\\pntxtb \\'95}}\\fi-283\\li283 b") !== -1, flach);
+      var nachL = TB.auszeichnung.ausHtml(
+        "<p>Titel</p><ul><li>eins</li></ul><p>danach</p>");
+      fall("Nach der Aufzählung setzt \\pard den Einzug zurück",
+        nachL.indexOf("\\li283 eins\\par \\pard danach") !== -1, nachL);
       var mini = "<ul><li>{{Ankreuz:Kisunla/aus}}{{Wenn:Kisunla}}Kisunla ab {{Feld:Ab=X}}<ul><li><b>CAVE</b></li></ul>{{Ende}}</li><li>fix</li></ul>";
       var an = TB.masken.wendeAn(mini,
         { kaestchen: { Kisunla: true }, antworten: {}, texte: {} }, []).html;
@@ -1213,7 +1220,7 @@ TB.selbsttest = (function () {
       var dx = TB.diagnose.erkenneDiagnose(probe);
       fall("Voll-Erkennung: Stadium, EM, LP, ApoE, cMRI, Therapien, Kisunla",
         dx.stadium === TB.diagnose.DX_MCI &&
-        dx.felder["EM (Jahr)"] === "2021" &&
+        dx.felder["EM"] === "ca. 2021" &&
         dx.felder["LP Monat/Jahr"] === "11/2024" &&
         dx.felder["LP-Labor"] === "USZ" &&
         dx.felder["LP-Ergebnis"] === "A+T+N+" &&
@@ -1276,8 +1283,27 @@ TB.selbsttest = (function () {
         });
         fall("Umbau-Texte 18.2: fehlerfrei, mit stummer Geschlecht-Wahl",
           uOk, uDetail.join(" · "));
+        if (u.dxad) {
+          var ud = TB.masken.analysiere(u.dxad.neu);
+          fall("Umbau 18.3: dxad-Text fehlerfrei, Titelzeile mit EM und ED",
+            ud.fehler.length === 0 && u.dxad.kuerzel === "dxad" &&
+            u.dxad.neu.indexOf(", EM {{Feld:EM=unklar}}, ED {{Feld:ED (Monat/Jahr)=unklar}}</b></p>") !== -1 &&
+            u.dxad.neu.indexOf("EM ca. {{Feld:EM (Jahr)") === -1,
+            ud.fehler.join(" · "));
+        }
+        var dEM = TB.diagnose.erkenneDiagnose(
+          "Mild Neurocognitive Impairment (MCI) im Rahmen eines Morbus Alzheimer, EM ca. 2019, ED 03/2024");
+        fall("Einlesen 18.3: EM mit ca.-Zusatz, ED als Monat/Jahr erkannt",
+          dEM.felder["EM"] === "ca. 2019" &&
+          dEM.felder["ED (Monat/Jahr)"] === "03/2024",
+          JSON.stringify(dEM.felder));
+        var dU = TB.diagnose.erkenneDiagnose(
+          "Leichte Demenz im Rahmen eines Morbus Alzheimer, EM unklar");
+        fall("Einlesen 18.3: EM unklar erkannt, ED darf fehlen",
+          dU.felder["EM"] === "unklar" && !dU.felder["ED (Monat/Jahr)"],
+          JSON.stringify(dU.felder));
       }
-      ["kismri1", "kismri", "kisauf", "kisew", "kiskogu", "kisverl", "dxkis"]
+      ["kismri1", "kismri", "kisauf", "kisew", "kiskogu", "kisverl", "dxad"]
         .forEach(function (k) {
           var bst = TB.speicher.holenPerKuerzel(k);
           if (!bst) {

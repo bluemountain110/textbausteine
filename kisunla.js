@@ -159,7 +159,11 @@ TB.kisunla = (function () {
     ortszeile: function () { return "Schlieren, " + heute(); }
   };
 
-  // ---- Einmaliger Umbau 18.1 → 18.2 (wie berZweiZeilen, Lehre-Muster) --
+  // ---- Einmalige Umbauten (wie berZweiZeilen, Lehre-Muster) ------------
+  // 18.2: männlich/weiblich-Texte + ;;kisbest anlegen.
+  // 18.3: ;;dxkis heisst neu ;;dxad (Kürzel wird IMMER umgehängt), die
+  //       Titelzeile trägt EM und ED (Text NUR gehoben, wenn er noch
+  //       wörtlich dem Lieferstand entspricht — eigene Fassung bleibt).
   function umbau182() {
     if (!TB.kisunlaUmbau) return 0;
     var S = TB.speicher, getan = 0;
@@ -175,6 +179,18 @@ TB.kisunla = (function () {
     if (!S.holenPerKuerzel("kisbest")) {
       var v = TB.kisunlaUmbau.kisbest;
       if (!S.holen(v.id)) { S.speichern(v); getan += 1; }
+    }
+    var d = TB.kisunlaUmbau.dxad;
+    if (d) {
+      var bd = S.holenPerKuerzel(d.altKuerzel) || S.holenPerKuerzel(d.kuerzel);
+      if (bd) {
+        var aend = { id: bd.id }, tun = false;
+        if (bd.kuerzel === d.altKuerzel) { aend.kuerzel = d.kuerzel; tun = true; }
+        if (bd.text === d.alt && bd.text !== d.neu) {
+          aend.text = d.neu; aend.notiz = d.notiz; tun = true;
+        }
+        if (tun) { S.speichern(aend); getan += 1; }
+      }
     }
     return getan;
   }

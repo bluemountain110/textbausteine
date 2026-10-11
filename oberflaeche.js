@@ -413,10 +413,11 @@ TB.oberflaeche = (function () {
       console.log(";;ber: neueste Fassung eingespielt.");
       TB.abgleich.anstossen();
     }
-    // 18.2: Kisunla-Bausteine einmalig auf männlich/weiblich heben und
-    // ;;kisbest anlegen (nur, wo noch der Lieferstand 18.1 steht).
+    // 18.2/18.3: Kisunla-Bausteine einmalig heben (männlich/weiblich,
+    // ;;kisbest anlegen, ;;dxkis → ;;dxad mit EM/ED in der Titelzeile) —
+    // Texte nur, wo noch der Lieferstand steht.
     if (TB.kisunla && TB.kisunla.umbau182()) {
-      console.log("Kisunla: Fassung 18.2 eingespielt.");
+      console.log("Kisunla: Umbauten 18.2/18.3 eingespielt.");
       TB.abgleich.anstossen();
     }
     setzeKopf();

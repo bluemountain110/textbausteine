@@ -341,6 +341,14 @@ TB.auszeichnung = (function () {
     return kinder;
   }
 
+  // Der erste Absatz NACH einer Liste setzt die Absatz-Eigenschaften
+  // zurück (\pard) — sonst erbte er Einzug und Aufzählungspunkt.
+  // Alle übrigen Absätze bleiben BYTE-GLEICH wie bisher ("\par ").
+  function absatzAnfang(w) {
+    if (w.listeZuEnde) { w.listeZuEnde = false; return "\\par \\pard "; }
+    return "\\par ";
+  }
+
   function kinderNachRtf(w, kinder, imListenpunkt) {
     var aus = "";
     Array.prototype.forEach.call(kinder, function (k) {
@@ -348,11 +356,17 @@ TB.auszeichnung = (function () {
     return aus;
   }
 
-  // Verschachtelte Aufzählungen (Etappe 13, Diagnoseblock): Unterpunkte
-  // rücken je Ebene mit \tab ein und wechseln die Marke (• → ◦ → ▪).
-  // Ebene 0 bleibt BYTE-GLEICH zur bisherigen Ausgabe (in KISIM
-  // bewiesen) — nur echte Unterlisten erzeugen Neues.
-  var LISTENMARKEN = ["\\u8226?", "\\u9702?", "\\u9642?"];
+  // Aufzählungen als ECHTE KISIM-Listen (18.3, Lehre von Näd 11.10.):
+  // Die in KISIM BEWIESENE Form stammt aus dem Bericht Memory Clinic
+  // (28.9./1.10., fenster-bericht-mc.ahk):
+  //   \pard{\*\pn\pnlvlblt\pnf0\pnindent283{\pntxtb\'95}}\fi-283\li283 Text
+  // — hängender Einzug, richtiger Punkt, keine „komischen" Zeichen.
+  // Verschachtelte Ebenen rücken je 283 Twips weiter ein und wechseln
+  // die Marke (• → o → -, das Word-Muster). Jeder Punkt setzt seine
+  // Absatz-Eigenschaften SELBST; der Block NACH einer Liste beginnt
+  // mit \pard, damit Einzug und Punkt dort wieder verschwinden
+  // (knotenNachRtf unten, w.listeZuEnde).
+  var LISTENMARKEN = ["\\'95", "o", "-"];
   function listeNachRtf(w, knoten, tiefe) {
     var nummeriert = knoten.tagName.toUpperCase() === "OL";
     var aus = "", n = 0;
@@ -361,8 +375,6 @@ TB.auszeichnung = (function () {
       n += 1;
       var marke = nummeriert ? zeichen(n + ".")
         : LISTENMARKEN[Math.min(tiefe, LISTENMARKEN.length - 1)];
-      var einzug = "";
-      for (var i = 0; i < tiefe; i++) einzug += "\\tab ";
       var innen = "", unterlisten = "";
       Array.prototype.forEach.call(blockKinder(li), function (k) {
         if (k.nodeType === 1 &&
@@ -372,9 +384,11 @@ TB.auszeichnung = (function () {
           innen += knotenNachRtf(w, k, true);
         }
       });
-      aus += "\\par {\\pntext " + einzug + marke + "\\tab}" + innen +
-             unterlisten;
+      aus += "\\par \\pard{\\*\\pn\\pnlvlblt\\pnf0\\pnindent283{\\pntxtb " +
+             marke + "}}\\fi-283\\li" + (283 * (tiefe + 1)) + " " +
+             innen + unterlisten;
     });
+    if (tiefe === 0) w.listeZuEnde = true;
     return aus;
   }
 
@@ -389,12 +403,12 @@ TB.auszeichnung = (function () {
     if (knoten.nodeType !== 1) return "";
     var name = knoten.tagName.toUpperCase();
 
-    if (name === "BR") return "\\par ";
+    if (name === "BR") return absatzAnfang(w);
     if (name === "UL" || name === "OL") {
       return listeNachRtf(w, knoten, 0);
     }
     if (name === "LI") {
-      return "\\par {\\pntext \\u8226?\\tab}" +
+      return "\\par \\pard{\\*\\pn\\pnlvlblt\\pnf0\\pnindent283{\\pntxtb \\'95}}\\fi-283\\li283 " +
              kinderNachRtf(w, blockKinder(knoten), true);
     }
     if (name === "TABLE") return tabelleNachRtf(w, knoten);
@@ -407,8 +421,8 @@ TB.auszeichnung = (function () {
         return tabelleNachRtf(w, kinder[0]);
       }
       if (imListenpunkt) return kinderNachRtf(w, kinder, imListenpunkt);
-      if (!kinder.length) return "\\par ";
-      return "\\par " + kinderNachRtf(w, kinder, imListenpunkt);
+      if (!kinder.length) return absatzAnfang(w);
+      return absatzAnfang(w) + kinderNachRtf(w, kinder, imListenpunkt);
     }
 
     var innen = kinderNachRtf(w, knoten.childNodes, imListenpunkt);
