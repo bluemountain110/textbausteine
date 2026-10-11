@@ -78,6 +78,40 @@ TB.abgleich = (function () {
     return isNaN(t) ? 0 : t;
   }
 
+  // 18.4: Zwei Fassungen mit gleichem INHALT sind KEIN Konflikt. Das
+  // passiert, wenn ein Baustein-Umbau auf mehreren Geräten dasselbe
+  // tat (Näd 11.10.: „Derselbe Baustein wurde an zwei Orten geändert"
+  // kam immer wieder, ohne dass er etwas geändert hatte) — nur die
+  // Zeitstempel unterscheiden sich. Dann gilt still die fremde
+  // Fassung. Verglichen wird alles Inhaltliche; Zeiten und das daraus
+  // gerechnete Druckformat (textRtf) zählen nicht.
+  var INHALT = ["titel", "kuerzel", "kategorie", "text", "notiz",
+                "varianten", "sortierung", "art", "ausgabeart"];
+  function inhaltGleich(a, b) {
+    if (!a || !b) return false;
+    if (!!a.entwurf !== !!b.entwurf) return false;
+    // Gelöscht ist gelöscht — der genaue Löschzeitpunkt ist kein Inhalt
+    // (sonst kollidierte dasselbe Aufräumen zweier Geräte erneut).
+    if (!!a.geloeschtAm !== !!b.geloeschtAm) return false;
+    return INHALT.every(function (f) {
+      var x = a[f], y = b[f];
+      if (x === undefined || x === null || x === "") x = null;
+      if (y === undefined || y === null || y === "") y = null;
+      return JSON.stringify(x) === JSON.stringify(y);
+    });
+  }
+
+  // Schon GEMERKTE Konflikte, deren zwei Fassungen inhaltsgleich sind,
+  // lösen sich still auf (sie stammen aus der Zeit vor dieser Regel).
+  function konflikteAusmisten() {
+    S().konflikte().slice().forEach(function (k) {
+      if (!inhaltGleich(k.eigen, k.fremd)) return;
+      S().erledigt("bausteine", [k.id]);
+      S().fremdEinspielen(k.fremd);
+      S().loeseKonflikt(k.id);
+    });
+  }
+
   // ---- Teil 1: holen ---------------------------------------------------
   function holeBausteine(seit) {
     var bedingung = "order=aktualisiert_am.asc";
@@ -107,6 +141,13 @@ TB.abgleich = (function () {
         // Ablage genau der Ausgangsfassung, ist es die eigene alte
         // Fassung — kein Konflikt, sondern der erwartete Widerhall.
         if (zeit(fremd.aktualisiertAm) === zeit(S().ausgangsfassung(fremd.id))) return;
+        // Gleicher Inhalt auf beiden Seiten (z. B. derselbe Umbau auf
+        // zwei Geräten): die fremde Fassung gilt, nichts wird gemeldet.
+        if (inhaltGleich(eigen, fremd)) {
+          S().erledigt("bausteine", [fremd.id]);
+          S().fremdEinspielen(fremd);
+          return;
+        }
         // Beide Seiten geändert: liegen lassen und fragen.
         veraendert++;
         S().merkeKonflikt({
@@ -216,6 +257,7 @@ TB.abgleich = (function () {
       return Promise.resolve({ ok: false, fehler: TB.T.abgleichNichtAngemeldet });
     }
     laeuft = true; letzterFehler = null; veraendert = 0; melden();
+    konflikteAusmisten();
 
     var benutzer = TB.wolke.benutzerKennung();
     var seit = S().abgleichStand().zuletzt;
@@ -306,5 +348,6 @@ TB.abgleich = (function () {
   return { zustand: zustand, beiAenderung: beiAenderung, jetzt: jetzt,
            spaltenNamen: spaltenNamen,
            anstossen: anstossen, erstmalig: erstmalig, loese: loese,
-           nachAblage: nachAblage, nachApp: nachApp };
+           nachAblage: nachAblage, nachApp: nachApp,
+           inhaltGleich: inhaltGleich, konflikteAusmisten: konflikteAusmisten };
 })();

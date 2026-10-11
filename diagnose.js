@@ -135,8 +135,11 @@ TB.diagnose = (function () {
   // oder ein Zusatzbefund (Radiologie, Liquor) — und liefert die Werte
   // für ALLE Felder des Diagnoseblocks. Gelesen wird nur der
   // Alzheimer-Block; weitere Diagnosen (2., 3. …) bleiben unberührt.
-  var DX_MCI = "Mild Neurocognitive Impairment (MCI) im Rahmen eines Morbus Alzheimer";
-  var DX_DEM = "Leichte Demenz im Rahmen eines Morbus Alzheimer";
+  // Seit 18.4 beginnt der Titel mit der Krankheit (Näds Wahl 11.10.);
+  // erkannt werden weiterhin auch die alten „… im Rahmen eines
+  // Morbus Alzheimer"-Zeilen aus bestehenden KISIM-Diagnosen.
+  var DX_MCI = "Morbus Alzheimer, Mild Neurocognitive Impairment (MCI)";
+  var DX_DEM = "Morbus Alzheimer, leichte Demenz";
 
   function putze(s) {
     return String(s || "").replace(/\s+/g, " ").replace(/[,\s]+$/, "").trim();

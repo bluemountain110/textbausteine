@@ -408,6 +408,7 @@ TB.auszeichnung = (function () {
       return listeNachRtf(w, knoten, 0);
     }
     if (name === "LI") {
+      w.listeZuEnde = true;
       return "\\par \\pard{\\*\\pn\\pnlvlblt\\pnf0\\pnindent283{\\pntxtb \\'95}}\\fi-283\\li283 " +
              kinderNachRtf(w, blockKinder(knoten), true);
     }
@@ -590,6 +591,11 @@ TB.auszeichnung = (function () {
     // Beginnt der Inhalt mit einem Absatz, hat er ein \par vorweg —
     // vor der ersten Zeile gehört aber keins.
     koerper = koerper.replace(/^\\par /, "");
+    // Endet der Inhalt mit einer Aufzählung, muss der LETZTE Punkt
+    // seinen Absatz selbst schliessen — sonst übernimmt das Schreibfeld
+    // für ihn die eigene Formatierung und das letzte Aufzählungszeichen
+    // fehlt (Näd 11.10., Diagnoseliste).
+    if (w.listeZuEnde) koerper += "\\par \\pard ";
 
     var schrifttabelle = "{\\fonttbl";
     w.schriften.forEach(function (name, i) {

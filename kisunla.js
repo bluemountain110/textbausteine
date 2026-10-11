@@ -161,16 +161,23 @@ TB.kisunla = (function () {
 
   // ---- Einmalige Umbauten (wie berZweiZeilen, Lehre-Muster) ------------
   // 18.2: männlich/weiblich-Texte + ;;kisbest anlegen.
-  // 18.3: ;;dxkis heisst neu ;;dxad (Kürzel wird IMMER umgehängt), die
-  //       Titelzeile trägt EM und ED (Text NUR gehoben, wenn er noch
-  //       wörtlich dem Lieferstand entspricht — eigene Fassung bleibt).
+  // 18.3/18.4: ;;dxkis heisst neu ;;dxad (Kürzel wird IMMER umgehängt);
+  //       die Titelzeile beginnt mit „Morbus Alzheimer" und trägt EM
+  //       und ED (Text NUR gehoben, wenn er wörtlich EINER
+  //       Lieferfassung entspricht — eigene Fassung bleibt).
+  // 18.4: Aufräumen — Kopien, die „Beide behalten" aus den
+  //       Umbau-Scheinkonflikten vom 11.10. gemacht hat (Titel endet
+  //       auf „(zweite Fassung)", kein Kürzel, Text wörtlich ein
+  //       Lieferstand), wandern in den Papierkorb.
   function umbau182() {
     if (!TB.kisunlaUmbau) return 0;
     var S = TB.speicher, getan = 0;
+    var liefertexte = [];
     Object.keys(TB.kisunlaUmbau.texte).forEach(function (k) {
+      var paar = TB.kisunlaUmbau.texte[k];
+      liefertexte.push(paar.alt, paar.neu);
       var b = S.holenPerKuerzel(k);
       if (!b) return;
-      var paar = TB.kisunlaUmbau.texte[k];
       if (b.text === paar.neu) return;
       if (b.text !== paar.alt) return;   // Näds eigene Fassung bleibt
       S.speichern({ id: b.id, text: paar.neu });
@@ -180,18 +187,27 @@ TB.kisunla = (function () {
       var v = TB.kisunlaUmbau.kisbest;
       if (!S.holen(v.id)) { S.speichern(v); getan += 1; }
     }
+    liefertexte.push(TB.kisunlaUmbau.kisbest.text);
     var d = TB.kisunlaUmbau.dxad;
     if (d) {
+      liefertexte = liefertexte.concat(d.alte, [d.neu]);
       var bd = S.holenPerKuerzel(d.altKuerzel) || S.holenPerKuerzel(d.kuerzel);
       if (bd) {
         var aend = { id: bd.id }, tun = false;
         if (bd.kuerzel === d.altKuerzel) { aend.kuerzel = d.kuerzel; tun = true; }
-        if (bd.text === d.alt && bd.text !== d.neu) {
+        if (d.alte.indexOf(bd.text) !== -1 && bd.text !== d.neu) {
           aend.text = d.neu; aend.notiz = d.notiz; tun = true;
         }
         if (tun) { S.speichern(aend); getan += 1; }
       }
     }
+    S.alle().slice().forEach(function (b) {
+      if (b.kuerzel) return;
+      if (!/\(zweite Fassung\)$/.test(String(b.titel || ""))) return;
+      if (liefertexte.indexOf(b.text) === -1) return;
+      S.inPapierkorb(b.id);
+      getan += 1;
+    });
     return getan;
   }
 

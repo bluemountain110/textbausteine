@@ -835,6 +835,11 @@ dialog.kisbest { width: min(820px, 96vw); }
 .kisew-text ul { margin: 4px 0; padding-left: 20px; }
 .kisew-knoepfe { position: sticky; bottom: 10px; display: flex;
   gap: 10px; justify-content: flex-end; margin-top: 14px; }
+/* 18.4: Solange die Druckseite offen ist, verschwindet der Rest der
+   App auch am BILDSCHIRM — am Spital stand sonst die Bausteinliste
+   über der Seite (Näd 11.10., S2). Schliessen holt alles zurück. */
+body.kisew-druck > *:not(#kisew-seite) { display: none !important; }
+body.kisew-druck { background: #e8e8e8; }
 @media print {
   body.kisew-druck > *:not(#kisew-seite) { display: none !important; }
   #kisew-seite { box-shadow: none; margin: 0; max-width: none;

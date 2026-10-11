@@ -1185,6 +1185,9 @@ TB.selbsttest = (function () {
         "<p>Titel</p><ul><li>eins</li></ul><p>danach</p>");
       fall("Nach der Aufzählung setzt \\pard den Einzug zurück",
         nachL.indexOf("\\li283 eins\\par \\pard danach") !== -1, nachL);
+      var endL = TB.auszeichnung.ausHtml("<p>Titel</p><ul><li>letzter</li></ul>");
+      fall("Letzter Aufzählungspunkt schliesst seinen Absatz selbst (18.4)",
+        endL.indexOf("\\li283 letzter\\par \\pard ") !== -1, endL);
       var mini = "<ul><li>{{Ankreuz:Kisunla/aus}}{{Wenn:Kisunla}}Kisunla ab {{Feld:Ab=X}}<ul><li><b>CAVE</b></li></ul>{{Ende}}</li><li>fix</li></ul>";
       var an = TB.masken.wendeAn(mini,
         { kaestchen: { Kisunla: true }, antworten: {}, texte: {} }, []).html;
@@ -1285,12 +1288,25 @@ TB.selbsttest = (function () {
           uOk, uDetail.join(" · "));
         if (u.dxad) {
           var ud = TB.masken.analysiere(u.dxad.neu);
-          fall("Umbau 18.3: dxad-Text fehlerfrei, Titelzeile mit EM und ED",
+          fall("Umbau 18.4: dxad-Text fehlerfrei, Titel Morbus Alzheimer zuerst mit EM und ED",
             ud.fehler.length === 0 && u.dxad.kuerzel === "dxad" &&
-            u.dxad.neu.indexOf(", EM {{Feld:EM=unklar}}, ED {{Feld:ED (Monat/Jahr)=unklar}}</b></p>") !== -1 &&
-            u.dxad.neu.indexOf("EM ca. {{Feld:EM (Jahr)") === -1,
+            u.dxad.neu.indexOf("{{Auswahl:Stadium:" + TB.diagnose.DX_MCI + "|" + TB.diagnose.DX_DEM + "}}, EM {{Feld:EM=unklar}}, ED {{Feld:ED (Monat/Jahr)=unklar}}</b></p>") !== -1 &&
+            u.dxad.neu.indexOf("im Rahmen eines") === -1 &&
+            u.dxad.neu.indexOf("EM ca. {{Feld:EM (Jahr)") === -1 &&
+            u.dxad.alte.length === 2,
             ud.fehler.join(" · "));
         }
+        // 18.4: Inhaltsgleiche Fassungen sind kein Konflikt.
+        var ig = { titel: "T", kuerzel: "k", kategorie: "K", text: "<p>x</p>",
+          notiz: "n", art: "text", ausgabeart: "fenster", entwurf: false,
+          aktualisiertAm: "2026-10-11T10:00:00.000Z", textRtf: "{a}" };
+        var ig2 = JSON.parse(JSON.stringify(ig));
+        ig2.aktualisiertAm = "2026-10-11T11:00:00.000Z"; ig2.textRtf = "{b}";
+        fall("Abgleich 18.4: gleicher Inhalt, andere Zeit — kein Konflikt",
+          TB.abgleich.inhaltGleich(ig, ig2) === true, "");
+        ig2.text = "<p>anders</p>";
+        fall("Abgleich 18.4: anderer Text bleibt ein echter Konflikt",
+          TB.abgleich.inhaltGleich(ig, ig2) === false, "");
         var dEM = TB.diagnose.erkenneDiagnose(
           "Mild Neurocognitive Impairment (MCI) im Rahmen eines Morbus Alzheimer, EM ca. 2019, ED 03/2024");
         fall("Einlesen 18.3: EM mit ca.-Zusatz, ED als Monat/Jahr erkannt",

@@ -417,7 +417,7 @@ TB.oberflaeche = (function () {
     // ;;kisbest anlegen, ;;dxkis → ;;dxad mit EM/ED in der Titelzeile) —
     // Texte nur, wo noch der Lieferstand steht.
     if (TB.kisunla && TB.kisunla.umbau182()) {
-      console.log("Kisunla: Umbauten 18.2/18.3 eingespielt.");
+      console.log("Kisunla: Baustein-Umbauten eingespielt.");
       TB.abgleich.anstossen();
     }
     setzeKopf();
