@@ -133,7 +133,13 @@ TB.makros = (function () {
         return (a[b] !== undefined) ? a[b] : vorgabe;
       }
       if (name === "Auswahl") {
-        var b2 = t.rest ? (t.rest.split(":")[0] || "").trim() : "";
+        var teileA = t.rest ? t.rest.split(":") : [];
+        var b2 = (teileA[0] || "").trim();
+        // 18.2: Eine STUMME Auswahl ({{Auswahl:Name:a|b:stumm}}) wird im
+        // Fenster ganz normal gefragt, schreibt aber selbst nichts in
+        // den Text — die Wirkung kommt über {{Wenn:Name=…}}-Abschnitte.
+        // Eingeführt für die Geschlechts-Wahl „männlich/weiblich".
+        if ((teileA[2] || "").trim().toLowerCase() === "stumm") return "";
         return (a[b2] !== undefined) ? a[b2] : "";
       }
       if (name === "Baustein") {

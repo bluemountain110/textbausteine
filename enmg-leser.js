@@ -179,6 +179,25 @@ TB.enmgLeser = (function () {
     });
   }
 
-  return { deute: deute, leseDatei: leseDatei, num: num,
+  // 18.2: Nur den TEXT einer Datei liefern (für das Einlese-Feld des
+  // Diagnoseblocks und künftige Werkzeuge) — dieselben Leser, ohne den
+  // ENMG-Deuter dahinter. Auch hier gilt: nichts wird gespeichert.
+  function leseText(datei) {
+    var name = (datei && datei.name || "").toLowerCase();
+    return datei.arrayBuffer().then(function (puffer) {
+      var b = new Uint8Array(puffer);
+      if (name.endsWith(".pdf") || (b[0] === 0x25 && b[1] === 0x50))
+        return TB.enmgLeserPdf.lese(puffer);
+      if (name.endsWith(".docx") || (b[0] === 0x50 && b[1] === 0x4b))
+        return TB.enmgLeserWord.lese(puffer);
+      return Promise.reject(new Error("unbekanntes Dateiformat"));
+    }).then(function (roh) {
+      // roh.texte enthält bereits jede Zeile als Klartext (auch die
+      // Tabellenzeilen) — die Zellen-Zeilen kämen nur doppelt dazu.
+      return (roh.texte || []).join("\n");
+    });
+  }
+
+  return { deute: deute, leseDatei: leseDatei, leseText: leseText, num: num,
            bedeutungen: bedeutungen, leseKopf: leseKopf };
 })();

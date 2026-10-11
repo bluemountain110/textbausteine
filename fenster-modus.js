@@ -41,7 +41,30 @@ TB.fensterModus = (function () {
   }
 
   function zeigeWerk() {
-    if (art === "enmg") {
+    if (art === "kisew") {
+      // Einwilligungs-Druckseite: kein Übergeben — Näd druckt und
+      // schliesst das Fenster selbst.
+      TB.oberflaeche.geheZu("bausteine");
+      TB.ansichtKisunla.oeffneEinwilligung();
+    } else if (art === "kisbest") {
+      TB.oberflaeche.geheZu("bausteine");
+      TB.ansichtKisunla.oeffneBestellung();
+    } else if (art === "baustein") {
+      // Ein reicher Baustein (z. B. ;;dxkis) als echtes App-Fenster:
+      // das Ausfüll-Fenster öffnet sofort, der Haupt-Knopf heisst
+      // „An KISIM/Axenita übergeben" und packt das Paket.
+      TB.oberflaeche.geheZu("bausteine");
+      var b = TB.speicher.holenPerKuerzel(kuerzel);
+      if (!b) return;   // pruefeNeu öffnet, sobald der Abgleich ihn bringt
+      TB.ansichtAusfuellen.setzeOkText(knopfText());
+      TB.ansichtAusfuellen.starte(b, function (ergebnis) {
+        if (ergebnis.fehler && ergebnis.fehler.length) {
+          TB.ui.melde(TB.T.makroWarnung + ergebnis.fehler.join(" · "), true);
+          return;
+        }
+        uebergebenBaustein(b, ergebnis);
+      });
+    } else if (art === "enmg") {
       // ENMG: Die Daten kommen aus der hineingezogenen Datei, nicht aus
       // dem Abgleich — es gibt nichts vorzubelegen.
       TB.oberflaeche.geheZu("enmg");
@@ -63,7 +86,12 @@ TB.fensterModus = (function () {
   function fingerabdruck() {
     // ENMG hängt nicht am Abgleich: konstanter Abdruck, damit ein
     // Datenabgleich die eingelesene Datei nie aus der Ansicht wirft.
-    if (art === "enmg") return "enmg";
+    if (art === "enmg" || art === "kisew" || art === "kisbest") return art;
+    if (art === "baustein") {
+      // Erst „da", wenn der Baustein angekommen ist — dann öffnet
+      // pruefeNeu das Ausfüll-Fenster genau EINMAL.
+      return "baustein|" + (TB.speicher.holenPerKuerzel(kuerzel) ? "1" : "0");
+    }
     var m = (art === "eeg") ? TB.eeg.master() : TB.status.master();
     var teil = (art === "status")
       ? TB.status.teilmengen().map(function (t) {
@@ -112,8 +140,8 @@ TB.fensterModus = (function () {
       fertig = true;
       window.removeEventListener("message", antwort);
       if (d.ok) {
-        knopf.textContent = T().fensterUebergeben;
-        knopf.disabled = true;
+        if (knopf) { knopf.textContent = T().fensterUebergeben; knopf.disabled = true; }
+        else TB.ui.melde(T().fensterUebergeben);
         setTimeout(function () { try { window.close(); } catch (e) {} }, 300);
       } else {
         TB.ui.melde(T().fensterErwFehler, true);
@@ -162,11 +190,53 @@ TB.fensterModus = (function () {
     });
   }
 
+  // Übergabe eines Baustein-Fensters (18.2): Diagnosen reisen als ZWEI
+  // Felder (fette Titelzeile, Rest) — das Skript tippt den Titel in die
+  // erste Zeile der KISIM-Diagnoseliste, springt mit Strg+Tab und setzt
+  // den Rest in die zweite Zeile. Andere Bausteine reisen als Block.
+  function uebergebenBaustein(b, ergebnis) {
+    var felder, artPaket;
+    if (String(b.kategorie || "").trim() === "Diagnosen") {
+      var wurzel = document.createElement("div");
+      wurzel.innerHTML = ergebnis.html || "";
+      var erster = wurzel.firstElementChild;
+      var titelHtml = erster ? erster.outerHTML : "";
+      var titelText = erster ? erster.textContent : "";
+      if (erster) erster.remove();
+      var restText = String(ergebnis.text || "");
+      var bruch = restText.indexOf("\n");
+      restText = bruch === -1 ? "" : restText.slice(bruch + 1);
+      felder = {
+        titel: { text: titelText, html: titelHtml,
+                 rtf: TB.speicher.rtfHtml(titelHtml) || "" },
+        rest: { text: restText, html: wurzel.innerHTML,
+                rtf: TB.speicher.rtfHtml(wurzel.innerHTML) || "" }
+      };
+      artPaket = "diagnose";
+    } else {
+      felder = { block: feld({ text: ergebnis.text, html: ergebnis.html }) };
+      artPaket = "baustein";
+    }
+    if (ziel === "axenita") {
+      anErweiterung({ art: artPaket, felder: felder }, null);
+      return;
+    }
+    var paket = "TBFENSTER1:" + JSON.stringify(
+      { art: artPaket, nonce: nonce, felder: felder });
+    navigator.clipboard.writeText(paket).then(function () {
+      TB.ui.melde(T().fensterUebergeben);
+      setTimeout(function () { try { window.close(); } catch (e) {} }, 600);
+    }, function () {
+      TB.ui.melde(T().fensterFehler, true);
+    });
+  }
+
   function start() {
     merkeAdresse();
     var p = new URLSearchParams(location.search);
     art = p.get("fenster") || "";
-    if (art !== "eeg" && art !== "status" && art !== "enmg") return;
+    if (art !== "eeg" && art !== "status" && art !== "enmg" &&
+        art !== "baustein" && art !== "kisew" && art !== "kisbest") return;
     kuerzel = p.get("kuerzel") || "";
     nonce = p.get("nonce") || "";
     ziel = (p.get("ziel") === "axenita") ? "axenita" : "kisim";
@@ -194,5 +264,5 @@ TB.fensterModus = (function () {
     start();
 
   return { start: start, pruefeNeu: pruefeNeu, uebergeben: uebergeben,
-           knopfText: knopfText };
+           uebergebenBaustein: uebergebenBaustein, knopfText: knopfText };
 })();

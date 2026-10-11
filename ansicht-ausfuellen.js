@@ -20,6 +20,10 @@ window.TB = window.TB || {};
 TB.ansichtAusfuellen = (function () {
   var T = null;
   function bereit() { T = TB.T; }
+  // 18.2: Im URL-Fenster-Modus heisst der Haupt-Knopf nicht „Kopieren",
+  // sondern „An KISIM/Axenita übergeben" (fenster-modus.js setzt ihn).
+  var okTextFest = null;
+  function setzeOkText(t) { okTextFest = t || null; }
 
   var el = function (a, b, c) { return TB.ui.el(a, b, c); };
   var dialogOeffnen = function (d) { return TB.ui.dialogOeffnen(d); };
@@ -108,19 +112,47 @@ TB.ansichtAusfuellen = (function () {
     });
     aktualisiere();
 
-    fensterAbschluss(d, T.kopieren, function () {
+    fensterAbschluss(d, okTextFest || T.kopieren, function () {
       beiFertig(TB.reichtext.auswerte(html, antworten(), umgebung, holeBaustein));
     }, beiAbbruch);
     dialogOeffnen(d);
   }
 
   // ---- Stufe 2 und 3: das Masken-Fenster -------------------------------
+  // 18.2 (Näd 10.10.): kompakt — kurze Felder stehen IN der Zeile ihres
+  // Kästchens statt in eigenen vollen Zeilen; Diagnose-Masken bekommen
+  // zuoberst ein Einlese-Feld (Text einfügen oder PDF/Word hereinziehen),
+  // das ALLE Felder füllt (diagnose.js).
+  var LANGFELD = /(Profil|Scores|Befund|Wortlaut)/i;
+
   function maskenFenster(b, html, umgebung, beiFertig, beiAbbruch) {
     var analyse = TB.masken.analysiere(html);
     var d = el("dialog", "maske");
     d.appendChild(el("h2", "", T.ausfuellenTitel + " — " + (b.titel || "")));
     if (analyse.fehler.length) {
       d.appendChild(el("p", "hinweis-warn", T.makroWarnung + analyse.fehler.join(" · ")));
+    }
+    var einleseAnwenden = null;   // wird unten gesetzt (Diagnose-Masken)
+    if (String(b.kategorie || "").trim() === "Diagnosen" &&
+        TB.diagnose && TB.diagnose.erkenneDiagnose) {
+      var eLabel = el("label", "", T.diagnoseEinlese);
+      var eFeld = el("textarea", "diagnose-einlese"); eFeld.rows = 3;
+      var eHinweis = el("div", "erklaerung", "");
+      d.appendChild(eLabel); d.appendChild(eFeld); d.appendChild(eHinweis);
+      eFeld.addEventListener("input", function () {
+        if (einleseAnwenden) einleseAnwenden(eFeld.value, eHinweis);
+      });
+      eFeld.addEventListener("dragover", function (ev) { ev.preventDefault(); });
+      eFeld.addEventListener("drop", function (ev) {
+        var datei = ev.dataTransfer && ev.dataTransfer.files &&
+                    ev.dataTransfer.files[0];
+        if (!datei) return;   // Text-Drop: Browser fügt selbst ein
+        ev.preventDefault();
+        TB.enmgLeser.leseText(datei).then(function (text) {
+          eFeld.value = text;
+          if (einleseAnwenden) einleseAnwenden(text, eHinweis);
+        }, function () { eHinweis.textContent = T.diagnoseDateiFehler; });
+      });
     }
 
     var vorgabeAn = {};
@@ -133,10 +165,12 @@ TB.ansichtAusfuellen = (function () {
     var antwortFeld = {};   // Beschriftung → input/select
     var katWahl = [];       // je Kategorie-Fundstelle: { zeile, gewaehlt:[Baustein] }
 
+    var letzterAnkreuz = null;
     analyse.zeilen.forEach(function (z) {
       var zeile = el("div", "feldzeile maske-zeile");
       var felder = [];
       if (z.typ === "ankreuz") {
+        letzterAnkreuz = { name: z.name, zeile: zeile };
         var k = analyse.kaestchen.filter(function (x) { return x.name === z.name; })[0];
         var kopf = el("label", "maske-kopf");
         var box = el("input"); box.type = "checkbox"; box.checked = k.an;
@@ -159,9 +193,25 @@ TB.ansichtAusfuellen = (function () {
         });
         zeile.appendChild(w); antwortFeld[z.name] = w; felder.push(w);
       } else if (z.typ === "feld") {
-        zeile.appendChild(el("label", "", z.name));
+        // 18.2 kompakt: Ein kurzes Feld, das am zuletzt gesehenen
+        // Kästchen hängt, wandert IN dessen Zeile (kleine Beschriftung,
+        // schmales Feld) — lange Felder (Profil, Scores, Befund,
+        // Wortlaut) behalten ihre volle Zeile.
+        var haengt = letzterAnkreuz &&
+          (z.sichtbarWenn || []).some(function (bed) {
+            return bed.name === letzterAnkreuz.name && !bed.negiert; });
         var e = el("input"); e.type = "text"; e.value = z.vorgabe || "";
-        zeile.appendChild(e); antwortFeld[z.name] = e; felder.push(e);
+        if (haengt && !LANGFELD.test(z.name)) {
+          zeile.className = "maske-unterfeld";
+          zeile.appendChild(el("span", "maske-unterfeld-name", z.name));
+          e.size = Math.max(6, Math.min(16, (z.vorgabe || "").length + 4));
+          zeile.appendChild(e);
+          letzterAnkreuz.zeile.appendChild(zeile);
+        } else {
+          zeile.appendChild(el("label", "", z.name));
+          zeile.appendChild(e);
+        }
+        antwortFeld[z.name] = e; felder.push(e);
         // Etappe 13: Ein „Scores…“-Feld erkennt einen hineinkopierten
         // Vorbericht und macht daraus die kompakte Score-Zeile.
         if (TB.diagnose) TB.diagnose.feldVeredeln(z.name, e, zeile, aktualisiere);
@@ -195,7 +245,7 @@ TB.ansichtAusfuellen = (function () {
           zeile.appendChild(liste);
         }
       }
-      d.appendChild(zeile);
+      if (zeile.className !== "maske-unterfeld") d.appendChild(zeile);
       zeilen.push({ wurzel: zeile, bedingungen: z.sichtbarWenn || [], felder: felder });
     });
 
@@ -236,11 +286,32 @@ TB.ansichtAusfuellen = (function () {
       vorschau.innerHTML =
         TB.reichtext.auswerte(vor.html, z.antworten, umgebung, holeBaustein).html;
     }
+    // 18.2: Das Einlese-Feld (oben) füllt ALLE Felder der Diagnose-Maske.
+    einleseAnwenden = function (text, hinweis) {
+      var erg = TB.diagnose.erkenneDiagnose(text);
+      if (!erg.gefunden) { hinweis.textContent = T.diagnoseNichtsErkannt; return; }
+      if (erg.stadium && antwortFeld["Stadium"]) {
+        var passt = Array.prototype.some.call(
+          antwortFeld["Stadium"].options || [],
+          function (o) { return o.value === erg.stadium; });
+        if (passt) antwortFeld["Stadium"].value = erg.stadium;
+      }
+      Object.keys(erg.kaestchen).forEach(function (n) {
+        if (kaestchenFeld[n]) kaestchenFeld[n].checked = true;
+      });
+      Object.keys(erg.felder).forEach(function (n) {
+        if (antwortFeld[n]) antwortFeld[n].value = erg.felder[n];
+        else if (textFeld[n]) textFeld[n].value = erg.felder[n];
+      });
+      hinweis.textContent = T.diagnoseErkannt.replace("%s", erg.gefunden);
+      aktualisiere();
+    };
+
     d.addEventListener("input", aktualisiere);
     d.addEventListener("change", aktualisiere);
     aktualisiere();
 
-    fensterAbschluss(d, katWahl.length ? T.weiter : T.kopieren, function () {
+    fensterAbschluss(d, katWahl.length ? T.weiter : (okTextFest || T.kopieren), function () {
       var zustand = zustandJetzt();
       // Eine Kategorie in einem abgewählten Abschnitt zählt nicht mit.
       var reihen = katWahl.map(function (w) {
@@ -316,5 +387,5 @@ TB.ansichtAusfuellen = (function () {
     });
   }
 
-  return { starte: starte };
+  return { starte: starte, setzeOkText: setzeOkText };
 })();

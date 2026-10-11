@@ -265,6 +265,12 @@ TB.oberflaeche = (function () {
   // (Masken, Kategorie-Auswahl und die Fenster-Kette des Berichts
   // hätten diese Datei weit über die 600-Zeilen-Grenze gebracht).
   function benutzeBaustein(b) {
+    // 18.2: ;;kisew und ;;kisbest öffnen ihre eigenen Fenster
+    // (Druckseite bzw. Bestellung) statt zu kopieren.
+    if (TB.kisunla && TB.kisunla.sonderStart(b)) {
+      TB.statistik.bausteinBenutzt(b.id);
+      return;
+    }
     TB.ansichtAusfuellen.starte(b, function (ergebnis, fassungsHinweis) {
       abschliessen(b, ergebnis, fassungsHinweis);
     });
@@ -405,6 +411,12 @@ TB.oberflaeche = (function () {
     // 17.6: ;;ber bekommt einmalig die Zwei-Zeilen-Fassung (Naed 7.10.).
     if (S.berZweiZeilen && S.berZweiZeilen()) {
       console.log(";;ber: neueste Fassung eingespielt.");
+      TB.abgleich.anstossen();
+    }
+    // 18.2: Kisunla-Bausteine einmalig auf männlich/weiblich heben und
+    // ;;kisbest anlegen (nur, wo noch der Lieferstand 18.1 steht).
+    if (TB.kisunla && TB.kisunla.umbau182()) {
+      console.log("Kisunla: Fassung 18.2 eingespielt.");
       TB.abgleich.anstossen();
     }
     setzeKopf();

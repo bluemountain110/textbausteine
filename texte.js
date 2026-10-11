@@ -69,6 +69,25 @@ TB.T = {
   vorschauTitel: "So sieht der Text aus:",
   scoresErkannt: "Scores aus dem eingefügten Text erkannt — bitte kurz prüfen.",
 
+  // Etappe 13 Sammelrunde: Diagnose-Einlesen und Kisunla-Fenster
+  diagnoseEinlese: "Vordiagnose oder Befund hier einfügen (Strg+V) — oder eine PDF-/Word-Datei hereinziehen:",
+  diagnoseErkannt: "%s Angaben erkannt und eingetragen — bitte kurz prüfen.",
+  diagnoseNichtsErkannt: "Nichts erkannt — die Felder bleiben unverändert.",
+  diagnoseDateiFehler: "Diese Datei konnte nicht gelesen werden.",
+  kisewDrucken: "Drucken / als PDF sichern",
+  kisewSchliessen: "Schliessen",
+  kisewFehlt: "Der Baustein ;;kisew fehlt — bitte zuerst die Kisunla-Bausteine importieren.",
+  kisbestTitel: "Kisunla — Bestellung MediService",
+  kisbestEinfuegen: "Stammblatt-Ergebnis hier einfügen (Strg+V):",
+  kisbestErinnerung: "NICHT VERGESSEN: Den unterschriebenen Scan des Formulars UND die Kostengutsprache an die Mail anhängen!",
+  kisbestFormular: "1. Formular drucken / als PDF",
+  kisbestMail: "2. Mail öffnen …",
+  kisbestMailJetzt: "Verstanden — Mail jetzt öffnen",
+  kisbestLeer: "Zuerst das Stammblatt einfügen — Vorname, Name und Geburtsdatum fehlen noch.",
+  kisbestFeste: "Feste Angaben (werden hier gepflegt und nur auf Deinen Geräten abgeglichen):",
+  kisbestHinweisDruck: "Falls der Druckdialog nicht von selbst aufgeht: im neuen Fenster Strg+P (Mac: ⌘P) oder das Drucker-Symbol.",
+  kisbestVorlageFehlt: "Die Formular-Vorlage (medi-rezept.pdf) konnte nicht geladen werden.",
+
   // Papierkorb
   papierkorbLeer: "Der Papierkorb ist leer. Gelöschte Bausteine bleiben hier 30 Tage.",
   zurueckholen: "Zurückholen",

@@ -788,3 +788,56 @@ body.nur-fenster .status-rechts { top: 10px; }
 .enmg-pflege-quelle-feld { flex: 1; min-width: 260px; border: 1px solid #c6d2cd;
   border-radius: 6px; padding: 6px 8px; font: inherit; }
 body.nur-fenster .enmg-drop { padding: 10px; }
+
+/* ---- Etappe 13 Sammelrunde (18.2): kompakte Masken, Diagnose-
+   Einlesen, Kisunla-Fenster --------------------------------------- */
+dialog.maske { width: min(880px, 96vw); }
+.maske-unterfeld { display: inline-flex; align-items: center;
+  gap: 4px; margin: 0 0 0 16px; vertical-align: middle; }
+.maske-unterfeld-name { font-size: .82em; color: var(--gedaempft); }
+.maske-unterfeld input { padding: 2px 6px; }
+.maske-unterfeld.gedimmt { opacity: .45; }
+.diagnose-einlese { width: 100%; }
+
+/* Bestell-Fenster ;;kisbest */
+dialog.kisbest { width: min(820px, 96vw); }
+.kisbest-quelle { width: 100%; }
+.kisbest-patient { font-size: 1.25em; font-weight: 700; margin: 8px 0;
+  color: var(--schrift); }
+.kisbest-raster { display: grid; gap: 6px 14px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.kisbest-feld { display: flex; flex-direction: column;
+  font-size: .85em; color: var(--gedaempft); }
+.kisbest-feld input { font-size: 1rem; color: var(--schrift); }
+.kisbest-erinnerung { background: var(--warn-schrift); color: #fff;
+  font-weight: 700; padding: 10px 12px; border-radius: 8px;
+  margin: 10px 0; }
+.kisbest-datei { display: block; margin: 8px 0; }
+
+/* Einwilligungs-Druckseite ;;kisew */
+#kisew-seite { background: #fff; color: #111; max-width: 780px;
+  margin: 18px auto; padding: 26px 40px 34px;
+  box-shadow: 0 2px 14px rgba(0,0,0,.18);
+  font-size: 12.5px; line-height: 1.35; }
+.kisew-kopf { display: flex; justify-content: space-between;
+  align-items: flex-start; }
+.kisew-logo { height: 38px; }
+.kisew-kopf-rechts { text-align: right; font-size: 11px;
+  line-height: 1.4; }
+.kisew-team-titel { font-weight: 700; margin-top: 10px; }
+.kisew-kontakt { margin-top: 1px; }
+.kisew-kopf-rechts div.kisew-kontakt:first-of-type { margin-top: 10px; }
+.kisew-ort { margin: 26px 0 12px; }
+.kisew-patient { display: flex; gap: 20px; margin: 4px 0 14px; }
+.kisew-feld input { border: none; border-bottom: 1px solid #333;
+  width: 150px; font: inherit; background: transparent; }
+.kisew-text p { margin: 5px 0; }
+.kisew-text ul { margin: 4px 0; padding-left: 20px; }
+.kisew-knoepfe { position: sticky; bottom: 10px; display: flex;
+  gap: 10px; justify-content: flex-end; margin-top: 14px; }
+@media print {
+  body.kisew-druck > *:not(#kisew-seite) { display: none !important; }
+  #kisew-seite { box-shadow: none; margin: 0; max-width: none;
+    padding: 0; font-size: 11.5px; }
+  .nur-bildschirm { display: none !important; }
+}

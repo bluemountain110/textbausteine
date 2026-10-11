@@ -1194,6 +1194,89 @@ TB.selbsttest = (function () {
         { kaestchen: {}, antworten: { Stadium: "A" }, texte: {} }, []).html;
       fall("Stadium-Wahl steuert den Zusatzabsatz",
         /nur bei B/.test(kb) && !/nur bei B/.test(ka), kb);
+      // ---- Sammelrunde 18.2 --------------------------------------------
+      var stummErg = TB.makros.auswerten(
+        "x {{Auswahl:G:a|b:stumm}}y", { G: "a" }, {});
+      fall("Stumme Auswahl schreibt nichts in den Text",
+        stummErg.text === "x y" && stummErg.fehler.length === 0,
+        stummErg.text);
+      var probe = "1. Mild Neurocognitive Impairment (MCI) im Rahmen eines Morbus Alzheimer\n" +
+        "DSM-5: Mild Neurocognitive Disorder (DSM-5), ohne Verhaltensstörung\nEM ca. 2021\nDiagnostik:\n" +
+        "Neuropsychologisches Profil: Deutliche mnestische Auffälligkeiten; seit 10/2024 stabil\n" +
+        "MMS 08/2026: 29/30; MoCA 02/2026: 30/30\n" +
+        "Liquor-Marker 11/2024 (USZ): A+T+N+ (Erlangen-Score 4/4)\n" +
+        "ApoE Bestimmung 23.12.2024 (Viollier): E3/E3\n" +
+        "cMRI 19.08.2026: leicht progrediente Atrophie, Fazekas 1.\n" +
+        "Therapien\nRezirkane (Ginko), Rivastigmin 9.5 mg 0-0-1,\n" +
+        "Kisunla (Donanemab) ab 12.01.2026\nCAVE: absolute Kontraindikation\n" +
+        "2. Anamnestisch St. n. Colon-Carcinom 2023\nseit 03/24 in Remission";
+      var dx = TB.diagnose.erkenneDiagnose(probe);
+      fall("Voll-Erkennung: Stadium, EM, LP, ApoE, cMRI, Therapien, Kisunla",
+        dx.stadium === TB.diagnose.DX_MCI &&
+        dx.felder["EM (Jahr)"] === "2021" &&
+        dx.felder["LP Monat/Jahr"] === "11/2024" &&
+        dx.felder["LP-Labor"] === "USZ" &&
+        dx.felder["LP-Ergebnis"] === "A+T+N+" &&
+        dx.felder["Erlangen-Score"] === "4/4" &&
+        dx.felder["ApoE-Datum"] === "23.12.2024" &&
+        dx.felder["ApoE-Genotyp"] === "E3/E3" &&
+        dx.felder["MRI-Datum"] === "19.08.2026" &&
+        /Fazekas/.test(dx.felder["MRI-Befund (Beurteilung)"]) &&
+        /Rivastigmin/.test(dx.felder["Symptomatische Therapie (Wortlaut)"]) &&
+        dx.felder["Kisunla ab (Datum)"] === "12.01.2026" &&
+        dx.kaestchen["Kisunla"] === true,
+        JSON.stringify(dx.felder));
+      fall("Voll-Erkennung: Zweitdiagnose bleibt draussen, Scores drin",
+        /MMS 08\/2026: 29\/30/.test(dx.felder["Scores (Vorbericht hier einfügen)"] || "") &&
+        !/Colon/.test(JSON.stringify(dx.felder)), "");
+      var sb = TB.kisunla.stammblattLesen(
+        "Patient\nName: Muster\nVorname: Max\nAdresse: Bernerweg 10\nPlz: 8000\nOrt: Zürich\n" +
+        "Geschlecht: M\nGeburtsdatum: 10.12.1970\nTelefon: +41 79 777 11 22\n" +
+        "Bürgerort: @<PAT_BUERGORT>\n" +
+        "Garant 1\nVertrag: KVG\nName: Groupe Mutuel\nPolicenummer: 2912345\n" +
+        "VeKa-Nr.: 80712345678901234567\n");
+      fall("Stammblatt-Leser: Patient, Kasse, VeKa, leere Makros",
+        sb.vollstaendig && sb.patient.vorname === "Max" &&
+        sb.patient.name === "Muster" && sb.patient.geburtsdatum === "10.12.1970" &&
+        sb.garant1.name === "Groupe Mutuel" &&
+        sb.garant1.vekaNr === "80712345678901234567",
+        JSON.stringify(sb));
+      var fw = TB.kisunla.formularWerte(sb, {});
+      fall("Formularwerte: Patientfelder und Vers.-Nr.",
+        fw["Vorname Name_2"] === "Max Muster" &&
+        fw["VersNr"] === "80712345678901234567" &&
+        fw["Krankenkasse"] === "Groupe Mutuel" &&
+        /^\d{2}\.\d{2}\.\d{4}$/.test(fw["Unterschrift des Arztes"]), "");
+      var ml = TB.kisunla.mailAdresse(sb);
+      fall("Bestell-Mail: Empfänger, CC und Betreff mit Geburtsdatum",
+        ml.indexOf("mailto:pharmacare@mediservice.ch") === 0 &&
+        ml.indexOf(encodeURIComponent("FND@spital-limmattal.ch")) !== -1 &&
+        ml.indexOf(encodeURIComponent("Max Muster, 10.12.1970")) !== -1, "");
+      var mini = "%PDF-1.4\n3 0 obj<< /T (Tel) /FT /Tx /AP 5 0 R >>endobj\n" +
+        "trailer\n<< /Size 9 /Root 7 0 R >>\nstartxref\n9\n%%EOF";
+      var miniBytes = new Uint8Array(mini.length);
+      for (var mb = 0; mb < mini.length; mb++) miniBytes[mb] = mini.charCodeAt(mb);
+      var gef = TB.pdfFormular.fuelle(miniBytes, { "Tel": "+41 (Züri)" });
+      var gefText = "";
+      for (var gb = 0; gb < gef.bytes.length; gb++) gefText += String.fromCharCode(gef.bytes[gb]);
+      fall("PDF-Füller: Wert gesetzt, Klammern und Umlaute verpackt, Fortschreibung dran",
+        gefText.indexOf("/V (+41 \\(Z\\374ri\\))") !== -1 &&
+        gefText.indexOf("/Prev 9") !== -1 && gef.fehlend.length === 0,
+        gefText.slice(mini.length));
+      if (TB.kisunlaUmbau) {
+        var u = TB.kisunlaUmbau;
+        var uOk = true, uDetail = [];
+        Object.keys(u.texte).forEach(function (k) {
+          var neu = u.texte[k].neu;
+          var ma2 = TB.masken.analysiere(neu);
+          if (ma2.fehler.length) { uOk = false; uDetail.push(k + ": " + ma2.fehler.join("/")); }
+          if (neu.indexOf(":stumm") === -1 || neu.indexOf("Geschlecht") === -1) {
+            uOk = false; uDetail.push(k + ": Geschlecht-Wahl fehlt");
+          }
+        });
+        fall("Umbau-Texte 18.2: fehlerfrei, mit stummer Geschlecht-Wahl",
+          uOk, uDetail.join(" · "));
+      }
       ["kismri1", "kismri", "kisauf", "kisew", "kiskogu", "kisverl", "dxkis"]
         .forEach(function (k) {
           var bst = TB.speicher.holenPerKuerzel(k);
