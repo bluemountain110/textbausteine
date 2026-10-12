@@ -236,16 +236,17 @@ TB.enmgAnonym = (function () {
 
   // Alle grünen Einträge zu EINER Textdatei; Dateinamen der Quellen
   // bleiben bewusst draussen (sie tragen oft den Patientennamen).
-  function sammelausgabe(eintraege) {
+  function sammelausgabe(eintraege, mitKurven) {
     var gruene = eintraege.filter(function (e) { return e.ok; });
     var teile = ["ENMG-Befunde, anonymisiert (Werkzeug der " +
-      "Textbausteine-App) — " + gruene.length + " Befunde", ""];
+      "Textbausteine-App) — " + gruene.length + " Befunde",
+      "Kurven: " + (mitKurven ? "mitgeliefert" : "nicht angefordert (Häkchen aus)"), ""];
     gruene.forEach(function (e, i) {
       teile.push("=== Befund " + (i + 1) + " — Alter " + e.alter +
         ", Geschlecht " + (e.geschlecht || "unbekannt") +
         ", Untersuchung " + (e.monatJahr || "unbekannt") + " ===");
       teile.push(e.text);
-      if (e.kurven) { teile.push(""); teile.push(e.kurven); }
+      if (mitKurven && e.kurven) { teile.push(""); teile.push(e.kurven); }
       teile.push("");
     });
     return teile.join("\n");

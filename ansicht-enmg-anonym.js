@@ -41,6 +41,10 @@ TB.ansichtEnmgAnonym = (function () {
     kurvenZeile.appendChild(kurvenKreuz);
     kurvenZeile.appendChild(el("span", "", T().anonymKurvenWahl));
     d.appendChild(kurvenZeile);
+    kurvenKreuz.addEventListener("change", function () {
+      if (!vorschau.hidden) vorschau.textContent =
+        TB.enmgAnonym.sammelausgabe(eintraege, kurvenKreuz.checked);
+    });
 
     var liste = el("div", "anonym-liste");
     d.appendChild(liste);
@@ -101,7 +105,7 @@ TB.ansichtEnmgAnonym = (function () {
       sichern.disabled = !gruene;
       zeigen.disabled = !gruene;
       if (!vorschau.hidden) vorschau.textContent =
-        TB.enmgAnonym.sammelausgabe(eintraege);
+        TB.enmgAnonym.sammelausgabe(eintraege, kurvenKreuz.checked);
     }
 
     function verarbeite(dateien) {
@@ -109,13 +113,20 @@ TB.ansichtEnmgAnonym = (function () {
       if (!neu.length) return;
       offen += neu.length;
       zeichneListe();
-      var mitKurven = kurvenKreuz.checked;
+      // 18.9: JEDES PDF wird auf Kurven gelesen — unabhängig vom
+      // Häkchen (Näds Test 12.10.: Häkchen nach dem Hineinziehen gesetzt
+      // → still keine Kurven). Das Häkchen entscheidet erst beim
+      // Sichern/Vorschauen, ob die Kurven in die Ausgabe kommen.
       neu.forEach(function (datei) {
         TB.enmgLeser.leseText(datei).then(function (text) {
           var erg = TB.enmgAnonym.anonymisiere(text.split("\n"));
           erg.name = datei.name;
           var istPdf = /\.pdf$/i.test(datei.name);
-          if (!erg.ok || !mitKurven || !istPdf) { eintraege.push(erg); return; }
+          if (erg.ok && !istPdf) {
+            erg.kurven = "### Kurven-Rohdaten: nicht möglich — Word-Datei " +
+              "(Kurven nur aus dem PDF-Export)";
+          }
+          if (!erg.ok || !istPdf) { eintraege.push(erg); return; }
           return datei.arrayBuffer().then(function (puffer) {
             return TB.enmgLeserPdf.leseGrafik(puffer);
           }).then(function (grafik) {
@@ -209,11 +220,11 @@ TB.ansichtEnmgAnonym = (function () {
     zeigen.addEventListener("click", function () {
       vorschau.hidden = !vorschau.hidden;
       if (!vorschau.hidden)
-        vorschau.textContent = TB.enmgAnonym.sammelausgabe(eintraege);
+        vorschau.textContent = TB.enmgAnonym.sammelausgabe(eintraege, kurvenKreuz.checked);
     });
     var sichern = el("button", "haupt", T().anonymSichern);
     sichern.addEventListener("click", function () {
-      var inhalt = TB.enmgAnonym.sammelausgabe(eintraege);
+      var inhalt = TB.enmgAnonym.sammelausgabe(eintraege, kurvenKreuz.checked);
       var blob = new Blob([inhalt], { type: "text/plain;charset=utf-8" });
       var a = el("a");
       a.href = URL.createObjectURL(blob);

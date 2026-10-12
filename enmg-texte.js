@@ -80,7 +80,7 @@ TB.enmgTexte = {
   anonymGesichert: "Gesichert als %s (im Download-Ordner) — diese Datei kannst Du in den Bau-Chat geben.",
   anonymLeeren: "Liste leeren",
   anonymSchliessen: "Schliessen",
-  anonymKurvenWahl: "Kurven mitliefern (Rohdaten f\u00fcr die Kurven-Analyse \u2014 vor dem Hineinziehen ankreuzen; f\u00fcr den Anfang 2\u20133 Befunde gen\u00fcgen, die Datei wird gross)",
+  anonymKurvenWahl: "Kurven in die Ausgabe nehmen (Rohdaten f\u00fcr die Kurven-Analyse \u2014 wirkt beim Sichern, egal wann Du es setzt; f\u00fcr den Anfang 2\u20133 Befunde, die Datei wird gross)",
   anonymKurvenKnopf: "Kurven (%s Linien)",
   anonymKurvenLeer: "keine Kurven-Linien gefunden (Diagnose steht in der Ausgabe)",
   anonymKurvenFlaeche: "Zeichenfl\u00e4che %s \u2014 %s Linienz\u00fcge (nur Linien, keine Beschriftung)"

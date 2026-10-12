@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "18.8 · ENMG-Kurven mit Diagnose · 12.10.2026";
+TB.FASSUNG = "18.9 · ENMG-Kurven immer gelesen · 12.10.2026";
 
 TB.speicher = (function () {
 
