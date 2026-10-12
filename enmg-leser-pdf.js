@@ -354,10 +354,56 @@ TB.enmgLeserPdf = (function () {
   // Liest ALLE Zeichenflächen einer PDF-Datei: je Strom mit Linien das
   // Grafik-Ergebnis plus die Kerndaten seines Wörterbuchs (Art, BBox,
   // Matrix — für die spätere Zuordnung von Form-Objekten).
+  // 18.8: Technische Diagnose, falls KEINE Linien gefunden werden
+  // (Näds erster Echt-Test 12.10.: kein Kurven-Abschnitt — warum?).
+  // Zählt nur Technisches: Ströme, Pressverfahren, Bilder (mit Grösse),
+  // Form-Objekte, Zeichenbefehle. Kein Inhalt, kein Patientenbezug.
+  function grafikDiagnose(bytes, alle) {
+    var latin = "";
+    for (var i = 0; i < bytes.length; i += 32768) {
+      latin += String.fromCharCode.apply(null,
+        bytes.subarray(i, Math.min(i + 32768, bytes.length)));
+    }
+    var filter = {}, bilder = [], formen = 0, stroeme = 0, pos = 0;
+    while (true) {
+      var s = latin.indexOf("stream", pos);
+      if (s === -1) break;
+      pos = s + 6;
+      if (latin.substr(s - 3, 3) === "end") continue;
+      stroeme++;
+      var dict = woerterbuchVor(latin, s);
+      var f = /\/Filter\s*\[?\s*((?:\/[A-Za-z0-9]+\s*)+)/.exec(dict);
+      var name = f ? f[1].trim().replace(/\s+/g, "+").replace(/\//g, "") : "ohne";
+      filter[name] = (filter[name] || 0) + 1;
+      if (/\/Subtype\s*\/Image\b/.test(dict)) {
+        var bw = /\/Width\s+(\d+)/.exec(dict), bh = /\/Height\s+(\d+)/.exec(dict);
+        bilder.push((bw ? bw[1] : "?") + "x" + (bh ? bh[1] : "?") + " " + name);
+      }
+      if (/\/Subtype\s*\/Form\b/.test(dict)) formen++;
+    }
+    var entpackt = 0, mitText = 0, linienBefehle = 0, doBefehle = 0;
+    (alle || []).forEach(function (st) {
+      if (!st.inhalt) return;
+      entpackt++;
+      if (/\bBT\b/.test(st.inhalt)) mitText++;
+      if (!istZeichenStrom(st.dict)) return;
+      var m = st.inhalt.match(/(^|[\s\d.])(l|re|c|v|y)(?=[\s\n])/g);
+      linienBefehle += m ? m.length : 0;
+      var d = st.inhalt.match(/\bDo\b/g);
+      doBefehle += d ? d.length : 0;
+    });
+    return "Ströme " + stroeme + " (Filter: " + Object.keys(filter).map(function (k) {
+        return k + " " + filter[k]; }).join(", ") + "), entpackt " + entpackt +
+      ", davon mit Text " + mitText + "; Linienbefehle " + linienBefehle +
+      "; Form-Objekte " + formen + ", Do-Aufrufe " + doBefehle +
+      "; Bilder " + bilder.length + (bilder.length ? " [" + bilder.join("; ") + "]" : "");
+  }
+
   function leseGrafik(puffer) {
     var bytes = new Uint8Array(puffer);
     return alleStroeme(bytes).then(function (alle) {
       var aus = [];
+      aus.diagnose = function () { return grafikDiagnose(bytes, alle); };
       alle.forEach(function (s, idx) {
         if (!s.inhalt || !istZeichenStrom(s.dict)) return;
         if (!/\b(l|re|c)\b/.test(s.inhalt)) return;

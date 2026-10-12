@@ -1197,6 +1197,11 @@ TB.selbsttest = (function () {
         /TEXT 60 580 Handgelenk - APB/.test(kt) &&
         kt.indexOf("Muster") === -1 && kt.indexOf("Hans") === -1, kt.slice(0, 300));
 
+      var leer = []; leer.diagnose = function () { return "Ströme 3; Bilder 1 [1200x400 FlateDecode]"; };
+      var ktLeer = TB.enmgAnonym.kurvenText(leer, probeMitKurve);
+      fall("Kurven-Ausgabe 18.8: ohne Linien NIE still — Diagnose steht da",
+        /KEINE Linien gefunden — Diagnose: Ströme 3; Bilder 1/.test(ktLeer), ktLeer);
+
       var anOhne = TB.enmgAnonym.anonymisiere(
         ["Datum der Untersuchung: 02.10.2026", "irgendein Text"]);
       fall("Anonymisierer: unvollständiger Kopf wird AUSGESCHLOSSEN, mit Grund",

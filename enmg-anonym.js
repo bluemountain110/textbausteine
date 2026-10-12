@@ -184,7 +184,15 @@ TB.enmgAnonym = (function () {
     return anonym.indexOf(s) !== -1;
   }
   function kurvenText(grafik, erg) {
-    if (!erg || !erg.ok || !grafik || !grafik.length) return "";
+    if (!erg || !erg.ok || !grafik) return "";
+    if (!grafik.length) {
+      // 18.8: Nie still — ohne Linien steht die technische Diagnose da.
+      var diag = "";
+      try { diag = typeof grafik.diagnose === "function" ? grafik.diagnose() : ""; }
+      catch (e) { diag = "Diagnose nicht möglich"; }
+      return "### Kurven-Rohdaten: KEINE Linien gefunden — Diagnose: " +
+        (diag || "keine Angaben");
+    }
     var teile = [];
     var nPfade = 0;
     grafik.forEach(function (g) {

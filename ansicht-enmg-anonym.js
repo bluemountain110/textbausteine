@@ -73,6 +73,10 @@ TB.ansichtEnmgAnonym = (function () {
           });
           erg.appendChild(g);
           erg.appendChild(el("span", "", " · " + (e.monatJahr || "—")));
+          if (e.grafik && !e.grafik.length) {
+            erg.appendChild(el("span", "anonym-kurven-leer",
+              " · " + T().anonymKurvenLeer));
+          }
           if (e.grafik && e.grafik.length) {
             var kb = el("button", "anonym-geschlecht",
               T().anonymKurvenKnopf.replace("%s", e.grafik.reduce(

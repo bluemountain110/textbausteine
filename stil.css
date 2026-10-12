@@ -878,3 +878,4 @@ dialog.anonym .enmg-drop { margin: 10px 0; }
 .anonym-kurven-titel { font-size: 12px; color: var(--gedaempft); margin: 6px 0 2px; }
 .anonym-kurven-bild { width: 100%; height: auto; max-height: 360px;
   background: #fff; border: 1px solid var(--linie); }
+.anonym-kurven-leer { color: var(--warn-schrift); }
