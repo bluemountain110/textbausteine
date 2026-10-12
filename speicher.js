@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "18.4 · Etappe 13 Nachbesserung 2 · 11.10.2026";
+TB.FASSUNG = "18.5 · ENMG-Anonymisierer · 12.10.2026";
 
 TB.speicher = (function () {
 

@@ -201,6 +201,12 @@ TB.kisunla = (function () {
         if (tun) { S.speichern(aend); getan += 1; }
       }
     }
+    // 18.5: die VOLLSTÄNDIGE Liefertext-Liste aus den Umbau-Daten
+    // (erfasst auch kisew, kismri … — in 18.4 blieb die kisew-Kopie
+    // stehen, weil nur die Umbau-Texte auf der Liste standen).
+    (TB.kisunlaUmbau.liefertexte || []).forEach(function (t) {
+      if (liefertexte.indexOf(t) === -1) liefertexte.push(t);
+    });
     S.alle().slice().forEach(function (b) {
       if (b.kuerzel) return;
       if (!/\(zweite Fassung\)$/.test(String(b.titel || ""))) return;

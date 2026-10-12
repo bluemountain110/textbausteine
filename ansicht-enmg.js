@@ -216,6 +216,10 @@ TB.ansichtEnmg = (function () {
       pflege.addEventListener("click", function () {
         TB.ansichtEnmgPflege.oeffne(); });
       leiste.appendChild(pflege);
+      var anonym = el("button", "", T().anonymKnopf);
+      anonym.addEventListener("click", function () {
+        TB.ansichtEnmgAnonym.oeffne(); });
+      leiste.appendChild(anonym);
       wurzel.appendChild(leiste);
     }
     zeichneAblage(wurzel);

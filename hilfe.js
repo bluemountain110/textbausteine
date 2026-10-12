@@ -240,8 +240,10 @@ TB.hilfe = (function () {
          "Bereich „ENMG“: Du ziehst den Export der EMG-Maschine (PDF oder Word) auf die Ablagefläche. Die App liest Patient, Geburtsdatum und Untersuchungsdatum, rechnet das Alter aus und zeigt die Messwert-Tabellen: rot, was ausserhalb Deiner Grenzwerte liegt, grün, was innerhalb liegt, schwarz, wofür es (noch) keinen Grenzwert gibt. Die angewandte Grenze steht klein neben jedem Wert."],
         ["Die Normwerte gehören Dir",
          "Unter „Normwert-Pflege“ liegen Deine kontrollierten Grenzwert-Tabellen (Medianus, Ulnaris, Radialis superficialis, Suralis, Peronaeus, Tibialis; Alter 20–80 in Fünferschritten, dazwischen wird linear gerechnet). Jeder Wert ist änderbar, „Grundausstattung“ stellt den gelieferten Stand wieder her, und der Name Deiner Quelle erscheint unter jeder Tabelle."],
+        ["Befunde anonymisieren (für den Bau-Chat)",
+         "Bereich „ENMG“ → Knopf „Befunde anonymisieren“: Du ziehst viele Geräte-Exporte aufs Mal hinein. Je Datei zeigt die Liste grün (Alter, Geschlecht, Monat/Jahr der Untersuchung) oder rot mit Grund. Name, Patienten-ID, Geburtsdatum und lange Nummern verschwinden, jedes Datum wird zu Monat/Jahr; rote Dateien kommen NIE in die Ausgabe, und die Quell-Dateinamen (oft mit Patientennamen!) stehen nur in der Liste, nie in der Ausgabe. „Vorschau“ zeigt das Ergebnis, „Als EINE Textdatei sichern“ legt alles gesammelt in Deinen Download-Ordner — diese Datei kannst Du bedenkenlos in den Bau-Chat geben."],
         ["Was NIE passiert",
-         "Die eingelesene Export-Datei wird nie gespeichert und nie abgeglichen — sie lebt nur im Fenster, bis Du es schliesst. In die Datenablage wandern nur Deine Normwert-Tabellen und Zählwerte."],
+         "Die eingelesene Export-Datei wird nie gespeichert und nie abgeglichen — sie lebt nur im Fenster, bis Du es schliesst (auch beim Anonymisieren). In die Datenablage wandern nur Deine Normwert-Tabellen und Zählwerte."],
         ["Was noch folgt",
          "Der Befund-Fliesstext nach Deinem Musterbericht, die Norm-Spalte im Bericht, Balken und Zweitquellen (Buschbacher/Leis) im Fenster sowie ;;enmg am Arbeitsplatz — gesammelt in der ENMG-Sammelrunde, sobald Deine Beispiele und der Musterbericht da sind."]
       ]],

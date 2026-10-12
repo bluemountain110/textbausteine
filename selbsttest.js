@@ -1141,6 +1141,41 @@ TB.selbsttest = (function () {
           return fremd.bloecke[0].nervId === null &&
             !(z.bew && (z.bew.nlg || z.bew.amp));
         })(), "");
+
+      // ---- 18.5: der Anonymisierer ---------------------------------
+      var probeZeilen = [
+        "Name: Muster, Hans   Patienten-ID: 7654321",
+        "Geburtsdatum: 03.05.1958",
+        "Datum der Untersuchung: 02.10.2026",
+        "Geschlecht: männlich",
+        "Kontrolle Muster vom 15.09.2026",
+        "N. medianus motorisch rechts  Lat 3.2  Amp 8.1"
+      ];
+      var an = TB.enmgAnonym.anonymisiere(probeZeilen);
+      fall("Anonymisierer: Name, ID und Geburtsdatum verschwinden restlos",
+        an.ok && an.text.indexOf("Muster") === -1 &&
+        an.text.indexOf("Hans") === -1 &&
+        an.text.indexOf("7654321") === -1 &&
+        an.text.indexOf("1958") === -1,
+        an.ok ? an.text : an.grund);
+      fall("Anonymisierer: Alter 68, Geschlecht m, Untersuchung 10/2026, Messwerte bleiben",
+        an.ok && an.alter === 68 && an.geschlecht === "m" &&
+        an.monatJahr === "10/2026" &&
+        an.text.indexOf("N. medianus motorisch rechts") !== -1 &&
+        an.text.indexOf("3.2") !== -1,
+        an.ok ? (an.alter + "/" + an.geschlecht + "/" + an.monatJahr) : an.grund);
+      fall("Anonymisierer: übrige Daten werden Monat/Jahr",
+        an.ok && an.text.indexOf("09/2026") !== -1 &&
+        an.text.indexOf("15.09.2026") === -1, an.text);
+      var anOhne = TB.enmgAnonym.anonymisiere(
+        ["Datum der Untersuchung: 02.10.2026", "irgendein Text"]);
+      fall("Anonymisierer: unvollständiger Kopf wird AUSGESCHLOSSEN, mit Grund",
+        !anOhne.ok && /Name/.test(anOhne.grund), anOhne.grund);
+      var ausgabe = TB.enmgAnonym.sammelausgabe([an, anOhne]);
+      fall("Anonymisierer: Sammelausgabe zählt nur Grüne, ohne Dateinamen",
+        /1 Befunde/.test(ausgabe) &&
+        /=== Befund 1 — Alter 68, Geschlecht m, Untersuchung 10\/2026 ===/.test(ausgabe) &&
+        ausgabe.indexOf("irgendein Text") === -1, ausgabe.slice(0, 200));
     } catch (e) {
       f.push({ name: "ENMG-Prüfungen liefen durch", ok: false,
         detail: String(e && e.message || e) });

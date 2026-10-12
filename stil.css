@@ -846,3 +846,23 @@ body.kisew-druck { background: #e8e8e8; }
     padding: 0; font-size: 11.5px; }
   .nur-bildschirm { display: none !important; }
 }
+
+/* ENMG-Anonymisierer (18.5) */
+dialog.anonym { width: min(860px, 94vw); }
+dialog.anonym .enmg-drop { margin: 10px 0; }
+.anonym-liste { max-height: 260px; overflow: auto; margin: 8px 0;
+  border: 1px solid var(--linie); border-radius: 6px; }
+.anonym-liste:empty { display: none; }
+.anonym-zeile { display: flex; gap: 12px; justify-content: space-between;
+  padding: 4px 10px; font-size: 13px;
+  border-bottom: 1px solid var(--linie); }
+.anonym-zeile:last-child { border-bottom: none; }
+.anonym-datei { overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; max-width: 45%; opacity: .8; }
+.anonym-ergebnis { text-align: right; flex: 1; }
+.anonym-gruen .anonym-ergebnis { color: var(--gut-schrift); }
+.anonym-rot .anonym-ergebnis { color: var(--warn-schrift); font-weight: 600; }
+.anonym-stand { font-size: 13px; margin: 4px 0 8px; }
+.anonym-vorschau { max-height: 300px; overflow: auto; font-size: 11.5px;
+  background: var(--grund); padding: 10px;
+  border-radius: 6px; white-space: pre-wrap; }

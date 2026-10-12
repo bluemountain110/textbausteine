@@ -62,5 +62,21 @@ TB.enmgTexte = {
   richtungMin: "untere Grenze",
   fensterKnopf: "An KISIM übergeben",
   fensterKnopfAxenita: "An Axenita übergeben",
-  fensterLeer: "Noch keine Datei gelesen — es gibt nichts zu übergeben."
+  fensterLeer: "Noch keine Datei gelesen — es gibt nichts zu übergeben.",
+
+  // Anonymisierer (18.5)
+  anonymKnopf: "Befunde anonymisieren",
+  anonymTitel: "ENMG-Befunde anonymisieren",
+  anonymErklaerung: "Macht aus Geräte-Exporten Befundtexte OHNE Patientenbezug (für den Bau-Chat): Name, Patienten-ID, Geburtsdatum und lange Nummern verschwinden, jedes Datum wird zu Monat/Jahr. Es bleiben Alter, Geschlecht (falls erkennbar), Untersuchungs-Monat/Jahr und alle Messwerte. Rote Dateien kommen NICHT in die Ausgabe. Alles bleibt in diesem Fenster — nichts wird gespeichert oder abgeglichen.",
+  anonymEinleitung: "PDF- oder Word-Exporte hierher ziehen — gerne viele aufs Mal",
+  anonymDateiKnopf: "Dateien wählen …",
+  anonymOhneGeschlecht: "Geschlecht unbekannt",
+  anonymStand: "%s Befunde bereit · %s ausgeschlossen (rot)",
+  anonymLiest: "· liest noch %s …",
+  anonymLeseFehler: "Datei nicht lesbar (%s) — wird NICHT ausgegeben",
+  anonymVorschau: "Vorschau",
+  anonymSichern: "Als EINE Textdatei sichern",
+  anonymGesichert: "Gesichert als %s (im Download-Ordner) — diese Datei kannst Du in den Bau-Chat geben.",
+  anonymLeeren: "Liste leeren",
+  anonymSchliessen: "Schliessen"
 };
