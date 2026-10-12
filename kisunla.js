@@ -187,6 +187,13 @@ TB.kisunla = (function () {
       var v = TB.kisunlaUmbau.kisbest;
       if (!S.holen(v.id)) { S.speichern(v); getan += 1; }
     }
+    // 18.7: weitere neue Lieferbausteine (z. B. ;;txirr) — nur anlegen,
+    // wenn weder Kürzel noch Kennung schon da sind (auch nicht im
+    // Papierkorb: was Näd gelöscht hat, bleibt gelöscht).
+    (TB.kisunlaUmbau.neu || []).forEach(function (nb) {
+      if (S.holenPerKuerzel(nb.kuerzel) || S.holen(nb.id)) return;
+      S.speichern(nb); getan += 1;
+    });
     liefertexte.push(TB.kisunlaUmbau.kisbest.text);
     var d = TB.kisunlaUmbau.dxad;
     if (d) {

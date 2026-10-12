@@ -71,6 +71,7 @@ TB.enmgTexte = {
   anonymEinleitung: "PDF- oder Word-Exporte hierher ziehen — gerne viele aufs Mal",
   anonymDateiKnopf: "Dateien wählen …",
   anonymOhneGeschlecht: "Geschlecht unbekannt",
+  anonymGeschlechtTipp: "Klicken zum Umstellen (m → w → unbekannt) — Dein Keypoint-Export enthält kein Geschlecht-Feld",
   anonymStand: "%s Befunde bereit · %s ausgeschlossen (rot)",
   anonymLiest: "· liest noch %s …",
   anonymLeseFehler: "Datei nicht lesbar (%s) — wird NICHT ausgegeben",
@@ -78,5 +79,8 @@ TB.enmgTexte = {
   anonymSichern: "Als EINE Textdatei sichern",
   anonymGesichert: "Gesichert als %s (im Download-Ordner) — diese Datei kannst Du in den Bau-Chat geben.",
   anonymLeeren: "Liste leeren",
-  anonymSchliessen: "Schliessen"
+  anonymSchliessen: "Schliessen",
+  anonymKurvenWahl: "Kurven mitliefern (Rohdaten f\u00fcr die Kurven-Analyse \u2014 vor dem Hineinziehen ankreuzen; f\u00fcr den Anfang 2\u20133 Befunde gen\u00fcgen, die Datei wird gross)",
+  anonymKurvenKnopf: "Kurven (%s Linien)",
+  anonymKurvenFlaeche: "Zeichenfl\u00e4che %s \u2014 %s Linienz\u00fcge (nur Linien, keine Beschriftung)"
 };

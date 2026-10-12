@@ -92,6 +92,19 @@ TB.enmgAnonym = (function () {
       .filter(function (s) { return s.length >= 2; });
     if (kopf.id) stuecke.push(kopf.id);
 
+    // 18.7: Die Geräte-Untersuchungsnummern merken (für die Kontrolle
+    // der Kurven-Beschriftungen — dort stehen sie als Einzelstücke).
+    var geraeteIds = [];
+    zeilen.forEach(function (z) {
+      var re = /\bID\b\s*:?\s*([0-9][0-9 .\-\/]*[0-9])/g, m;
+      while ((m = re.exec(String(z || ""))) !== null) {
+        var v = m[1].trim();
+        if (geraeteIds.indexOf(v) === -1) geraeteIds.push(v);
+        var kompakt = v.replace(/\s+/g, "");
+        if (geraeteIds.indexOf(kompakt) === -1) geraeteIds.push(kompakt);
+      }
+    });
+
     var behalten = [];
     for (var i = 0; i < zeilen.length; i++) {
       var zeile = String(zeilen[i] || "");
@@ -110,6 +123,10 @@ TB.enmgAnonym = (function () {
       zeile = datumErsetzen(zeile, kopf.geburtsdatum);
       zeile = zeile.replace(/\b756\.\d{4}\.\d{4}\.\d{2}\b/g, "█");  // AHV
       zeile = zeile.replace(/\b\d{7,}\b/g, "█");                   // lange IDs
+      // 18.6: Die Untersuchungs-Nummer des Geräts („ID: 26 - 040") ist
+      // über das EMG-System rückverfolgbar — sie wird geschwärzt
+      // (Näds Testfund 12.10.).
+      zeile = zeile.replace(/\bID\b\s*:?\s*[0-9][0-9 .\-\/]*/g, "ID: █ ");
       behalten.push(zeile);
     }
     var text = behalten.join("\n")
@@ -125,11 +142,88 @@ TB.enmgAnonym = (function () {
         grund: "Kontrolle fehlgeschlagen (Rest eines Patientenbezugs?) — Datei wird NICHT ausgegeben" };
     }
 
-    return { ok: true, grund: "",
+    var erg = { ok: true, grund: "",
       alter: alter,
       geschlecht: leseGeschlecht(zeilen),
       monatJahr: monatJahr(kopf.untersuchungsdatum),
       text: text };
+    // Schutzliste NUR für die Kurven-Ausgabe; wird nie ausgegeben
+    // (nicht aufzählbar, damit sie auch kein Durchlauf erwischt).
+    Object.defineProperty(erg, "schutz", { enumerable: false,
+      value: { stuecke: stuecke, geburtsdatum: kopf.geburtsdatum,
+               geraeteIds: geraeteIds } });
+    return erg;
+  }
+
+  // ---- 18.7: Kurven-Rohdaten anonym ---------------------------------------
+  // Aus dem Grafik-Leser (enmg-leser-pdf.js, leseGrafik) wird eine
+  // Zahlen-Ausgabe: je Zeichenfläche die Linienzüge mit Farbe, Breite und
+  // Punkten (eine Nachkommastelle). Beschriftungen kommen NUR mit, wenn
+  // sie unverändert auch im anonymen Text stehen — alles mit
+  // Patientenbezug (Name, Geburtsdatum, Geräte-Nummer) ist dort schon
+  // weg und fällt damit auch hier heraus. Danach eine Schluss-Kontrolle;
+  // schlägt sie an, entfallen die Kurven dieses Befunds ganz.
+  function r1(v) { return Math.round(v * 10) / 10; }
+  function farbText(f) {
+    return f.map(function (x) { return Math.round(x * 100) / 100; }).join(",");
+  }
+  function beschriftungErlaubt(t, erg) {
+    var s = String(t || "").replace(/\s+/g, " ").trim();
+    if (!s) return false;
+    var sch = erg.schutz || { stuecke: [], geraeteIds: [] };
+    var klein = s.toLowerCase();
+    if (sch.stuecke.some(function (x) {
+          return x.length >= 2 && klein.indexOf(x.toLowerCase()) !== -1; }))
+      return false;
+    if (sch.geraeteIds.some(function (x) { return x && s.indexOf(x) !== -1; }))
+      return false;
+    if (/\b\d{1,2}\.\d{1,2}\.\d{4}\b/.test(s)) return false;  // ganze Daten nie
+    if (/\d{7,}/.test(s)) return false;
+    // Muss im anonymen Text vorkommen (Leerzeichen vereinheitlicht).
+    var anonym = erg.text.replace(/\s+/g, " ");
+    return anonym.indexOf(s) !== -1;
+  }
+  function kurvenText(grafik, erg) {
+    if (!erg || !erg.ok || !grafik || !grafik.length) return "";
+    var teile = [];
+    var nPfade = 0;
+    grafik.forEach(function (g) {
+      teile.push("--- Zeichenfläche " + g.nr + " (" + g.art +
+        (g.bbox ? ", BBox " + g.bbox : "") +
+        (g.matrix ? ", Matrix " + g.matrix : "") + ") ---");
+      g.xobjekte.forEach(function (x) {
+        teile.push("FORM " + x.name + " ctm=" + x.ctm.map(r1).join(" "));
+      });
+      g.texte.forEach(function (t) {
+        if (!beschriftungErlaubt(t.text, erg)) return;
+        teile.push("TEXT " + r1(t.x) + " " + r1(t.y) + " " +
+          t.text.replace(/\s+/g, " ").trim());
+      });
+      g.pfade.forEach(function (p) {
+        nPfade++;
+        teile.push((p.art === "flaeche" ? "FLAECHE" : "LINIE") +
+          " n=" + p.pts.length +
+          " farbe=" + farbText(p.farbe) +
+          " breite=" + r1(p.breite) +
+          (p.geschlossen ? " zu" : "") + ": " +
+          p.pts.map(function (q) { return r1(q[0]) + "," + r1(q[1]); }).join(" "));
+      });
+    });
+    var text = "### Kurven-Rohdaten (" + grafik.length + " Zeichenflächen, " +
+      nPfade + " Linienzüge; Koordinaten in PDF-Punkten, y nach oben)\n" +
+      teile.join("\n");
+    // Schluss-Kontrolle über die ganze Kurven-Ausgabe.
+    var sch = erg.schutz || { stuecke: [], geraeteIds: [] };
+    var klein = text.toLowerCase();
+    var verdacht = sch.stuecke.some(function (s) {
+      return s.length >= 3 && klein.indexOf(s.toLowerCase()) !== -1; }) ||
+      sch.geraeteIds.some(function (x) { return x && x.length >= 4 && text.indexOf(x) !== -1; }) ||
+      (sch.geburtsdatum && text.indexOf(sch.geburtsdatum) !== -1);
+    if (verdacht) {
+      return "### Kurven-Rohdaten: AUSGELASSEN (Kontrolle schlug an — " +
+        "sicherheitshalber nicht ausgegeben)";
+    }
+    return text;
   }
 
   // Alle grünen Einträge zu EINER Textdatei; Dateinamen der Quellen
@@ -143,6 +237,7 @@ TB.enmgAnonym = (function () {
         ", Geschlecht " + (e.geschlecht || "unbekannt") +
         ", Untersuchung " + (e.monatJahr || "unbekannt") + " ===");
       teile.push(e.text);
+      if (e.kurven) { teile.push(""); teile.push(e.kurven); }
       teile.push("");
     });
     return teile.join("\n");
@@ -157,5 +252,6 @@ TB.enmgAnonym = (function () {
 
   return { anonymisiere: anonymisiere, sammelausgabe: sammelausgabe,
            monatJahr: monatJahr, dateiname: dateiname,
-           leseGeschlecht: leseGeschlecht };
+           leseGeschlecht: leseGeschlecht, kurvenText: kurvenText,
+           beschriftungErlaubt: beschriftungErlaubt };
 })();

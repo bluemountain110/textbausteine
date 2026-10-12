@@ -1149,6 +1149,7 @@ TB.selbsttest = (function () {
         "Datum der Untersuchung: 02.10.2026",
         "Geschlecht: männlich",
         "Kontrolle Muster vom 15.09.2026",
+        "ID: 26 - 040 Datum der Untersuchung: 02.10.2026",
         "N. medianus motorisch rechts  Lat 3.2  Amp 8.1"
       ];
       var an = TB.enmgAnonym.anonymisiere(probeZeilen);
@@ -1167,6 +1168,35 @@ TB.selbsttest = (function () {
       fall("Anonymisierer: übrige Daten werden Monat/Jahr",
         an.ok && an.text.indexOf("09/2026") !== -1 &&
         an.text.indexOf("15.09.2026") === -1, an.text);
+      fall("Anonymisierer 18.6: Geräte-Untersuchungsnummer (ID: 26 - 040) wird geschwärzt",
+        an.ok && an.text.indexOf("26 - 040") === -1 &&
+        an.text.indexOf("ID: █") !== -1 &&
+        /ID: █\s*Datum der Untersuchung: 10\/2026/.test(an.text), an.text);
+      // ---- 18.7: Grafik-Leser und Kurven-Ausgabe ---------------------
+      var gInhalt = "q 1 0 0 1 60 450 cm 0.5 w 0 0 0.8 RG 0 0 m 1 2 l 2 5 l 3 1 l S Q " +
+        "q 1 0 0 rg 10 10 m 13 4 l 7 4 l h f Q 60 400 200 120 re S " +
+        "BT /F1 8 Tf 1 0 0 1 60 580 Tm (Handgelenk - APB) Tj ET " +
+        "BT 1 0 0 1 50 785 Tm (Name: Muster, Hans) Tj ET";
+      var gr = TB.enmgLeserPdf.grafikAusInhalt(gInhalt);
+      var linie = gr.pfade[0] || { pts: [] };
+      fall("Grafik-Leser 18.7: Kurve mit Verschiebung (cm), Farbe und Breite",
+        gr.pfade.length === 3 && linie.pts.length === 4 &&
+        linie.pts[1][0] === 61 && linie.pts[1][1] === 452 &&
+        linie.farbe[2] === 0.8 && linie.breite === 0.5,
+        JSON.stringify(gr.pfade.map(function (p) { return p.pts.length; })));
+      fall("Grafik-Leser 18.7: Marker-Fläche rot, Rahmen geschlossen, Text mit Position",
+        gr.pfade[1].art === "flaeche" && gr.pfade[1].farbe[0] === 1 &&
+        gr.pfade[2].geschlossen === true &&
+        gr.texte.some(function (t) { return t.text === "Handgelenk - APB" && t.y === 580; }),
+        JSON.stringify(gr.texte));
+      gr.nr = 1; gr.art = "Seiteninhalt"; gr.bbox = ""; gr.matrix = "";
+      var probeMitKurve = TB.enmgAnonym.anonymisiere(probeZeilen.concat(["Handgelenk - APB"]));
+      var kt = TB.enmgAnonym.kurvenText([gr], probeMitKurve);
+      fall("Kurven-Ausgabe 18.7: Zahlen und erlaubte Beschriftung — Name fällt heraus",
+        /LINIE n=4 farbe=0,0,0\.8 breite=0\.5: 60,450 61,452/.test(kt) &&
+        /TEXT 60 580 Handgelenk - APB/.test(kt) &&
+        kt.indexOf("Muster") === -1 && kt.indexOf("Hans") === -1, kt.slice(0, 300));
+
       var anOhne = TB.enmgAnonym.anonymisiere(
         ["Datum der Untersuchung: 02.10.2026", "irgendein Text"]);
       fall("Anonymisierer: unvollständiger Kopf wird AUSGESCHLOSSEN, mit Grund",
@@ -1354,7 +1384,7 @@ TB.selbsttest = (function () {
           dU.felder["EM"] === "unklar" && !dU.felder["ED (Monat/Jahr)"],
           JSON.stringify(dU.felder));
       }
-      ["kismri1", "kismri", "kisauf", "kisew", "kiskogu", "kisverl", "dxad"]
+      ["kismri1", "kismri", "kisauf", "kisew", "kiskogu", "kisverl", "dxad", "txirr"]
         .forEach(function (k) {
           var bst = TB.speicher.holenPerKuerzel(k);
           if (!bst) {
