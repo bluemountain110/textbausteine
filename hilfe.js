@@ -247,6 +247,16 @@ TB.hilfe = (function () {
         ["Was noch folgt",
          "Der Befund-Fliesstext nach Deinem Musterbericht, die Norm-Spalte im Bericht, Balken und Zweitquellen (Buschbacher/Leis) im Fenster sowie ;;enmg am Arbeitsplatz — gesammelt in der ENMG-Sammelrunde, sobald Deine Beispiele und der Musterbericht da sind."]
       ]],
+      ["Bericht anonymisieren (;;anon) — für Claude oder OpenEvidence", [
+        ["Was es tut",
+         "Tippe ;;anon (in KISIM öffnet sich ein Browser-Fenster, in der App das Fenster direkt). Links fügst Du den Bericht UND alle Zusatzuntersuchungen untereinander in EIN Feld ein (Strg+V; PDF- oder Word-Dateien kannst Du auch hineinziehen). Rechts entsteht sofort EIN langer anonymer Text: oben Alter und Geschlecht, darunter alle Dokumente, getrennt durch „--- nächstes Dokument ---“. „Kopieren“ legt ihn in die Zwischenablage, „Als Textdatei sichern“ in den Download-Ordner."],
+        ["Was verschwindet, was bleibt",
+         "Weg: Name (auch „Herrn Müllers“), Geburtsdatum, Strasse, PLZ/Ort, Telefon, E-Mail, Fall- und Patientennummern, der ganze Briefkopf, Anrede, Grussformel mit Unterschrift und Kopie-Verteiler; alle Ärztinnen und Ärzte werden [Arzt], Angehörige mit Namen [Name]. „Spital Limmattal“ wird „Untersuchungsspital“. Es bleiben: Alter, Geschlecht, alle Untersuchungsdaten, Institute und alle Befunde."],
+        ["Kontrolle und Nachhelfen",
+         "Wird Name oder Geburtsdatum nicht erkannt, steht oben eine rote Zeile — dann trägst Du sie in die Felder ein (beim Geburtsdatum geht auch einfach das Alter, z. B. 72); männlich/weiblich wählst Du per Knopf. Ein Klick auf ein Wort im rechten Text schwärzt es überall. Wurde ein Fachwort fälschlich als Name ersetzt, klickst Du es in der Zeile „Als Arzt/Person ersetzt“ an — dann bleibt es stehen. Unter „Entfernte Zeilen“ siehst Du, was ganz weggefallen ist (nur dort, nie in der Ausgabe)."],
+        ["Was NIE passiert",
+         "Nichts aus diesem Fenster wird gespeichert oder abgeglichen — Fenster zu, alles weg. Der Name des Patienten kommt nie in die Ausgabe: Eine Schlussprüfung schwärzt nach, falls irgendwo noch ein Stück stehen sollte."]
+      ]],
       ["Kisunla und der erste Diagnoseblock", [
         ["Die Kisunla-Familie",
          "Acht Bausteine in der Kategorie „Kisunla“, alle am Kürzel: ;;kismri1 (MRI-Verordnung vor Therapiebeginn), ;;kismri (Verlaufs-MRI mit ARIA-Graduierung), ;;kisauf (Aufklärungsgespräch), ;;kisew (Einwilligung als Druckseite), ;;kiskogu (Kostengutsprache-Gesuch), ;;kisverl (Verlaufsbericht an die Krankenkasse), ;;kisbest (MediService-Bestellung) und ;;dxad (der Alzheimer-Diagnoseblock, Kategorie „Diagnosen“; bis 18.2 hiess er ;;dxkis — Kisunla ist nur die Therapie, die Diagnose ist die Alzheimer Disease)."],

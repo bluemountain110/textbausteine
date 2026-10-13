@@ -1389,7 +1389,7 @@ TB.selbsttest = (function () {
           dU.felder["EM"] === "unklar" && !dU.felder["ED (Monat/Jahr)"],
           JSON.stringify(dU.felder));
       }
-      ["kismri1", "kismri", "kisauf", "kisew", "kiskogu", "kisverl", "dxad", "txirr"]
+      ["kismri1", "kismri", "kisauf", "kisew", "kiskogu", "kisverl", "dxad", "txirr", "anon"]
         .forEach(function (k) {
           var bst = TB.speicher.holenPerKuerzel(k);
           if (!bst) {
@@ -1412,6 +1412,96 @@ TB.selbsttest = (function () {
     return f;
   }
 
+  // ---- 18.10: Bericht anonymisieren (;;anon) --------------------------
+  function pruefeBerichtAnonym() {
+    var f = [];
+    function fall(name, ok, detail) {
+      f.push({ name: name, ok: !!ok, detail: detail || "" });
+    }
+    try {
+      var A = TB.berichtAnonym;
+      fall("bericht-anonym.js vorhanden", !!(A && A.anonymisiere));
+      var probe = [
+        "Spital Limmattal", "Klinik für Neurologie",
+        "Urdorferstrasse 100, 8952 Schlieren", "Tel. 044 733 11 11",
+        "neurologie@spital-limmattal.ch, www.spital-limmattal.ch",
+        "Prof. Dr. med. Hans-Peter Beispielmann, Chefarzt", "",
+        "Herr", "Dr. med. Kurt Zuweisinger", "Bahnhofstrasse 12", "8001 Zürich", "",
+        "Schlieren, 12.10.2026 / cv", "",
+        "Betrifft: Herr Peter Probehuber, geb. 03.04.1955, Dorfstrasse 5, 8953 Dietikon",
+        "Fall-Nr. 40012345", "", "Sehr geehrter Herr Kollege", "",
+        "Vielen Dank für die Zuweisung von Herrn Probehuber.", "",
+        "Diagnosen", "1. Morbus Alzheimer, MCI, EM ca. 2019",
+        "- MRI Schädel vom 01.10.2026: Atrophie (MTA 2)", "",
+        "Anamnese",
+        "Herr Probehuber berichtet seit 2019 über Vergesslichkeit. Die Ehefrau Annelies begleitet ihn. Familienanamnese: Mutter Demenz, Schwester Multiple Sklerose. Hausärztin Dr. Meierhans betreut ihn.",
+        "", "Beurteilung",
+        "Bei Herrn Probehubers Befundkonstellation empfehlen wir Donanemab im Spital Limmattal. Untersuchungen im Universitätsspital Zürich vom 05.09.2026 unauffällig.",
+        "", "Freundliche Grüsse", "",
+        "Prof. Dr. med. H.-P. Beispielmann", "Chefarzt Neurologie", "",
+        "Kopie an:", "- Hausärztin Dr. med. Susanne Meierhans, Bachweg 3, 8902 Urdorf", "- Patient", "",
+        "Institut für Radiologie Muster AG", "Seestrasse 50, 8800 Thalwil", "",
+        "Patient: Probehuber Peter, 03.04.1955, M",
+        "MRI Schädel nativ vom 01.10.2026",
+        "Befund: Globale Atrophie (MTA 2). Fazekas 1.", "",
+        "Mit freundlichen Grüssen", "Dr. med. Rolf Röntgenberg", "Facharzt Radiologie FMH"
+      ].join("\n");
+      var r = A.anonymisiere(probe, { heute: new Date(2026, 9, 13) });
+      var t = r.text;
+      var weg = ["Probehuber", "Peter", "03.04.1955", "1955", "Dorfstrasse",
+        "Dietikon", "8953", "Urdorferstrasse", "044 733", "@", "www",
+        "40012345", "Limmattal", "Beispielmann", "Zuweisinger", "Meierhans",
+        "Susanne", "Annelies", "Röntgenberg", "Bachweg", "Thalwil",
+        "Sehr geehrter", "Grüsse", "Chefarzt", "Kopie"];
+      var reste = weg.filter(function (w) { return t.indexOf(w) !== -1; });
+      fall("Anonym 18.10: Name, Geburtsdatum, Adressen, Kontakt, Nummern, Briefkopf, Unterschrift, Ärzte und Angehörige restlos weg",
+        reste.length === 0, reste.join(", "));
+      fall("Anonym 18.10: Kopfzeile trägt Alter (zum Berichtsdatum) und Geschlecht",
+        /Patient: 71 Jahre, männlich/.test(t), t.split("\n")[1]);
+      var bleibt = ["Untersuchungsspital", "01.10.2026", "05.09.2026",
+        "Universitätsspital Zürich", "seit 2019", "EM ca. 2019", "Mutter Demenz",
+        "Multiple Sklerose", "MTA 2", "Fazekas 1", "Berichtsdatum: 12.10.2026",
+        "Herr [Patient] berichtet", "Ehefrau [Name]", "Hausärztin [Arzt]",
+        "Herrn [Patient]s Befundkonstellation"];
+      var fehlt = bleibt.filter(function (w) { return t.indexOf(w) === -1; });
+      fall("Anonym 18.10: Untersuchungsdaten, Institute, Befunde und Krankheitsnamen bleiben stehen",
+        fehlt.length === 0, fehlt.join(" | "));
+      fall("Anonym 18.10: Bericht + Zusatzuntersuchung = zwei Dokumente in EINEM Text",
+        r.dokumente === 2 && (t.match(/--- nächstes Dokument ---/g) || []).length === 1,
+        "Dokumente: " + r.dokumente);
+      var r2 = A.anonymisiere("Sprechstunde vom 08.10.2026\nDie Patientin klagt über Kopfschmerzen.\nTochter Mirjam begleitet sie.",
+        { geburt: "72", geschlecht: "weiblich", zusatz: ["Kopfschmerzen"],
+          fragestellung: "Differentialdiagnose?" });
+      fall("Anonym 18.10: Angaben von Hand (Alter statt Datum), Fragestellung, Zusatz-Schwärzung",
+        /Patient: 72 Jahre, weiblich/.test(r2.text) &&
+        /Fragestellung: Differentialdiagnose\?/.test(r2.text) &&
+        r2.text.indexOf("Kopfschmerzen") === -1 && r2.text.indexOf("Mirjam") === -1,
+        r2.text.slice(0, 160));
+      fall("Anonym 18.10: ohne erkannten Namen warnt das Fenster (nie still)",
+        r2.warnungen.some(function (w) { return /Name nicht erkannt/.test(w); }),
+        r2.warnungen.join(" "));
+      var r3 = A.anonymisiere("Befund\nRücksprache mit Oberarzt Keller.",
+        { name: "Hans Test", geburt: "01.01.1950", geschlecht: "männlich", behalten: ["Keller"] });
+      fall("Anonym 18.10: ‚stehen lassen‘ nimmt eine Namens-Ersetzung zurück",
+        /Oberarzt Keller/.test(r3.text), r3.text.slice(-60));
+      var r4 = A.anonymisiere("Prof. Dr. med. H. Beispielmann, Chefarzt\n\nSchlieren, 12.10.2026\n\nSehr geehrter Herr Kollege\n\nDiagnosen\n1. Migräne ohne Aura",
+        { name: "Hans Test", geburt: "70", geschlecht: "männlich" });
+      fall("Anonym 18.10: Überschrift nach „Herr Kollege“/„Chefarzt“ bleibt (kein Namens-Fang über die Zeile)",
+        /\nDiagnosen\n1\. Migräne ohne Aura/.test(r4.text) && r4.text.indexOf("Schlieren") === -1,
+        r4.text.slice(-80));
+      fall("Anonym 18.10: Dateiname ohne Patientenbezug",
+        /^Bericht-anonym-\d{4}-\d\d-\d\d-\d{6}\.txt$/.test(A.dateiname()), A.dateiname());
+      var tr = TB.speicher.holenPerKuerzel("anon");
+      fall(tr ? ";;anon-Träger angelegt (Kategorie Werkzeuge), öffnet das Fenster"
+              : ";;anon-Träger noch nicht angelegt — entsteht beim nächsten App-Start",
+        !tr || (tr.kategorie === "Werkzeuge" && !!TB.ansichtBerichtAnonym), "");
+    } catch (e) {
+      f.push({ name: "Anonymisier-Prüfungen liefen durch", ok: false,
+        detail: String(e && e.message || e) });
+    }
+    return f;
+  }
+
   function alleTests() {
     return mitErgebniszeile([].concat(
       pruefeRechnen().map(function (f) { f.gruppe = "Rechnen"; return f; }),
@@ -1426,7 +1516,8 @@ TB.selbsttest = (function () {
       pruefeEeg().map(function (f) { f.gruppe = "EEG-Werk"; return f; }),
       pruefeEnmg().map(function (f) { f.gruppe = "Etappe 12"; return f; }),
       pruefeKisunla().map(function (f) { f.gruppe = "Etappe 13"; return f; }),
-      pruefeBerichtMc().map(function (f) { f.gruppe = "Bericht Memory Clinic"; return f; })
+      pruefeBerichtMc().map(function (f) { f.gruppe = "Bericht Memory Clinic"; return f; }),
+      pruefeBerichtAnonym().map(function (f) { f.gruppe = "Bericht anonymisieren"; return f; })
     ));
   }
 

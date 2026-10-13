@@ -231,6 +231,8 @@ TB.kisunla = (function () {
     var k = String(b && b.kuerzel || "").toLowerCase();
     if (k === "kisew") { TB.ansichtKisunla.oeffneEinwilligung(); return true; }
     if (k === "kisbest") { TB.ansichtKisunla.oeffneBestellung(); return true; }
+    // 18.10: ;;anon öffnet den Bericht-Anonymisierer
+    if (k === "anon") { TB.ansichtBerichtAnonym.oeffne(); return true; }
     return false;
   }
 

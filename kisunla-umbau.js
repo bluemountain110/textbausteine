@@ -77,6 +77,20 @@ TB.kisunlaUmbau = {
    "zuletztBenutztAm": null,
    "erstelltAm": "2026-10-12T19:40:00.000Z",
    "aktualisiertAm": "2026-10-12T19:40:00.000Z"
+  },
+  {
+   "id": "e1300010-13a0-4c13-8010-c15a00000010",
+   "titel": "Bericht anonymisieren (für Claude / OpenEvidence)",
+   "kuerzel": "anon",
+   "kategorie": "Werkzeuge",
+   "text": "<p>Öffnet den Bericht-Anonymisierer: Bericht und Zusatzuntersuchungen in EIN Feld einfügen — heraus kommt EIN anonymer Text (ohne Name, Geburtsdatum, Adresse, Briefkopf, Unterschrift und Arztnamen; Alter und Geschlecht bleiben). (Dieser Baustein ist nur der Träger des Kürzels — der Text hier wird nicht eingefügt.)</p>",
+   "notiz": "— KI-ANLEITUNG (Lieferstand 18.10, 13.10.2026) —\nZweck: Träger-Baustein für den Bericht-Anonymisierer (bericht-anonym.js = Logik, ansicht-bericht-anonym.js = Fenster). Näds Vorgaben 13.10.: Name und Geburtsdatum weg, Alter und Geschlecht bleiben (Eingabe von Hand, falls nicht erkannt); Strasse/Ort weg; Briefkopf und unterschreibende Ärzte ganz weg, alle Arztnamen anonym; Untersuchungsdaten und Institute dürfen bleiben; „Spital Limmattal“ → „Untersuchungsspital“; Bericht UND Zusatzuntersuchungen in EIN Feld, Ausgabe EIN langer Text.\nAufbau: Das Kürzel wird in App (kisunla.js sonderStart) und Spital-Skript (FensterNurOeffnen → ?fenster=anon) abgefangen; der Bausteintext dient nur der Auffindbarkeit.\nÄnderungen gegenüber dem Lieferstand erkennt eine spätere KI am Vergleich mit diesem Block.",
+   "art": "text",
+   "ausgabeart": "fenster",
+   "entwurf": false,
+   "zuletztBenutztAm": null,
+   "erstelltAm": "2026-10-13T12:00:00.000Z",
+   "aktualisiertAm": "2026-10-13T12:00:00.000Z"
   }
  ]
 };

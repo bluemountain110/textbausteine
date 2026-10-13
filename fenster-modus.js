@@ -50,6 +50,12 @@ TB.fensterModus = (function () {
       TB.oberflaeche.geheZu("bausteine");
       if (!TB.speicher.holenPerKuerzel("kisew")) return;
       TB.ansichtKisunla.oeffneEinwilligung();
+    } else if (art === "anon") {
+      // 18.10: Bericht-Anonymisierer — hängt an keinem Baustein, darum
+      // sofort offen; „Schliessen" schliesst das ganze Fenster.
+      TB.oberflaeche.geheZu("bausteine");
+      if (!document.querySelector("dialog.anon"))
+        TB.ansichtBerichtAnonym.oeffne(true);
     } else if (art === "kisbest") {
       TB.oberflaeche.geheZu("bausteine");
       if (!TB.speicher.holenPerKuerzel("kisbest")) return;
@@ -91,7 +97,7 @@ TB.fensterModus = (function () {
   function fingerabdruck() {
     // ENMG hängt nicht am Abgleich: konstanter Abdruck, damit ein
     // Datenabgleich die eingelesene Datei nie aus der Ansicht wirft.
-    if (art === "enmg") return art;
+    if (art === "enmg" || art === "anon") return art;
     if (art === "kisew" || art === "kisbest") {
       // Erst „da", wenn der Baustein angekommen ist (s. zeigeWerk).
       return art + "|" + (TB.speicher.holenPerKuerzel(art) ? "1" : "0");
@@ -245,7 +251,8 @@ TB.fensterModus = (function () {
     var p = new URLSearchParams(location.search);
     art = p.get("fenster") || "";
     if (art !== "eeg" && art !== "status" && art !== "enmg" &&
-        art !== "baustein" && art !== "kisew" && art !== "kisbest") return;
+        art !== "baustein" && art !== "kisew" && art !== "kisbest" &&
+        art !== "anon") return;
     kuerzel = p.get("kuerzel") || "";
     nonce = p.get("nonce") || "";
     ziel = (p.get("ziel") === "axenita") ? "axenita" : "kisim";
