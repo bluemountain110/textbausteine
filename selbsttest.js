@@ -1489,6 +1489,30 @@ TB.selbsttest = (function () {
       fall("Anonym 18.10: Überschrift nach „Herr Kollege“/„Chefarzt“ bleibt (kein Namens-Fang über die Zeile)",
         /\nDiagnosen\n1\. Migräne ohne Aura/.test(r4.text) && r4.text.indexOf("Schlieren") === -1,
         r4.text.slice(-80));
+      // 18.11: Näds Screenshot 13.10.
+      var r5 = A.anonymisiere(["Ärztliche Praxisgemeinschaft Muster Beispiel",
+        "Hauptstrasse 3", "8903 Birmensdorf ZH",
+        "Schlieren, 06. Oktober 2026 / NADTIS01", "Ambulanter Bericht vom 06.10.2026", "",
+        "Besten Dank für die Zuweisung von Herr Paul Testmann.", "", "Diagnosen",
+        "1. Axonale Polyneuropathie, ED 06.10.2026Ätiologie vorerst unklar"].join("\n"),
+        { geburt: "63", geschlecht: "männlich" });
+      fall("Anonym 18.11: Benutzerkürzel, Briefkopf „Ärztliche …“, PLZ-Ort-Kanton-Zeile weg; Berichtsdatum erkannt",
+        ["NADTIS01", "Birmensdorf", "8903", "Ärztliche", "Muster", "Hauptstrasse"]
+          .every(function (w) { return r5.text.indexOf(w) === -1; }) &&
+        /Berichtsdatum: 06\.10\.2026/.test(r5.text), r5.text.slice(-260));
+      fall("Anonym 18.11: am Datum klebender Text bekommt seinen Zeilenumbruch zurück",
+        /ED 06\.10\.2026\nÄtiologie vorerst unklar/.test(r5.text), r5.text.slice(-60));
+      var vw = A.verdachtsWoerter("Befund\nRücksprache mit Kollegin Brunnhofer erfolgte in der Sprechstunde. Der Patient hat Schmerzen im linken Bein.");
+      fall("Anonym 18.11: Gelb nur für mögliche Namen (nicht Satzanfang, nicht Hauptwort hinter Artikel)",
+        vw.Brunnhofer && !vw.Sprechstunde && !vw.Bein && !vw.Patient && !vw.Befund,
+        Object.keys(vw).join(", "));
+      var netz = A.nachschwaerzen("Meine Ergänzung: Herr Probehuber, geb. 03.04.1955, kam allein.", r);
+      fall("Anonym 18.11: Sicherheitsnetz schwärzt von Hand Getipptes (Name, Geburtsdatum) nach",
+        netz.anzahl === 2 && netz.text.indexOf("Probehuber") === -1 &&
+        netz.text.indexOf("03.04.1955") === -1, netz.text);
+      fall("Anonym 18.11: Markiertes schwärzen ersetzt überall, Gross/klein egal",
+        A.schwaerzeWort("Spitex Meier; SPITEX täglich", "Spitex") === "[Name] Meier; [Name] täglich",
+        A.schwaerzeWort("Spitex Meier; SPITEX täglich", "Spitex"));
       fall("Anonym 18.10: Dateiname ohne Patientenbezug",
         /^Bericht-anonym-\d{4}-\d\d-\d\d-\d{6}\.txt$/.test(A.dateiname()), A.dateiname());
       var tr = TB.speicher.holenPerKuerzel("anon");

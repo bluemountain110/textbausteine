@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "18.10 · Bericht anonymisieren (;;anon) · 13.10.2026";
+TB.FASSUNG = "18.11 · ;;anon: rechts tippen, Gelb = Name? · 13.10.2026";
 
 TB.speicher = (function () {
 

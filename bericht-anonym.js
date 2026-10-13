@@ -106,7 +106,7 @@ TB.berichtAnonym = (function () {
   var RE_ARZT = new RegExp("(?:(Herrn?|Frau|Hr\\.|Fr\\.)[ \\t]+)?" + TITEL_EIN +
     "[ \\t]*" + TITEL_ALLE + "*(" + NAME + ")", "g");
 
-  var PLATZ = /\[(?:Patient|Arzt|Name|Adresse|PLZ Ort|Ort|Telefon|E-Mail|Nr|Geburtsdatum)\]/g;
+  var PLATZ = /\[(?:Patient|Arzt|Name|Adresse|PLZ Ort|Ort|Telefon|E-Mail|Nr|Geburtsdatum|Kürzel)\]/g;
   var PLATZ1 = new RegExp(PLATZ.source);
   var ANKER = /(diagnose|anamnese|befund|beurteilung|procedere|prozedere|therapie|medikation|medikament|verlauf|zusammenfassung|fragestellung|indikation|technik|methode|untersuchung|neurostatus|labor|liquor|\bmri\b|\bmrt\b|\bct\b|\bpet\b|spect|\beeg\b|enmg|\bemg\b|\bnlg\b|duplex|doppler|sonograph|sonograf|röntgen|bericht|epikrise|empfehlung|einschätzung|klinische angaben|vorgeschichte|neuropsycholog|\bekg\b|echokardiograph|angiograph|schädel|neurokranium|kopf-?mri|szintigraph|biopsie|punktion|histolog|konsil|assessment|testung|scores?\b|moca|mmse?\b)/i;
 
@@ -313,7 +313,7 @@ TB.berichtAnonym = (function () {
 
   // „Schlieren, 12.10.2026 / ab" → Berichtsdatum 12.10.2026
   function berichtsDatum(t) {
-    var m = new RegExp("^([" + B + "][A-Za-z" + K + ".\\- ]{1,30}),\\s*(?:den\\s+)?(" + DATUM + ")\\s*(?:\\/\\s*[A-Za-zäöü]{1,4}(?:\\s*\\/\\s*[A-Za-zäöü]{1,4})*)?\\s*$").exec(t);
+    var m = new RegExp("^([" + B + "][A-Za-z" + K + ".\\- ]{1,30}),\\s*(?:den\\s+)?(" + DATUM + ")\\s*(?:\\/\\s*[A-Za-zäöü0-9]{1,10}(?:\\s*\\/\\s*[A-Za-zäöü0-9]{1,10})*)?\\s*$").exec(t);
     if (!m) return null;
     // Nur ein Ortsname (1–3 Wörter), nie „MRI Schädel, 01.10.2026"
     if (woerter(m[1]).length > 3 || ANKER.test(m[1])) return null;
@@ -329,10 +329,11 @@ TB.berichtAnonym = (function () {
   var RE_ANREDE = /^(sehr\s+geehrte[rs]?|liebe[rs]?|geschätzte[rs]?|hallo|guten\s+tag)\b/i;
   var RE_KOPF = /^(betrifft|betreff|betr\.|patient(?:in)?\s*:|pat\.\s*:|patientenname|name\s*:|nachname|familienname|vornamen?\s*:|geburtsdatum|geb\.?\s*-?datum|geboren\s*:|geb\.\s|adresse\s*:|wohnadresse|wohnort|strasse\s*:|plz\b|telefon\s*:|tel\.\s*:|mobile?\s*:|natel|e-?mail\s*:|ahv|sozialversicherung|versicherten|versicherung\s*:|krankenkasse|kasse\s*:|police\b|fall-?\s?nr|fallnummer|fall\s*:|pid\b|pat\.?-?\s?nr|patienten-?\s?(nr|nummer|id)|auftrags-?\s?(nr|nummer)|zuweiser\s*:|zuweisende[rn]?\s+(arzt|ärztin|stelle)|überweisende[rn]?\s+(arzt|ärztin)|zugewiesen\s+(von|durch)|kopie\s*(an\b|z\.?\s?k\.?)?\s*:|kopie\s+an\b|cc\s*:|z\.\s?k\.|verteiler|elektronisch\s+(visiert|unterschrieben|signiert)|visiert|diktiert|geschrieben\s*:|signiert|i\.\s?a\.|i\.\s?v\.|im\s+auftrag)/i;
   var VOR = "(?<![A-Za-zÄÖÜäöüß])";   // \b kennt keine Umlaute
-  var RE_ROLLE_ZEILE = new RegExp(ROLLEN + "|" + VOR + "(Leitende[rn]?\\s+Ärzt|Arzt\\b|Ärztin\\b|Ärzte\\b|Sekretariat|Assistenz|Klinikdirektor|Klinikleiter|Direktor|Chefärzt)", "i");
+  var RE_ROLLE_ZEILE = new RegExp(ROLLEN + "|" + VOR + "(Leitende[rn]?\\s+Ärzt|Ärztliche[rns]?\\b|Arzt\\b|Ärztin\\b|Ärzte\\b|Sekretariat|Assistenz|Klinikdirektor|Klinikleiter|Direktor|Chefärzt)", "i");
   var RE_KONTAKT = /(\btel\b|\btel\.|telefon|\bfax\b|e-?mail|@|www\.|https?:|\.ch\b|\.com\b|postfach|\b0\d{2}\s?\d{3}\s?\d{2}\s?\d{2}\b|\+41)/i;
   var RE_STRASSE = new RegExp("(?:" + VOR + "(?:" + NW + "[\\s-])?[" + B + "]?[" + K + "-]*(?:strasse|straße|str\\.|gasse|weg|platz|allee|rain|halde|matte|graben|quai|steig|ring|acker|park|hof)\\s+\\d+\\s?[a-zA-Z]?\\b|\\b(?:Rue|Route|Chemin|Avenue|Via|Viale|Piazza|Place)\\s+[^,\\n]{2,30}?\\s+\\d+[a-z]?\\b)", "g");
-  var RE_PLZ_ORT = new RegExp("(?:CH-\\s?)?\\b[1-9]\\d{3}\\s+" + NW + "(?:[\\s-](?:" + NW + "|am|an|im|bei|b\\.)){0,3}", "g");
+  var KANTONE = "(?:ZH|AG|BE|LU|UR|SZ|OW|NW|GL|ZG|FR|SO|BS|BL|SH|AR|AI|SG|GR|TG|TI|VD|VS|NE|GE|JU)";
+  var RE_PLZ_ORT = new RegExp("(?:CH-\\s?)?\\b[1-9]\\d{3}\\s+" + NW + "(?:[\\s-](?:" + NW + "|am|an|im|bei|b\\.)){0,3}(?:\\s+" + KANTONE + "\\b)?", "g");
   var RE_TITEL_ZEILE = /\b(Prof\.|PD\b|Dr\.|med\.|pract\.|lic\.|dipl\.|Dipl\.|FMH\b|MSc\b|PhD\b)/;
   var RE_INSTITUTION = new RegExp(VOR + "(Spital|Klinik|Institut|Praxis|Zentrum|Abteilung|Departement|Limmattal|Ambulatorium|Universität|Gruppenpraxis|Ärztezentrum|AG|GmbH)(?![A-Za-zäöü])");
 
@@ -422,12 +423,7 @@ TB.berichtAnonym = (function () {
           ctx.patient.indexOf(st[0]) === -1 ? "s" : "";
         return anrede + " " + (pat ? "[Patient]" + gen : "[Name]") + teil.rest;
       });
-    // 7. Gesammelte Namen überall
-    ctx.patient.forEach(function (w) { t = t.replace(wortRe(w), "[Patient]"); });
-    ctx.zusatz.forEach(function (w) { t = t.replace(wortRe(w, "gi"), "[Name]"); });
-    ctx.arzt.forEach(function (w) { if (!ctx.behalten[w]) t = t.replace(wortRe(w), "[Arzt]"); });
-    ctx.weitere.forEach(function (w) { if (!ctx.behalten[w]) t = t.replace(wortRe(w), "[Name]"); });
-    // 8. Adressen
+    // 7. Adressen (VOR den Namen: „8903 Birmensdorf ZH“ muss als Adresse fallen)
     var hatteStrasse = false;
     t = t.replace(new RegExp(RE_STRASSE.source, "g"), function () { hatteStrasse = true; return "[Adresse]"; });
     t = t.replace(/\bPostfach(?:\s+\d+)?\b/g, "");
@@ -446,7 +442,15 @@ TB.berichtAnonym = (function () {
     });
     t = t.replace(new RegExp("\\b([Ww]ohnhaft|[Ww]ohnt|[Ll]ebt|[Ww]ohnend|[Zz]uhause|[Zz]u Hause)([ \\t]+(?:in|im|bei|allein in|alleine in)[ \\t]+)(" + NW + ")", "g"),
       function (ganz, a, b, ort) { return fachwort(ort) ? ganz : a + b + "[Ort]"; });
-    // 9. Lange Nummern
+    // 8. Gesammelte Namen überall
+    ctx.patient.forEach(function (w) { t = t.replace(wortRe(w), "[Patient]"); });
+    ctx.zusatz.forEach(function (w) { t = t.replace(wortRe(w, "gi"), "[Name]"); });
+    ctx.arzt.forEach(function (w) { if (!ctx.behalten[w]) t = t.replace(wortRe(w), "[Arzt]"); });
+    ctx.weitere.forEach(function (w) { if (!ctx.behalten[w]) t = t.replace(wortRe(w), "[Name]"); });
+    // 9. Benutzer- und Diktatkürzel (KISIM: „/ NADTIS01“ verrät den Arzt)
+    t = t.replace(/\s*\/\s*[A-Z]{3,8}\d{1,3}\s*$/, "")
+         .replace(/\b(?!COVID)[A-Z]{5,8}\d{1,3}\b/g, "[Kürzel]");
+    // 10. Lange Nummern
     t = t.replace(/\b\d{7,}\b/g, "[Nr]");
     return t;
   }
@@ -457,7 +461,7 @@ TB.berichtAnonym = (function () {
     if (!PLATZ1.test(t)) return false;
     var rest = t.replace(PLATZ, " ")
       .replace(new RegExp(ROLLEN, "g"), " ")
-      .replace(new RegExp(VOR + "(Herrn?|Frau|Hr\\.|Fr\\.|und|sowie|Tel\\.?|Telefon|Fax|E-Mail|Mail|Web|Postfach|CH|Leitende[rn]?|Arzt|Ärztin|Ärzte|Neurologie|FMH|für|z\\.\\s?H\\.|zu\\s+Handen|Direktwahl|Zentrale|Sekretariat)(?![A-Za-zäöü])", "gi"), " ")
+      .replace(new RegExp(VOR + "(Herrn?|Frau|Hr\\.|Fr\\.|und|sowie|Tel\\.?|Telefon|Fax|E-Mail|Mail|Web|Postfach|CH|Leitende[rn]?|Arzt|Ärztin|Ärzte|Neurologie|FMH|für|z\\.\\s?H\\.|zu\\s+Handen|Direktwahl|Zentrale|Sekretariat|" + KANTONE + ")(?![A-Za-zäöü])", "gi"), " ")
       .replace(/[\s\d.,;:\/|•·\-–()+]+/g, "");
     return rest.length === 0;
   }
@@ -469,7 +473,9 @@ TB.berichtAnonym = (function () {
   function anonymisiere(eingabe, angaben) {
     angaben = angaben || {};
     var text = String(eingabe || "").replace(/\r\n?/g, "\n")
-      .replace(/[   ]/g, " ").replace(/[ \t]+$/gm, "");
+      .replace(/[   ]/g, " ").replace(/[ \t]+$/gm, "")
+      // „ED 06.10.2026Ätiologie“: beim Kopieren aus KISIM verlorener Umbruch
+      .replace(/(\d{1,2}\.\d{1,2}\.\d{4})(?=[A-ZÄÖÜ][a-zäöü])/g, "$1\n");
     var er = erkenne(text);
     var prot = [];   // nur fürs Fenster (Kontrolle), NIE in die Ausgabe
 
@@ -546,7 +552,7 @@ TB.berichtAnonym = (function () {
       "Patient: " + (alter !== null ? alter + " Jahre" : "Alter unbekannt") + ", " +
         (geschlecht || "Geschlecht unbekannt"),
       "Hinweis: [Patient] = der Patient/die Patientin, [Arzt] = behandelnde Ärztin/behandelnder Arzt, " +
-        "[Name] = weitere Person; [Adresse], [PLZ Ort], [Telefon], [Nr] = entfernte Angaben. " +
+        "[Name] = weitere Person; [Adresse], [PLZ Ort], [Telefon], [Nr], [Kürzel] = entfernte Angaben. " +
         "„Untersuchungsspital“ = das untersuchende Spital. Untersuchungsdaten sind echt."];
     if (angaben.fragestellung && String(angaben.fragestellung).trim())
       kopf.push("Fragestellung: " + String(angaben.fragestellung).trim());
@@ -570,11 +576,81 @@ TB.berichtAnonym = (function () {
     if (alter === null) warnungen.push("Geburtsdatum nicht erkannt — bitte Geburtsdatum oder Alter eingeben.");
     if (!geschlecht) warnungen.push("Geschlecht nicht erkannt — bitte männlich/weiblich wählen.");
 
-    return { text: ausgabe, alter: alter, geschlecht: geschlecht,
+    var erg = { text: ausgabe, alter: alter, geschlecht: geschlecht,
       erkannt: { name: er.name, geburt: er.geburt ? datumText(er.geburt) : "",
                  geschlecht: er.geschlecht },
       namenArzt: er.arzt, namenWeitere: er.weitere, protokoll: prot,
       dokumente: dokumente, warnungen: warnungen };
+    // Nur im Arbeitsspeicher, für das Nachschwärzen (nicht aufzählbar)
+    Object.defineProperty(erg, "schutz", { value: {
+      patient: patient.concat(ctx.zusatz), geburt: geburt } });
+    return erg;
+  }
+
+  // ---- Fürs Fenster: Verdachtswörter, Nachschwärzen -------------------
+  // Gelb markiert werden gross geschriebene Wörter, die ein Name sein
+  // KÖNNTEN: nicht am Satzanfang, nicht hinter Artikel oder gebeugtem
+  // Eigenschaftswort („der Sprechstunde", „linken Bein"), keine typische
+  // Hauptwort-Endung, kein bekanntes Fach-/Abschnittswort. Ein Wort,
+  // das irgendwo im Text als Hauptwort erkennbar ist, gilt überall als
+  // Hauptwort. Das ist eine Lese-HILFE — es entfernt nichts.
+  var ARTIKEL = /^(der|die|das|den|dem|des|ein|eine|einer|eines|einem|einen|kein|keine|keiner|keinen|keinem|keines|zur|zum|im|am|vom|beim|ins|ans|aufs|seine[mnrs]?|sein|ihre[mnrs]?|ihr|unsere[mnrs]?|unser|diese[mnrs]?|jede[mnrs]?|alle[mnrs]?|beide[n]?|mehrere|einige|viele|wenige|welche[mnrs]?|deren|dessen|etwas|viel|wenig|mehr|kein|keinerlei|bei|seit|ohne|für|gegen|unter|über|wegen|trotz)$/i;
+  var NOMEN_ENDUNG = /(ung|ungen|heit|heiten|keit|keiten|schaft|ion|ionen|tät|ik|ie|ien|ismus|nis|nisse|tum|ling|ment|ur|ei|enz|anz|ose|itis|om|ome|al|ar|är|iv|in|innen|ten|tor|tion|ität|ese|yse|ase|in)$/;
+  var HAEUFIG = {};
+  ("jahr jahre jahren monat monate monaten woche wochen tag tage tagen " +
+   "stunde stunden minute minuten ort hause haus tel kopf schädel bein " +
+   "beine arm arme hand hände fuss füsse auge augen mund gesicht rücken " +
+   "nacken knie hüfte schulter finger zehen links rechts seite seiten " +
+   "mal hinweis hinweise zeit punkte punkt grad dosis mg").split(" ")
+    .forEach(function (w) { HAEUFIG[w] = true; });
+  function verdachtsWoerter(text) {
+    var re = new RegExp(NW, "g"), x, hauptwort = {}, kandidat = {};
+    var t = String(text || "");
+    while ((x = re.exec(t))) {
+      var w = x[0], vor = t.slice(Math.max(0, x.index - 40), x.index);
+      var vorWort = (/([A-Za-zÄÖÜäöüß]+)[ \t]+$/.exec(vor) || [])[1] || "";
+      var satzAnfang = /(^|[\n.!?:;•·\-–]|\d\.)\s*$/.test(vor) || /\[$/.test(vor);
+      if (vorWort && (ARTIKEL.test(vorWort) ||
+          (/^[a-zäöüß]/.test(vorWort) && /(e|en|er|es|em)$/.test(vorWort) && vorWort.length > 3))) {
+        hauptwort[w] = true; continue;
+      }
+      if (satzAnfang) continue;
+      kandidat[w] = true;
+    }
+    var aus = {};
+    Object.keys(kandidat).forEach(function (w) {
+      var k = w.toLowerCase();
+      if (hauptwort[w] || KEIN_NAME[k] || FACH[k] || fachwort(w)) return;
+      if (w.length < 3 || NOMEN_ENDUNG.test(k)) return;
+      if (/^(Untersuchungsspital|Patient|Patientin)$/.test(w)) return;
+      if (new RegExp("^" + ANGEHOERIGE + "$").test(w) || HAEUFIG[k]) return;
+      aus[w] = true;
+    });
+    return aus;
+  }
+
+  // Letzte Sicherung vor Kopieren/Sichern (auch nach eigenen Änderungen
+  // rechts): Namens-Stücke des Patienten und das Geburtsdatum.
+  function nachschwaerzen(text, ergebnis) {
+    var s = ergebnis && ergebnis.schutz, n = 0, t = String(text || "");
+    if (!s) return { text: t, anzahl: 0 };
+    (s.patient || []).forEach(function (w) {
+      t = t.replace(new RegExp(KEIN_BUCHST + esc(w) + "s?" + KEIN_BUCHST_N, "gi"),
+        function () { n++; return "[Patient]"; });
+    });
+    if (s.geburt) t = t.replace(new RegExp(DATUM, "g"), function (d) {
+      if (gleichesDatum(leseDatum(d), s.geburt)) { n++; return "[Geburtsdatum]"; }
+      return d;
+    });
+    return { text: t, anzahl: n };
+  }
+
+  // Ein markiertes Wort überall schwärzen (Gross/klein egal).
+  function schwaerzeWort(text, wort) {
+    wort = String(wort || "").trim();
+    if (wort.length < 2) return String(text || "");
+    return String(text || "").replace(
+      new RegExp(KEIN_BUCHST + esc(wort) + KEIN_BUCHST_N, "gi"), "[Name]");
   }
 
   function dateiname(jetzt) {
@@ -585,5 +661,7 @@ TB.berichtAnonym = (function () {
   }
 
   return { anonymisiere: anonymisiere, dateiname: dateiname,
+           verdachtsWoerter: verdachtsWoerter, nachschwaerzen: nachschwaerzen,
+           schwaerzeWort: schwaerzeWort,
            leseDatum: leseDatum, namensStuecke: namensStuecke };
 })();

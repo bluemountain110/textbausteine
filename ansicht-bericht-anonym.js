@@ -2,10 +2,14 @@
 // Projekt: Textbausteine — Teil: App (Browser), nur App
 // Zweck: Das Fenster des Bericht-Anonymisierers ;;anon (18.10): EIN
 //        Feld für Bericht + Zusatzuntersuchungen (auch PDF/Word
-//        hineinziehen), Angaben von Hand (Name, Geburtsdatum oder Alter,
-//        männlich/weiblich, Fragestellung), rechts die anonyme Fassung.
-//        Ein Klick auf ein Wort der Fassung schwärzt es überall; ein
-//        Klick auf einen erkannten Arzt-/Personennamen nimmt ihn zurück.
+//        hineinziehen oder wählen), Angaben von Hand (Name, Geburtsdatum
+//        oder Alter, männlich/weiblich, Fragestellung), rechts die
+//        anonyme Fassung. 18.11 (Näds Variante A, 13.10.): Rechts kann
+//        man direkt tippen und löschen — ab der ersten Änderung ist es
+//        „Deine Fassung“, die links nicht mehr überschreibt („Neu aus
+//        links erzeugen“ fragt zuerst). Gelb = könnte ein Name sein.
+//        Markieren/Doppelklicken + „Markiertes schwärzen“ schwärzt
+//        überall; ein Klick auf einen erkannten Namen nimmt ihn zurück.
 //        Darunter zur Kontrolle, was ganz entfernt wurde (nur hier
 //        sichtbar, nie in der Ausgabe). Kopieren oder als Textdatei
 //        sichern. GRUNDSATZ: Nichts hiervon wird gespeichert oder
@@ -26,7 +30,15 @@ TB.berichtAnonymTexte = {
   maennlich: "männlich",
   weiblich: "weiblich",
   einfuegen: "Hier Bericht + Zusatzuntersuchungen einfügen (Strg+V) — oder PDF/Word hineinziehen",
-  vorschauTitel: "Anonyme Fassung — Klick auf ein Wort schwärzt es überall",
+  dateiKnopf: "PDF/Word wählen …",
+  vorschauTitel: "Anonyme Fassung — hier kannst Du direkt tippen und löschen · Gelb = könnte ein Name sein, bitte prüfen",
+  schwaerzenKnopf: "Markiertes schwärzen",
+  schwaerzenTipp: "Wort rechts doppelklicken (oder mehrere Wörter markieren), dann hier klicken — wird überall zu [Name]",
+  schwaerzenLeer: "Zuerst rechts ein Wort doppelklicken oder markieren.",
+  eigenHinweis: "Rechts ist jetzt DEINE Fassung — Änderungen links wirken erst nach „Neu aus links erzeugen“.",
+  neuKnopf: "Neu aus links erzeugen",
+  neuFrage: "Deine Änderungen rechts gehen verloren — rechts neu aus dem linken Feld erzeugen?",
+  nachgeschwaerzt: "Sicherheitsnetz: %s Stelle(n) mit Patientenname/Geburtsdatum nachgeschwärzt.",
   vorschauLeer: "Noch nichts eingefügt.",
   erkannt: "Erkannt: %s",
   erkanntNichts: "Noch kein Patient erkannt.",
@@ -58,7 +70,7 @@ TB.ansichtBerichtAnonym = (function () {
 
   function oeffne(imFenster) {
     var zustand = { geschlecht: "", zusatz: [], behalten: [] };
-    var ergebnis = null, takt = null;
+    var ergebnis = null, takt = null, eigeneFassung = false;
 
     var d = el("dialog", "anon");
     d.appendChild(el("h2", "", T().titel));
@@ -102,9 +114,33 @@ TB.ansichtBerichtAnonym = (function () {
     eingabe.placeholder = T().einfuegen;
     eingabe.spellcheck = false;
     links.appendChild(eingabe);
+    var dateiZeile = el("div", "anon-datei-zeile");
+    var dateiKnopf = el("button", "leise", T().dateiKnopf);
+    dateiKnopf.type = "button";
+    var dateiFeld = el("input");
+    dateiFeld.type = "file"; dateiFeld.accept = ".pdf,.docx";
+    dateiFeld.multiple = true; dateiFeld.hidden = true;
+    dateiZeile.appendChild(dateiKnopf); dateiZeile.appendChild(dateiFeld);
+    links.appendChild(dateiZeile);
     var rechts = el("div", "anon-rechts");
-    rechts.appendChild(el("div", "anon-spalten-titel", T().vorschauTitel));
+    var kopfRechts = el("div", "anon-rechts-kopf");
+    kopfRechts.appendChild(el("span", "anon-spalten-titel", T().vorschauTitel));
+    var schwaerzen = el("button", "neben anon-schwaerzen", T().schwaerzenKnopf);
+    schwaerzen.type = "button"; schwaerzen.title = T().schwaerzenTipp;
+    kopfRechts.appendChild(schwaerzen);
+    rechts.appendChild(kopfRechts);
+    var eigenZeile = el("div", "anon-eigen");
+    eigenZeile.appendChild(el("span", "", T().eigenHinweis));
+    var neuKnopf = el("button", "leise", T().neuKnopf);
+    neuKnopf.type = "button";
+    eigenZeile.appendChild(neuKnopf);
+    eigenZeile.hidden = true;
+    rechts.appendChild(eigenZeile);
     var vorschau = el("div", "anon-vorschau");
+    // Rechts tippen und löschen (18.11): reiner Text, Enter = Zeilenumbruch
+    try { vorschau.contentEditable = "plaintext-only"; } catch (e) { /* alt */ }
+    if (vorschau.contentEditable !== "plaintext-only") vorschau.contentEditable = "true";
+    vorschau.spellcheck = false;
     rechts.appendChild(vorschau);
     spalten.appendChild(links); spalten.appendChild(rechts);
     d.appendChild(spalten);
@@ -127,7 +163,7 @@ TB.ansichtBerichtAnonym = (function () {
 
     function rechne() {
       var roh = eingabe.value;
-      if (!roh.trim()) {
+      if (!roh.trim() && !eigeneFassung) {
         ergebnis = null;
         vorschau.textContent = T().vorschauLeer;
         vorschau.classList.add("anon-leer");
@@ -141,7 +177,7 @@ TB.ansichtBerichtAnonym = (function () {
         name: nameFeld.value, geburt: geburtFeld.value,
         geschlecht: zustand.geschlecht, fragestellung: frageFeld.value,
         zusatz: zustand.zusatz, behalten: zustand.behalten });
-      zeichneVorschau(ergebnis.text);
+      if (!eigeneFassung) zeichneVorschau(ergebnis.text);
       var e = ergebnis.erkannt, teile = [];
       if (e.name.length) teile.push(e.name.join(" "));
       if (e.geburt) teile.push("geb. " + e.geburt);
@@ -167,30 +203,48 @@ TB.ansichtBerichtAnonym = (function () {
     function zeichneVorschau(text) {
       vorschau.textContent = "";
       vorschau.classList.remove("anon-leer");
+      var verdacht = TB.berichtAnonym.verdachtsWoerter(text);
       var re = /(\[[^\]\n]+\]|[A-Za-zÄÖÜäöüßéèêàâçëïîôûñ][A-Za-zÄÖÜäöüßéèêàâçëïîôûñ'’-]*)/g;
       var pos = 0, m;
       var frag = document.createDocumentFragment();
       while ((m = re.exec(text))) {
-        if (m.index > pos) frag.appendChild(document.createTextNode(text.slice(pos, m.index)));
         var w = m[0];
-        if (w.charAt(0) === "[") {
-          frag.appendChild(el("span", "anon-platz", w));
-        } else if (w.length >= 2) {
-          var s = el("span", "anon-wort", w);
-          s.addEventListener("click", function (ev) {
-            var wort = ev.target.textContent;
-            if (zustand.zusatz.indexOf(wort) === -1) zustand.zusatz.push(wort);
-            neu();
-          });
-          frag.appendChild(s);
-        } else {
-          frag.appendChild(document.createTextNode(w));
-        }
+        var klasse = w.charAt(0) === "[" ? "anon-platz" : (verdacht[w] ? "anon-verdacht" : "");
+        if (!klasse) continue;
+        if (m.index > pos) frag.appendChild(document.createTextNode(text.slice(pos, m.index)));
+        frag.appendChild(el("span", klasse, w));
         pos = m.index + w.length;
       }
       if (pos < text.length) frag.appendChild(document.createTextNode(text.slice(pos)));
       vorschau.appendChild(frag);
     }
+    function rechterText() {
+      var t = vorschau.innerText;
+      if (typeof t !== "string") t = vorschau.textContent;
+      return t.replace(/\u00a0/g, " ");
+    }
+    vorschau.addEventListener("input", function () {
+      if (!eigeneFassung) { eigeneFassung = true; eigenZeile.hidden = false; }
+    });
+    neuKnopf.addEventListener("click", function () {
+      if (!window.confirm(T().neuFrage)) return;
+      eigeneFassung = false; eigenZeile.hidden = true;
+      clearTimeout(takt); rechne();
+    });
+    // mousedown statt click: so bleibt die Markierung rechts erhalten
+    schwaerzen.addEventListener("mousedown", function (ev) {
+      ev.preventDefault();
+      var sel = window.getSelection ? String(window.getSelection()) : "";
+      var wort = sel.replace(/\s+/g, " ").trim();
+      if (wort.length < 2 || wort.length > 80) { TB.ui.melde(T().schwaerzenLeer, true); return; }
+      if (zustand.zusatz.indexOf(wort) === -1) zustand.zusatz.push(wort);
+      if (eigeneFassung) {
+        zeichneVorschau(TB.berichtAnonym.schwaerzeWort(rechterText(), wort));
+        zeichneChips();
+      } else {
+        clearTimeout(takt); rechne();
+      }
+    });
 
     function chip(text, klasse, klick) {
       var c = el("button", "anon-chip " + (klasse || ""), text);
@@ -210,6 +264,7 @@ TB.ansichtBerichtAnonym = (function () {
         });
       }
       namenZeile.textContent = "";
+      if (!ergebnis) return;
       var namen = (ergebnis.namenArzt || []).concat(ergebnis.namenWeitere || []);
       if (namen.length) {
         namenZeile.appendChild(el("span", "anon-chips-titel", T().namenTitel));
@@ -233,11 +288,8 @@ TB.ansichtBerichtAnonym = (function () {
     });
     eingabe.addEventListener("dragleave", function () {
       eingabe.classList.remove("anon-drop-aktiv"); });
-    eingabe.addEventListener("drop", function (ev) {
-      var dateien = ev.dataTransfer && ev.dataTransfer.files;
-      if (!dateien || !dateien.length) return;
-      ev.preventDefault(); eingabe.classList.remove("anon-drop-aktiv");
-      Array.prototype.forEach.call(dateien, function (datei) {
+    function liesDateien(dateien) {
+      Array.prototype.forEach.call(dateien || [], function (datei) {
         TB.ui.melde(T().liest);
         TB.enmgLeser.leseText(datei).then(function (text) {
           eingabe.value = (eingabe.value.trim() ? eingabe.value.replace(/\s+$/, "") + "\n\n" : "") + text;
@@ -247,7 +299,16 @@ TB.ansichtBerichtAnonym = (function () {
             (fehler && fehler.message) || "unbekannter Fehler"), true);
         });
       });
+    }
+    eingabe.addEventListener("drop", function (ev) {
+      var dateien = ev.dataTransfer && ev.dataTransfer.files;
+      if (!dateien || !dateien.length) return;
+      ev.preventDefault(); eingabe.classList.remove("anon-drop-aktiv");
+      liesDateien(dateien);
     });
+    dateiKnopf.addEventListener("click", function () { dateiFeld.click(); });
+    dateiFeld.addEventListener("change", function () {
+      liesDateien(dateiFeld.files); dateiFeld.value = ""; });
     [eingabe, nameFeld, geburtFeld, frageFeld].forEach(function (f) {
       f.addEventListener("input", neu); });
 
@@ -260,12 +321,23 @@ TB.ansichtBerichtAnonym = (function () {
       eingabe.value = ""; nameFeld.value = ""; geburtFeld.value = "";
       frageFeld.value = "";
       zustand = { geschlecht: "", zusatz: [], behalten: [] };
+      eigeneFassung = false; eigenZeile.hidden = true;
       neu(); eingabe.focus();
     });
+    // Was hinausgeht: Deine Fassung rechts (oder die automatische),
+    // immer durch das Sicherheitsnetz (Patientenname, Geburtsdatum).
+    var zusatzMeldung = "";
     function aktuell() {
       clearTimeout(takt); rechne();
       if (!ergebnis) { TB.ui.melde(T().leer, true); return null; }
-      return ergebnis.text;
+      var text = eigeneFassung ? rechterText() : ergebnis.text;
+      var netz = TB.berichtAnonym.nachschwaerzen(text, ergebnis);
+      zusatzMeldung = "";
+      if (netz.anzahl) {
+        zusatzMeldung = " " + T().nachgeschwaerzt.replace("%s", netz.anzahl);
+        zeichneVorschau(netz.text);
+      }
+      return netz.text;
     }
     var sichern = el("button", "neben", T().sichern);
     sichern.addEventListener("click", function () {
@@ -278,7 +350,7 @@ TB.ansichtBerichtAnonym = (function () {
       a.click();
       setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
       TB.speicher.zaehleFunktion("berichtAnonym");
-      TB.ui.melde(T().gesichert.replace("%s", a.download));
+      TB.ui.melde(T().gesichert.replace("%s", a.download) + zusatzMeldung, !!zusatzMeldung);
     });
     var kopieren = el("button", "haupt", T().kopieren);
     kopieren.addEventListener("click", function () {
@@ -286,7 +358,7 @@ TB.ansichtBerichtAnonym = (function () {
       if (!inhalt) return;
       TB.ui.kopiereText(inhalt, function (ok) {
         if (ok) TB.speicher.zaehleFunktion("berichtAnonym");
-        TB.ui.melde(ok ? T().kopiert : T().kopierenFehl, !ok);
+        TB.ui.melde(ok ? T().kopiert + zusatzMeldung : T().kopierenFehl, !ok || !!zusatzMeldung);
       });
     });
     zeile.appendChild(zu); zeile.appendChild(leeren);
@@ -296,7 +368,7 @@ TB.ansichtBerichtAnonym = (function () {
     // Fenster zu = alles weg. Im eigenen Browser-Fenster (;;anon aus
     // KISIM) schliesst „Schliessen" das ganze Fenster.
     d.addEventListener("close", function () {
-      eingabe.value = ""; ergebnis = null;
+      eingabe.value = ""; ergebnis = null; vorschau.textContent = "";
       if (imFenster) { try { window.close(); } catch (e) { /* still */ } }
     });
 
