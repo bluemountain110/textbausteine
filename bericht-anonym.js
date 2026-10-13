@@ -36,6 +36,9 @@ TB.berichtAnonym = (function () {
   var DATUM_ZAHL = "\\d{1,2}\\.\\s?\\d{1,2}\\.\\s?(?:\\d{4}|\\d{2})(?!\\d)";
   var DATUM_WORT = "\\d{1,2}\\.\\s?(?:Januar|Februar|März|Maerz|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\\s+\\d{4}";
   var DATUM = "(?:" + DATUM_WORT + "|" + DATUM_ZAHL + ")";
+  // Geräte-/Systemblöcke (Radiologie-Export) schreiben ISO: 1960-07-14
+  var DATUM_ISO = "(?:19|20)\\d{2}-\\d{2}-\\d{2}(?!\\d)";
+  var DATUM_ALLE = "(?:" + DATUM + "|" + DATUM_ISO + ")";
 
   // Wörter, die NIE Namen sind (klein geschrieben verglichen).
   var KEINE_NAMEN = ("herr herrn frau fräulein kollege kollegin kollegen " +
@@ -66,6 +69,11 @@ TB.berichtAnonym = (function () {
     "empfehlungen einschätzung vorgeschichte sozialanamnese systemanamnese " +
     "familienanamnese fremdanamnese noxen allergien austritt eintritt " +
     "kontrolle termin bericht kurzbericht austrittsbericht konsilium " +
+    "allgemeine allgemeiner allgemeines medizinische medizinischer " +
+    "medizinisches ärztliche ärztlicher ärztliches gemeinschaftspraxis " +
+    "praxisgemeinschaft facharztpraxis universitäre visum ambulante " +
+    "ambulanter stationäre stationärer kopie zuweiser zuweiserin " +
+    "verteiler limmattal beilage beilagen " +
     "procedere beilage beilagen").split(" ");
   var KEIN_NAME = {};
   KEINE_NAMEN.forEach(function (w) { KEIN_NAME[w] = true; });
@@ -116,6 +124,7 @@ TB.berichtAnonym = (function () {
     var m = /^(\d{1,2})\.\s?(\d{1,2})\.\s?(\d{4}|\d{2})$/.exec(s);
     var t, mo, j;
     if (m) { t = +m[1]; mo = +m[2]; j = +m[3]; }
+    else if ((m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s))) { j = +m[1]; mo = +m[2]; t = +m[3]; }
     else {
       m = /^(\d{1,2})\.\s?([A-Za-zäÄ]+)\s+(\d{4})$/.exec(s);
       if (!m) return null;
@@ -249,7 +258,7 @@ TB.berichtAnonym = (function () {
       }
     });
     // Geburtsdatum: hinter geb./geboren/*/Geburtsdatum/DOB
-    var gm = new RegExp("(?:geb\\.?(?:oren)?(?:\\s+am)?|Geburtsdatum|Geb\\.-?\\s?Datum|DOB|\\*)\\s*:?\\s*(" + DATUM + ")", "i").exec(text);
+    var gm = new RegExp("(?:geb\\.?(?:oren)?(?:\\s+am)?|Geburtsdatum|Geb\\.-?\\s?Datum|DOB|\\*)\\s*:?\\s*(" + DATUM_ALLE + ")", "i").exec(text);
     if (gm) { e.geburt = leseDatum(gm[1]); e.geburtRoh = gm[1]; }
     // Kopfzeile ohne Beschriftung („Müller Peter, 03.04.1955 (71 J.)“)
     // in den ersten Zeilen: Name + ein Datum, das als Geburtsdatum
@@ -268,6 +277,32 @@ TB.berichtAnonym = (function () {
         return true;
       });
     }
+    // Name aus der Geburtsdatums-Zeile (KISIM-Kopfzeile „Meier Peter,
+    // 14.07.1960, Strasse …" — ohne Beschriftung, Name VOR dem Datum).
+    // 18.12: lief bisher nur, wenn das Geburtsdatum noch fehlte — stand
+    // „geb. …" woanders, blieb der Name unerkannt (Näds Fund 13.10.).
+    if (!e.name.length && e.geburt) {
+      var suchen = [e.geburtRoh, datumText(e.geburt)].filter(Boolean);
+      zeilen.filter(function (z) { return z.trim(); }).slice(0, 30).some(function (z) {
+        var pos = -1;
+        suchen.forEach(function (sd) {
+          var i = z.indexOf(sd);
+          if (i !== -1 && (pos === -1 || i < pos)) pos = i;
+        });
+        if (pos === -1) return false;
+        var vor = z.slice(0, pos)
+          .replace(/(?:geb\.?(?:oren)?(?:\s+am)?|Geburtsdatum|Geb\.-?\s?Datum|DOB)\s*:?\s*$/i, "")
+          .replace(/[\s,;:*(\u2013-]+$/, "");
+        var toks = vor.trim().split(/[\s,]+/).filter(Boolean)
+          .filter(function (w) { return !/^(Herrn?|Frau|Hr\.|Fr\.|Pat\.?|Patient(?:in)?|Betrifft|Betreff|Name|Vorname)$/i.test(w); });
+        if (!toks.length || toks.length > 4) return false;
+        // NUR wenn davor ausschliesslich Namens-Wörter stehen — sonst ist
+        // es ein Satz („Wir sahen ihn am …") und keine Kopfzeile.
+        if (!toks.every(function (w) { return istNamensWort(w) && !fachwort(w); })) return false;
+        e.name = e.name.concat(toks);
+        return true;
+      });
+    }
     // „Herr/Frau NAME, geb. …" mitten im Text
     var hm = new RegExp("(Herrn?|Frau)[ \\t]+(" + NAME + ")\\s*,?\\s*(?:\\(|geb|\\*)", "g");
     var x;
@@ -276,6 +311,11 @@ TB.berichtAnonym = (function () {
       if (!e.geschlecht) e.geschlecht = /^Herr/.test(x[1]) ? "männlich" : "weiblich";
     }
     e.name = eindeutig(e.name);
+    if (!e.geschlecht) {
+      // Geräteblöcke: „(male, *1960-07-14“, KISIM-Kopf: „(M)“, „(w)“
+      if (/\(\s*(?:male|m)\s*[,)]/i.test(text)) e.geschlecht = "männlich";
+      else if (/\(\s*(?:female|f|w)\s*[,)]/i.test(text)) e.geschlecht = "weiblich";
+    }
     if (!e.geschlecht) {
       var w = (text.match(/\b(Patientin|Frau)\b/g) || []).length;
       var mm = (text.match(/\b(Patient|Herrn?)\b/g) || []).length;
@@ -380,14 +420,23 @@ TB.berichtAnonym = (function () {
          .replace(/\b(?:https?:\/\/|www\.)\S+/gi, "")
          .replace(/\b[\w-]+\.(?:ch|com|de|org|net|swiss)\b(?:\/\S*)?/gi, "");
     t = t.replace(/\b756[.\s]?\d{4}[.\s]?\d{4}[.\s]?\d{2}\b/g, "[Nr]");
+    // Geräte-Patientennummern: „#486756“, „#486756:486756“
+    t = t.replace(/#\d{3,}(?::\d+)*/g, "[Nr]");
+    // Radiologie-Systemblock: „2026-06-02 14:14:10 - Name Name, …“
+    t = t.replace(new RegExp("^(\\s*\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}(?::\\d{2})?\\s*-\\s*)(" + NAME + ")(?=\\s*[,;]|\\s*$)"), "$1[Arzt]");
+    // Visum-Kürzel: „vis 02.06.2026 12:43 spi“, „02.06.2026 / spi“
+    t = t.replace(/\b(vis\s+\d{1,2}\.\d{1,2}\.\d{2,4}\s+\d{1,2}:\d{2})\s+[a-zäöü]{1,5}\b/g, "$1")
+         .replace(/^(\s*\d{1,2}\.\d{1,2}\.\d{4})\s*\/\s*[A-Za-zäöü0-9]{1,10}\s*$/, "$1");
     t = t.replace(/\b((?:Fall|PID|Pat(?:ienten)?|Auftrags|Untersuchungs|Versicherten|Versicherungs|Policen|Kunden|Akten|Kassen|AHV)[-.\s]?(?:Nr\.?|Nummer|ID|Id)\s*[:#]?\s*)\d[\d.\-\/]*/gi, "$1[Nr]")
          .replace(/\b(PID|ID)(\s*:\s*)\d[\d\s-]*\d/g, "$1$2[Nr]");
     t = t.replace(/(?:\+41|0041)\s?\(?0?\)?\s?\d{2}[\s.\/-]?\d{3}[\s.-]?\d{2}[\s.-]?\d{2}\b|\b0\d{2}[\s.\/-]?\d{3}[\s.-]?\d{2}[\s.-]?\d{2}\b/g, "[Telefon]");
     // 3. Geburtsdatum (in jeder Schreibweise)
     if (ctx.geburt) {
-      t = t.replace(new RegExp(DATUM, "g"), function (d) {
+      t = t.replace(new RegExp(DATUM_ALLE, "g"), function (d) {
         return gleichesDatum(leseDatum(d), ctx.geburt) ? "[Geburtsdatum]" : d;
       });
+      // „*1960-07-14“: der Stern gehört zum Geburtsdatum
+      t = t.replace(/\*\s*\[Geburtsdatum\]/g, "[Geburtsdatum]");
     }
     // 4. Ärzte mit Titel (Titel + höchstens 3 Namens-Wörter)
     t = t.replace(new RegExp(RE_ARZT.source, "g"), function (ganz, anrede, name) {
@@ -474,8 +523,14 @@ TB.berichtAnonym = (function () {
     angaben = angaben || {};
     var text = String(eingabe || "").replace(/\r\n?/g, "\n")
       .replace(/[   ]/g, " ").replace(/[ \t]+$/gm, "")
-      // „ED 06.10.2026Ätiologie“: beim Kopieren aus KISIM verlorener Umbruch
-      .replace(/(\d{1,2}\.\d{1,2}\.\d{4})(?=[A-ZÄÖÜ][a-zäöü])/g, "$1\n");
+      // KISIM-Artefakt „manueller SeitenumbruchSeitenumbruch“
+      .replace(/(?:manueller\s*)?Seitenumbruch/g, "\n")
+      // Beim Kopieren aus KISIM verlorene Umbrüche wiederherstellen:
+      // „ED 06.10.2026Ätiologie“, „Fall 7102362Spital“, „EM 2024Motorische“,
+      // „KoronarskleroseKoronar-CT“ (klein→GROSS mitten im Wort)
+      .replace(/(\d{1,2}\.\d{1,2}\.\d{4})(?=[A-ZÄÖÜ][a-zäöü])/g, "$1\n")
+      .replace(/(\d)(?=[A-ZÄÖÜ][a-zäöüß]{2,})/g, "$1\n")
+      .replace(/([a-zäöüß]{2,})(?=[A-ZÄÖÜ][a-zäöüß]{2,})/g, "$1\n");
     var er = erkenne(text);
     var prot = [];   // nur fürs Fenster (Kontrolle), NIE in die Ausgabe
 
@@ -506,44 +561,75 @@ TB.berichtAnonym = (function () {
       zusatz: eindeutig((angaben.zusatz || []).filter(function (w) {
         return String(w).trim().length >= 2; })) };
 
-    // Zeilen
-    var aus = [], modus = "kopf", dokumente = 1, trenner = false;
-    function behalte(zeile) {
-      if (trenner) { aus.push("", "--- nächstes Dokument ---", ""); dokumente++; trenner = false; }
-      aus.push(zeile);
+    // ---- Durchgang 1: Zeilen einteilen und NAMEN ERNTEN ---------------
+    // (18.12) Aus entfernten Anrede-, Titel-, Rollen-, Kopie- und reinen
+    // Namens-Zeilen werden die Namen eingesammelt und in Durchgang 2
+    // AUCH im Fliesstext ersetzt — so verschwindet „Petra" aus „wie mit
+    // Petra besprochen", obwohl die Anrede „Liebe Petra" längst weg ist.
+    // Adress-/Instituts-Zeilen werden NICHT geerntet (sonst würde
+    // „Zürich" überall zum [Arzt]).
+    var plan = [], modus = "kopf", trenner = false, ernte = [];
+    function ernten(t) {
+      if (!(RE_ANREDE.test(t) || RE_TITEL_ZEILE.test(t) || RE_ROLLE_ZEILE.test(t) ||
+            /^(kopie|cc|z\.\s?k\.|verteiler)/i.test(t) || nurNamen(t))) return;
+      if (new RegExp(RE_STRASSE.source).test(t) || /\b[1-9]\d{3}\s+[A-ZÄÖÜ]/.test(t)) return;
+      namensStuecke(t).forEach(function (w) {
+        if (!fachwort(w) && !behalten[w] && patient.indexOf(w) === -1) ernte.push(w);
+      });
     }
     text.split("\n").forEach(function (z) {
       var t = z.trim();
-      if (!t) { if (!modus) aus.push(""); return; }
+      if (!t) { if (!modus) plan.push({ art: "leer" }); return; }
       var bd = berichtsDatum(t);
       if (bd) {
         if (modus === "unterschrift") trenner = true;
         modus = "kopf";
-        behalte("Berichtsdatum: " + datumText(bd.datum));
+        plan.push({ art: "datum", text: "Berichtsdatum: " + datumText(bd.datum),
+                    trennerDavor: trenner });
+        trenner = false;
         if (t.replace(bd.roh, "").replace(/[,\s\/]/g, "").length) prot.push({ art: "Ort beim Datum", text: t });
         return;
       }
       if (RE_GRUSS.test(t)) { modus = "unterschrift"; prot.push({ art: "Gruss/Unterschrift", text: t }); return; }
-      if (RE_ANREDE.test(t)) { prot.push({ art: "Anrede", text: t }); return; }
-      if (RE_KOPF.test(t)) { prot.push({ art: "Patienten-/Kopfangaben", text: t }); return; }
-      if (geburt && woerter(t).length <= 14 && new RegExp(DATUM).test(t)) {
+      if (RE_ANREDE.test(t)) { ernten(t); prot.push({ art: "Anrede", text: t }); return; }
+      if (RE_KOPF.test(t)) { ernten(t); prot.push({ art: "Patienten-/Kopfangaben", text: t }); return; }
+      if (geburt && woerter(t).length <= 14 && new RegExp(DATUM_ALLE).test(t)) {
         var hatGeb = false;
-        (t.match(new RegExp(DATUM, "g")) || []).forEach(function (x) {
+        (t.match(new RegExp(DATUM_ALLE, "g")) || []).forEach(function (x) {
           if (gleichesDatum(leseDatum(x), geburt)) hatGeb = true; });
-        if (hatGeb) { prot.push({ art: "Zeile mit Geburtsdatum", text: t }); return; }
+        if (hatGeb) { ernten(t); prot.push({ art: "Zeile mit Geburtsdatum", text: t }); return; }
       }
       if (modus) {
         if (kopfOderUnterschrift(t, modus)) {
+          ernten(t);
           prot.push({ art: modus === "kopf" ? "Briefkopf" : "Unterschrift/Verteiler", text: t });
           return;
         }
         if (modus === "unterschrift") trenner = true;
         modus = "";
       }
-      var neu = ersetzeZeile(z.replace(/\s+$/, ""), ctx);
-      if (nurPlatzhalter(neu)) { prot.push({ art: "nur Kontakt/Adresse", text: t }); return; }
-      if (neu !== z.replace(/\s+$/, "")) prot.push({ art: "ersetzt", text: t, neu: neu });
-      behalte(neu);
+      plan.push({ art: "text", zeile: z.replace(/\s+$/, ""), trennerDavor: trenner });
+      trenner = false;
+    });
+    // Geerntete Namen gelten als Ärzte/Beteiligte (ohne Patient).
+    eindeutig(ernte).forEach(function (w) {
+      if (ctx.arzt.indexOf(w) === -1 && ctx.weitere.indexOf(w) === -1) ctx.arzt.push(w);
+    });
+
+    // ---- Durchgang 2: Ersetzen mit der VOLLEN Namensliste -------------
+    var aus = [], dokumente = 1, haengig = false;
+    plan.forEach(function (e) {
+      if (e.art === "leer") { aus.push(""); return; }
+      if (e.trennerDavor) haengig = true;
+      var zeile;
+      if (e.art === "datum") zeile = e.text;
+      else {
+        zeile = ersetzeZeile(e.zeile, ctx);
+        if (nurPlatzhalter(zeile)) { prot.push({ art: "nur Kontakt/Adresse", text: e.zeile.trim() }); return; }
+        if (zeile !== e.zeile) prot.push({ art: "ersetzt", text: e.zeile.trim(), neu: zeile });
+      }
+      if (haengig) { aus.push("", "--- nächstes Dokument ---", ""); dokumente++; haengig = false; }
+      aus.push(zeile);
     });
     var koerper = aus.join("\n").replace(/\n{3,}/g, "\n\n").replace(/^\n+|\n+$/g, "");
 
@@ -563,7 +649,7 @@ TB.berichtAnonym = (function () {
     patient.concat(ctx.zusatz).forEach(function (w) {
       if (new RegExp(KEIN_BUCHST + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + KEIN_BUCHST_N, "i").test(koerper)) reste.push(w);
     });
-    if (geburt) (koerper.match(new RegExp(DATUM, "g")) || []).forEach(function (x) {
+    if (geburt) (koerper.match(new RegExp(DATUM_ALLE, "g")) || []).forEach(function (x) {
       if (gleichesDatum(leseDatum(x), geburt)) reste.push(x); });
     if (reste.length) {
       // Sicherheitsnetz: dann eben grob schwärzen
@@ -638,7 +724,7 @@ TB.berichtAnonym = (function () {
       t = t.replace(new RegExp(KEIN_BUCHST + esc(w) + "s?" + KEIN_BUCHST_N, "gi"),
         function () { n++; return "[Patient]"; });
     });
-    if (s.geburt) t = t.replace(new RegExp(DATUM, "g"), function (d) {
+    if (s.geburt) t = t.replace(new RegExp(DATUM_ALLE, "g"), function (d) {
       if (gleichesDatum(leseDatum(d), s.geburt)) { n++; return "[Geburtsdatum]"; }
       return d;
     });

@@ -1513,6 +1513,46 @@ TB.selbsttest = (function () {
       fall("Anonym 18.11: Markiertes schwärzen ersetzt überall, Gross/klein egal",
         A.schwaerzeWort("Spitex Meier; SPITEX täglich", "Spitex") === "[Name] Meier; [Name] täglich",
         A.schwaerzeWort("Spitex Meier; SPITEX täglich", "Spitex"));
+      // 18.12: Näds echte Funde vom 13.10. (kardiologischer Bericht +
+      // Radiologie-Systemblock), mit erfundenen Daten nachgestellt.
+      var r6 = A.anonymisiere([
+        "Frau", "Dr. med. Petra Probegysi",
+        "FMH für Allgemeine Innere Medizin", "Teststrasse 111",
+        "Medizinische Gemeinschaftspraxis", "8001 Zürich",
+        "Schlieren, 27. Mai 2026 / msc",
+        " Probemüller Hans, 14.07.1960, Probeweg 22, 8000 Zürich ",
+        "PID/FID: 486756 / 7102362",
+        "Ambulanter Bericht vom 26.05.2026", "Liebe Petra", "",
+        "Wir berichten über oben genannten Patienten.", "",
+        "Diagnosen",
+        "1. V. a. koronare HerzerkrankungBelastungsabhängiges thorakales Druckgefühl", "",
+        "Beurteilung / Verlauf",
+        "Wie mit Petra telefonisch besprochen, erfolgt eine Koronar-CT. Herr Probemüller wünscht dies.",
+        "Abklärung geplant.manueller SeitenumbruchSeitenumbruch", "",
+        "Mit freundlichen Grüssen", "Dr. med. Beat Beispielkardiologe", "",
+        "Langzeit EKG, für Pat. Probemüller Hans, geb. 14.07.1960, #486756, Fall 7102362Spital Limmattal", "",
+        "Probemüller Hans (male, *1960-07-14, #486756:486756)",
+        "Verifying Observers:",
+        "2026-06-02 14:14:10 - Sjunne Probeduhnsen, Verifying Organization",
+        "Visum", "vis 02.06.2026 12:43 spi"
+      ].join("\n"), { heute: new Date(2026, 9, 13) });
+      var t6 = r6.text;
+      fall("Anonym 18.12: Name aus der KISIM-Kopfzeile trotz „geb.“ an anderer Stelle; Geschlecht aus „(male“",
+        /Patient: 65 Jahre, männlich/.test(t6) &&
+        t6.indexOf("Probemüller") === -1 && t6.indexOf("Hans") === -1,
+        t6.split("\n")[1]);
+      fall("Anonym 18.12: geernteter Anrede-Name verschwindet auch im Fliesstext",
+        /Wie mit \[Arzt\] telefonisch besprochen/.test(t6) &&
+        t6.indexOf("Petra") === -1 && t6.indexOf("Probegysi") === -1, "");
+      var leck6 = ["486756", "7102362", "1960-07-14", "14.07.1960",
+        "Probeduhnsen", "Sjunne", "Limmattal", "Seitenumbruch",
+        "Beispielkardiologe", "Probeweg", "Teststrasse"]
+        .filter(function (w) { return t6.indexOf(w) !== -1; });
+      fall("Anonym 18.12: Geräte-Nummern, ISO-Geburtsdatum, Visum-Kürzel, Prüf-Arzt und geklebtes „…Spital Limmattal“ restlos weg",
+        leck6.length === 0 && /vis 02\.06\.2026 12:43\s*$/m.test(t6) &&
+        t6.indexOf("Untersuchungsspital") !== -1, leck6.join(", "));
+      fall("Anonym 18.12: verlorene KISIM-Umbrüche repariert (Wort „HerzerkrankungBelastungs…“ getrennt)",
+        /koronare Herzerkrankung\nBelastungsabhängiges/.test(t6), "");
       fall("Anonym 18.10: Dateiname ohne Patientenbezug",
         /^Bericht-anonym-\d{4}-\d\d-\d\d-\d{6}\.txt$/.test(A.dateiname()), A.dateiname());
       var tr = TB.speicher.holenPerKuerzel("anon");
