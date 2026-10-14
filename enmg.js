@@ -102,6 +102,7 @@ TB.enmg = (function () {
     var zuordnung = {}, vergeben = {};
     zeilen.forEach(function (z, i) {
       if (z.werte.nlg === null || z.werte.nlg === undefined) return;
+      if (z.ohneNorm) return;   // 18.13: Vergleichs-/unplausible Zeile
       var seg = (z.segment || "").toLowerCase();
       Object.keys(schluessel || {}).forEach(function (zielId) {
         if (zuordnung[i] || vergeben[zielId]) return;
@@ -116,6 +117,7 @@ TB.enmg = (function () {
     var naechste = 0;
     zeilen.forEach(function (z, i) {
       if (z.werte.nlg === null || z.werte.nlg === undefined) return;
+      if (z.ohneNorm) return;
       if (zuordnung[i]) return;
       while (naechste < reihe.length && vergeben[reihe[naechste]]) naechste++;
       if (naechste < reihe.length) {
@@ -138,7 +140,7 @@ TB.enmg = (function () {
     if (g === null) return null;
     return { farbe: farbeFuer(wert, g, zeile.richtung),
              grenze: rund2(g), richtung: zeile.richtung,
-             zeileName: zeile.name };
+             zeileName: zeile.name, zeileId: zeile.id };
   }
 
   // ---- Ein ganzes Lese-Ergebnis bewerten --------------------------------
@@ -207,6 +209,25 @@ TB.enmg = (function () {
   var TH = '<td style="border:1px solid #808080;padding:2px 6px;' +
            'font-family:Arial;font-size:10pt;font-weight:bold;' +
            'background-color:#efefef;text-align:left">';
+  // 18.13: Spalten je Block — nur, was das Gerät auch liefert (Keypoint:
+  // Dauer; Viking: Fläche, Abstand, Peak). Bildschirm und Kopie benutzen
+  // dieselbe Liste.
+  function spalten(block) {
+    var T = TB.enmgTexte;
+    var alle = block.art === "motor"
+      ? [["segment", T.spalteSegment, false], ["lat", T.spalteLat, true],
+         ["amp", T.spalteAmpM, false], ["dur", T.spalteDur, false],
+         ["areaDiff", T.spalteArea, false], ["abstand", T.spalteAbstand, false],
+         ["nlg", T.spalteNlg, true], ["fLat", T.spalteFLat, true]]
+      : [["segment", T.spalteSegment, false], ["abstand", T.spalteAbstand, false],
+         ["lat", T.spalteLat, false], ["peak", T.spaltePeak, false],
+         ["amp", T.spalteAmpU, true], ["nlg", T.spalteNlg, true]];
+    return alle.filter(function (a) {
+      if (a[0] === "segment") return true;
+      return block.zeilen.some(function (z) {
+        return z.werte[a[0]] !== null && z.werte[a[0]] !== undefined; });
+    }).map(function (a) { return { feld: a[0], titel: a[1], bewertet: a[2] }; });
+  }
   function tabelleHtmlText(ergebnis) {
     var T = TB.enmgTexte, html = [], text = [];
     var p = ergebnis.patient || {};
@@ -226,39 +247,21 @@ TB.enmg = (function () {
       html.push('<p style="font-family:Arial;font-size:10pt;margin-bottom:2px"><b><u>' +
         block.nervText + "</u></b></p>");
       text.push(block.nervText);
-      var motor = block.art === "motor";
-      var spalten = motor
-        ? [T.spalteSegment, T.spalteLat, T.spalteAmpM, T.spalteDur,
-           T.spalteNlg, T.spalteFLat]
-        : [T.spalteSegment, T.spalteAbstand, T.spalteLat, T.spalteAmpU,
-           T.spalteNlg];
+      var sp = spalten(block);
       var h = '<table style="border-collapse:collapse;margin-bottom:8px">' +
-        "<tr>" + spalten.map(function (s) { return TH + s + "</td>"; }).join("") +
+        "<tr>" + sp.map(function (s) { return TH + s.titel + "</td>"; }).join("") +
         "</tr>";
-      text.push(spalten.join("  |  "));
+      text.push(sp.map(function (s) { return s.titel; }).join("  |  "));
       block.zeilen.forEach(function (z) {
         var w = z.werte, b = z.bew || {};
-        var zellenH, zellenT;
-        if (motor) {
-          zellenH = [TDL + z.segment + "</td>",
-            TD + wertHtml(w.lat, b.lat) + "</td>",
-            TD + zahl(w.amp) + "</td>",
-            TD + zahl(w.dur) + "</td>",
-            TD + wertHtml(w.nlg, b.nlg) + "</td>",
-            TD + wertHtml(w.fLat, b.fLat) + "</td>"];
-          zellenT = [z.segment, wertText(w.lat, b.lat), zahl(w.amp),
-            zahl(w.dur), wertText(w.nlg, b.nlg), wertText(w.fLat, b.fLat)];
-        } else {
-          zellenH = [TDL + z.segment + "</td>",
-            TD + zahl(w.abstand) + "</td>",
-            TD + zahl(w.lat) + "</td>",
-            TD + wertHtml(w.amp, b.amp) + "</td>",
-            TD + wertHtml(w.nlg, b.nlg) + "</td>"];
-          zellenT = [z.segment, zahl(w.abstand), zahl(w.lat),
-            wertText(w.amp, b.amp), wertText(w.nlg, b.nlg)];
-        }
-        h += "<tr>" + zellenH.join("") + "</tr>";
-        text.push(zellenT.join("  |  "));
+        h += "<tr>" + sp.map(function (s) {
+          if (s.feld === "segment") return TDL + z.segment + "</td>";
+          return TD + (s.bewertet ? wertHtml(w[s.feld], b[s.feld]) : zahl(w[s.feld])) + "</td>";
+        }).join("") + "</tr>";
+        text.push(sp.map(function (s) {
+          if (s.feld === "segment") return z.segment;
+          return s.bewertet ? wertText(w[s.feld], b[s.feld]) : zahl(w[s.feld]);
+        }).join("  |  "));
       });
       h += "</table>";
       html.push(h);
@@ -279,6 +282,6 @@ TB.enmg = (function () {
     zeileVonNerv: zeileVonNerv, grenzeFuer: grenzeFuer,
     erkenneNerv: erkenneNerv, ordneNlg: ordneNlg,
     bewertung: bewertung, bewerte: bewerte,
-    tabelleHtmlText: tabelleHtmlText
+    tabelleHtmlText: tabelleHtmlText, spalten: spalten
   };
 })();

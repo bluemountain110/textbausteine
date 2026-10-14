@@ -788,6 +788,14 @@ body.nur-fenster .status-rechts { top: 10px; }
 .enmg-pflege-quelle-feld { flex: 1; min-width: 260px; border: 1px solid #c6d2cd;
   border-radius: 6px; padding: 6px 8px; font: inherit; }
 body.nur-fenster .enmg-drop { padding: 10px; }
+/* 18.13: Befund-Vorschlag unter der Tabelle */
+.enmg-befund { border-top: 1px solid #dde4e6; margin-top: 12px; padding-top: 6px; }
+.enmg-befund h3 { margin: 6px 0 2px; }
+.enmg-befund-beschriftung { font-weight: 600; margin-right: 6px; }
+.enmg-befund-export { color: #555; font-size: 0.9em; margin: 2px 0 8px; }
+.enmg-befund-feld { display: flex; flex-direction: column; gap: 3px; margin: 8px 0; }
+.enmg-befund-feld textarea { font: inherit; font-size: 0.95rem; padding: 6px 8px;
+  border: 1px solid #c6d2cd; border-radius: 6px; resize: vertical; }
 
 /* ---- Etappe 13 Sammelrunde (18.2): kompakte Masken, Diagnose-
    Einlesen, Kisunla-Fenster --------------------------------------- */

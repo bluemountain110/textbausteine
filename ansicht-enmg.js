@@ -1,14 +1,18 @@
 // Datei: ansicht-enmg.js
 // Projekt: Textbausteine — Teil: App (Browser), nur App
-// Zweck: Die ENMG-Ansicht: Export-Datei (PDF oder Word) hineinziehen,
+// Zweck: Die ENMG-Ansicht: Export-Datei (Keypoint-PDF, Word .docx oder
+//        seit 18.13 der Viking-Bericht als altes Word .doc) hineinziehen,
 //        Messwerte als Tabelle mit Färbung sehen (rot = ausserhalb
 //        Deiner Grenzwerte, grün = innerhalb, schwarz = kein Normwert),
 //        neben jedem gefärbten Wert steht klein die angewandte Grenze —
 //        der Patient steht gross über der Tabelle, bevor irgendetwas
-//        kopiert wird. Kopieren legt Text + formatiertes HTML (+ RTF
-//        für KISIM) in die Zwischenablage; im URL-Fenster übergibt der
-//        grosse Knopf. GRUNDSATZ: Der Inhalt der Datei bleibt in
-//        diesem Fenster — nichts wird gespeichert, nichts abgeglichen.
+//        kopiert wird. Seit 18.13 darunter der BEFUND-VORSCHLAG:
+//        Fragestellungen zum Anklicken, Zusammenfassung je Nerv und
+//        Beurteilung (beide frei änderbar). „Bericht kopieren" legt
+//        Fragestellung, Tabelle, Zusammenfassung und Beurteilung in die
+//        Zwischenablage; im URL-Fenster übergibt der grosse Knopf.
+//        GRUNDSATZ: Der Inhalt der Datei bleibt in diesem Fenster —
+//        nichts wird gespeichert, nichts abgeglichen.
 
 "use strict";
 window.TB = window.TB || {};
@@ -22,12 +26,20 @@ TB.ansichtEnmg = (function () {
   var dateiName = "";
   var liest = false;
   var fensterModus = false;
+  // Befund-Vorschlag (18.13) — ebenfalls nur im Speicher
+  var fragen = [], zusText = "", beuText = "", beuGeaendert = false,
+      zusGeaendert = false;
   function setzeFensterModus(w) { fensterModus = !!w; }
 
   // ---- Datei annehmen ---------------------------------------------------
   function passt(datei) {
     var n = (datei && datei.name || "").toLowerCase();
-    return n.endsWith(".pdf") || n.endsWith(".docx");
+    return n.endsWith(".pdf") || n.endsWith(".docx") || n.endsWith(".doc");
+  }
+  function vorschlagNeu() {
+    zusText = TB.enmgBefund.zusammenfassung(ergebnis);
+    beuText = TB.enmgBefund.beurteilung(ergebnis, fragen);
+    zusGeaendert = false; beuGeaendert = false;
   }
   function verarbeite(datei) {
     if (!datei) return;
@@ -39,6 +51,8 @@ TB.ansichtEnmg = (function () {
       TB.enmg.bewerte(erg);
       ergebnis = erg;
       dateiName = datei.name;
+      fragen = TB.enmgBefund.fragenAusText(erg.fragestellungText || "");
+      vorschlagNeu();
       TB.statistik.zaehle("enmgGelesen");
       neuZeichnen();
       if (!erg.bloecke.length) melde(T().keineMesswerte, true);
@@ -61,7 +75,7 @@ TB.ansichtEnmg = (function () {
       zone.appendChild(el("div", "enmg-drop-datei", dateiName));
     var knopf = el("button", "neben", T().dateiKnopf);
     var feld = el("input");
-    feld.type = "file"; feld.accept = ".pdf,.docx"; feld.hidden = true;
+    feld.type = "file"; feld.accept = ".pdf,.docx,.doc"; feld.hidden = true;
     feld.addEventListener("change", function () {
       verarbeite(feld.files && feld.files[0]);
     });
@@ -81,7 +95,7 @@ TB.ansichtEnmg = (function () {
     wurzel.appendChild(zone);
   }
 
-  function wertZelle(td, wert, bew, einheitlos) {
+  function wertZelle(td, wert, bew) {
     if (wert === null || wert === undefined) { td.textContent = ""; return; }
     if (!bew || !bew.farbe) {
       var s = el("span", "", String(wert));
@@ -97,7 +111,6 @@ TB.ansichtEnmg = (function () {
     g.title = T().zuordnungKurz.replace("%s", bew.zeileName)
       .replace("%s", bew.grenze);
     td.appendChild(g);
-    if (einheitlos) { /* Einheit steht im Spaltenkopf */ }
   }
 
   function zeichneBlock(wurzel, block) {
@@ -105,35 +118,84 @@ TB.ansichtEnmg = (function () {
     if (!block.nervId)
       kopf.appendChild(el("span", "marke enmg-marke-warn", T().unbekannterNerv));
     wurzel.appendChild(kopf);
-    var motor = block.art === "motor";
-    var spalten = motor
-      ? [T().spalteSegment, T().spalteLat, T().spalteAmpM, T().spalteDur,
-         T().spalteNlg, T().spalteFLat]
-      : [T().spalteSegment, T().spalteAbstand, T().spalteLat,
-         T().spalteAmpU, T().spalteNlg];
+    var sp = TB.enmg.spalten(block);
     var tabelle = el("table", "enmg-tabelle");
     var kopfzeile = el("tr");
-    spalten.forEach(function (s) { kopfzeile.appendChild(el("th", "", s)); });
+    sp.forEach(function (s) { kopfzeile.appendChild(el("th", "", s.titel)); });
     tabelle.appendChild(kopfzeile);
     block.zeilen.forEach(function (z) {
       var tr = el("tr");
-      tr.appendChild(el("td", "enmg-segment", z.segment));
+      var segTd = el("td", "enmg-segment", z.segment);
+      if (z.unplausibel) {
+        segTd.appendChild(el("span", "marke enmg-marke-warn", T().unplausibel));
+      } else if (z.vergleich) {
+        segTd.title = T().vergleichOhneNorm;
+      }
+      tr.appendChild(segTd);
       var w = z.werte, b = z.bew || {};
-      function zelle(wert, bew) {
+      sp.forEach(function (s) {
+        if (s.feld === "segment") return;
         var td = el("td", "enmg-wert");
-        wertZelle(td, wert, bew);
+        wertZelle(td, w[s.feld], s.bewertet ? b[s.feld] : null);
         tr.appendChild(td);
-      }
-      if (motor) {
-        zelle(w.lat, b.lat); zelle(w.amp, null); zelle(w.dur, null);
-        zelle(w.nlg, b.nlg); zelle(w.fLat, b.fLat);
-      } else {
-        zelle(w.abstand, null); zelle(w.lat, null);
-        zelle(w.amp, b.amp); zelle(w.nlg, b.nlg);
-      }
+      });
       tabelle.appendChild(tr);
     });
     wurzel.appendChild(tabelle);
+  }
+
+  // ---- Befund-Vorschlag (18.13) -------------------------------------------
+  function zeichneBefund(wurzel) {
+    var B = TB.enmgBefund;
+    var kasten = el("div", "enmg-befund");
+    kasten.appendChild(el("h3", "", T().befundTitel));
+    kasten.appendChild(el("div", "erklaerung", T().befundHinweis));
+
+    var fz = el("div", "status-teilmengen");
+    fz.appendChild(el("span", "enmg-befund-beschriftung", T().fragestellungTitel));
+    B.FRAGEN.forEach(function (f) {
+      var k = el("button", "status-chip" + (fragen.indexOf(f.id) !== -1 ? " aktiv" : ""),
+        f.text);
+      k.addEventListener("click", function () {
+        var i = fragen.indexOf(f.id);
+        if (i === -1) fragen.push(f.id); else fragen.splice(i, 1);
+        if (beuGeaendert) melde(T().beurteilungVonHand, true);
+        else beuText = B.beurteilung(ergebnis, fragen);
+        neuZeichnen();
+      });
+      fz.appendChild(k);
+    });
+    kasten.appendChild(fz);
+    if (ergebnis.fragestellungText)
+      kasten.appendChild(el("div", "enmg-befund-export",
+        T().ausExport.replace("%s", ergebnis.fragestellungText)));
+
+    function feld(titel, wert, beiAenderung) {
+      var l = el("label", "enmg-befund-feld");
+      l.appendChild(el("span", "enmg-befund-beschriftung", titel));
+      var ta = el("textarea");
+      ta.value = wert;
+      ta.rows = Math.max(3, String(wert).split("\n").length + 1);
+      ta.addEventListener("input", function () { beiAenderung(ta.value); });
+      l.appendChild(ta);
+      kasten.appendChild(l);
+    }
+    feld(T().zusammenfassungTitel, zusText, function (v) {
+      zusText = v; zusGeaendert = true; });
+    feld(T().beurteilungTitel, beuText, function (v) {
+      beuText = v; beuGeaendert = true; });
+    if (ergebnis.vorhandeneBeurteilung)
+      kasten.appendChild(el("div", "enmg-befund-export",
+        T().vorhandeneBeurteilung.replace("%s", ergebnis.vorhandeneBeurteilung)));
+
+    var neu = el("button", "leise", T().neuVorschlagen);
+    neu.addEventListener("click", function () {
+      if ((zusGeaendert || beuGeaendert) && !window.confirm(T().neuVorschlagenFrage))
+        return;
+      vorschlagNeu(); neuZeichnen(); melde(T().neuVorgeschlagen);
+    });
+    kasten.appendChild(neu);
+    wurzel.appendChild(kasten);
   }
 
   function zeichneErgebnis(wurzel) {
@@ -171,16 +233,22 @@ TB.ansichtEnmg = (function () {
     wurzel.appendChild(el("div", "enmg-quelle",
       T().quelleZeile.replace("%s", TB.enmg.quelle())));
 
+    zeichneBefund(wurzel);
+
     var zeile = TB.ui.knopfzeile();
-    var kopieren = el("button", "haupt", T().kopierenKnopf);
-    kopieren.addEventListener("click", kopiereTabelle);
-    zeile.appendChild(kopieren);
+    var bericht = el("button", "haupt", T().berichtKopieren);
+    bericht.addEventListener("click", function () { kopiere(true, true); });
+    var nurText = el("button", "neben", T().nurTextKopieren);
+    nurText.addEventListener("click", function () { kopiere(false, true); });
+    var nurTab = el("button", "neben", T().kopierenKnopf);
+    nurTab.addEventListener("click", function () { kopiere(true, false); });
     var leeren = el("button", "leise", T().zuruecksetzenKnopf);
     leeren.addEventListener("click", function () {
-      ergebnis = null; dateiName = "";
+      ergebnis = null; dateiName = ""; fragen = []; zusText = ""; beuText = "";
       neuZeichnen(); melde(T().zurueckgesetzt);
     });
-    zeile.appendChild(leeren);
+    zeile.appendChild(leeren); zeile.appendChild(nurTab);
+    zeile.appendChild(nurText); zeile.appendChild(bericht);
     wurzel.appendChild(zeile);
 
     if (fensterModus) {
@@ -192,9 +260,38 @@ TB.ansichtEnmg = (function () {
     }
   }
 
-  function kopiereTabelle() {
+  // ---- Zusammensetzen: Fragestellung · Tabelle · Zusammenfassung · Beurteilung
+  function fragestellungZeile() {
+    var t = TB.enmgBefund.FRAGEN.filter(function (f) {
+      return fragen.indexOf(f.id) !== -1; }).map(function (f) { return f.text; });
+    if (!t.length && ergebnis.fragestellungText) return ergebnis.fragestellungText;
+    return t.join(" ");
+  }
+  function zusammensetzen(mitTabelle, mitText) {
+    var B = TB.enmgBefund, html = [], text = [];
+    var P = '<p style="font-family:Arial;font-size:10pt;margin:8px 0 2px"><b>';
+    var fr = fragestellungZeile();
+    if (mitText && fr) {
+      html.push(P + T().fragestellungTitel + "</b> " +
+        B.alsHtml(fr).replace(/^<p[^>]*>|<\/p>$/g, "") + "</p>");
+      text.push(T().fragestellungTitel + " " + fr, "");
+    }
+    if (mitTabelle) {
+      var ht = TB.enmg.tabelleHtmlText(ergebnis);
+      html.push(ht.html); text.push(ht.text, "");
+    }
+    if (mitText) {
+      html.push(P + T().zusammenfassungTitel + "</b></p>" + B.alsHtml(zusText));
+      text.push(T().zusammenfassungTitel, zusText, "");
+      html.push(P + T().beurteilungTitel + "</b></p>" + B.alsHtml(beuText));
+      text.push(T().beurteilungTitel, beuText);
+    }
+    return { html: html.join("\n"), text: text.join("\n") };
+  }
+
+  function kopiere(mitTabelle, mitText) {
     if (!ergebnis) { melde(T().nichtsZuKopieren, true); return; }
-    var ht = TB.enmg.tabelleHtmlText(ergebnis);
+    var ht = zusammensetzen(mitTabelle, mitText);
     TB.ui.kopiereFassungen(ht.html, ht.text, function (ok, wie) {
       if (!ok) { melde(T().kopierenFehl, true); return; }
       TB.statistik.zaehle("enmgKopiert");
@@ -204,7 +301,7 @@ TB.ansichtEnmg = (function () {
 
   function aktuellerText() {
     if (!ergebnis || !ergebnis.bloecke.length) return null;
-    var ht = TB.enmg.tabelleHtmlText(ergebnis);
+    var ht = zusammensetzen(true, true);
     return { text: ht.text, html: ht.html };
   }
 
@@ -230,5 +327,6 @@ TB.ansichtEnmg = (function () {
   }
 
   return { zeichne: zeichne, setzeFensterModus: setzeFensterModus,
-           aktuellerText: aktuellerText, verarbeite: verarbeite };
+           aktuellerText: aktuellerText, verarbeite: verarbeite,
+           zusammensetzen: zusammensetzen };
 })();

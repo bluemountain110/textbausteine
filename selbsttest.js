@@ -1581,7 +1581,10 @@ TB.selbsttest = (function () {
       pruefeEnmg().map(function (f) { f.gruppe = "Etappe 12"; return f; }),
       pruefeKisunla().map(function (f) { f.gruppe = "Etappe 13"; return f; }),
       pruefeBerichtMc().map(function (f) { f.gruppe = "Bericht Memory Clinic"; return f; }),
-      pruefeBerichtAnonym().map(function (f) { f.gruppe = "Bericht anonymisieren"; return f; })
+      pruefeBerichtAnonym().map(function (f) { f.gruppe = "Bericht anonymisieren"; return f; }),
+      (TB.selbsttestEnmgBefund ? TB.selbsttestEnmgBefund()
+        : [{ name: "ENMG-Befund-Prüfungen geladen (selbsttest-enmg.js)", ok: false, detail: "" }])
+        .map(function (f) { f.gruppe = "ENMG-Befund"; return f; })
     ));
   }
 

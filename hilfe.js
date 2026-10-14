@@ -238,6 +238,8 @@ TB.hilfe = (function () {
       ["Das ENMG-Werk — gefärbte Messwerte aus dem Geräte-Export", [
         ["Was es tut",
          "Bereich „ENMG“: Du ziehst den Export der EMG-Maschine (PDF oder Word) auf die Ablagefläche. Die App liest Patient, Geburtsdatum und Untersuchungsdatum, rechnet das Alter aus und zeigt die Messwert-Tabellen: rot, was ausserhalb Deiner Grenzwerte liegt, grün, was innerhalb liegt, schwarz, wofür es (noch) keinen Grenzwert gibt. Die angewandte Grenze steht klein neben jedem Wert."],
+        ["Viking-Bericht der Praxis (.doc) und Befund-Vorschlag",
+         "Seit 18.13 liest das Werk auch den Viking-Bericht der Praxis, so wie Word ihn speichert (.doc) — einfach auf die Ablagefläche ziehen, nichts umspeichern. Unter der Tabelle steht der Befund-Vorschlag: Oben klickst Du die Fragestellungen an (steht im Bericht schon eine, ist sie vorgewählt). Darunter die Zusammenfassung je Nerv und Seite ohne Zahlen (z. B. „N. medianus rechts: Neuropathie über dem Carpaltunnel (Grad 3 nach Bland – moderat)“) und die Beurteilung, die Deine Fragestellungen beantwortet und alles weitere Auffällige nennt. Beide Felder kannst Du direkt ändern. Grundlage ist nur die Färbung nach Deinen Grenzwerten: Wo kein Normwert besteht, wird nichts behauptet; Palmar- und Ringfinger-Messungen bleiben schwarz, unmögliche NLG-Werte (über 90 m/s) werden als „Distanz prüfen“ gemeldet. „Bericht kopieren“ nimmt Fragestellung, Tabelle, Zusammenfassung und Beurteilung; „Nur Text kopieren“ dasselbe ohne Tabelle."],
         ["Die Normwerte gehören Dir",
          "Unter „Normwert-Pflege“ liegen Deine kontrollierten Grenzwert-Tabellen (Medianus, Ulnaris, Radialis superficialis, Suralis, Peronaeus, Tibialis; Alter 20–80 in Fünferschritten, dazwischen wird linear gerechnet). Jeder Wert ist änderbar, „Grundausstattung“ stellt den gelieferten Stand wieder her, und der Name Deiner Quelle erscheint unter jeder Tabelle."],
         ["Befunde anonymisieren (für den Bau-Chat)",
@@ -245,7 +247,7 @@ TB.hilfe = (function () {
         ["Was NIE passiert",
          "Die eingelesene Export-Datei wird nie gespeichert und nie abgeglichen — sie lebt nur im Fenster, bis Du es schliesst (auch beim Anonymisieren). In die Datenablage wandern nur Deine Normwert-Tabellen und Zählwerte."],
         ["Was noch folgt",
-         "Der Befund-Fliesstext nach Deinem Musterbericht, die Norm-Spalte im Bericht, Balken und Zweitquellen (Buschbacher/Leis) im Fenster sowie ;;enmg am Arbeitsplatz — gesammelt in der ENMG-Sammelrunde, sobald Deine Beispiele und der Musterbericht da sind."]
+         "Die Norm-Spalte im Bericht, Balken und Zweitquellen (Buschbacher/Leis) im Fenster, Normwerte für die motorischen Amplituden, die Nadel-EMG-Tabelle und ;;enmg am Arbeitsplatz — gesammelt in der ENMG-Sammelrunde."]
       ]],
       ["Bericht anonymisieren (;;anon) — für Claude oder OpenEvidence", [
         ["Was es tut",

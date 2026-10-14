@@ -167,6 +167,10 @@ TB.enmgLeser = (function () {
   function leseDatei(datei) {
     var name = (datei && datei.name || "").toLowerCase();
     return datei.arrayBuffer().then(function (puffer) {
+      // 18.13: altes Word (.doc) = Viking der Praxis — eigener Deuter,
+      // liefert das fertige Lese-Ergebnis.
+      if (name.endsWith(".doc") || TB.enmgLeserDoc.istDoc(new Uint8Array(puffer)))
+        return { fertig: TB.enmgViking.lese(puffer) };
       if (name.endsWith(".docx")) return TB.enmgLeserWord.lese(puffer);
       if (name.endsWith(".pdf")) return TB.enmgLeserPdf.lese(puffer);
       // Ohne Endung: PDF beginnt mit %PDF, Zip mit PK.
@@ -175,6 +179,7 @@ TB.enmgLeser = (function () {
       if (b[0] === 0x50 && b[1] === 0x4b) return TB.enmgLeserWord.lese(puffer);
       return Promise.reject(new Error("unbekanntes Dateiformat"));
     }).then(function (roh) {
+      if (roh.fertig) return roh.fertig;
       return deute(roh.zeilen, roh.texte);
     });
   }
@@ -186,6 +191,8 @@ TB.enmgLeser = (function () {
     var name = (datei && datei.name || "").toLowerCase();
     return datei.arrayBuffer().then(function (puffer) {
       var b = new Uint8Array(puffer);
+      if (TB.enmgLeserDoc.istDoc(b))
+        return { texte: [TB.enmgLeserDoc.klartext(TB.enmgLeserDoc.wordText(puffer))] };
       if (name.endsWith(".pdf") || (b[0] === 0x25 && b[1] === 0x50))
         return TB.enmgLeserPdf.lese(puffer);
       if (name.endsWith(".docx") || (b[0] === 0x50 && b[1] === 0x4b))

@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "18.12 · ;;anon lernt aus Deinen Funden · 13.10.2026";
+TB.FASSUNG = "18.13 · ENMG: Viking-Bericht lesen + Befund-Vorschlag · 14.10.2026";
 
 TB.speicher = (function () {
 

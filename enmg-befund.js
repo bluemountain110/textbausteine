@@ -1,0 +1,356 @@
+// Datei: enmg-befund.js
+// Projekt: Textbausteine — Teil: App (Browser), nur App
+// Zweck: Der Befund-VORSCHLAG des ENMG-Werks (18.13, Näds Wunsch 13.10.):
+//        Aus der gefärbten Tabelle entstehen (1) eine Zusammenfassung je
+//        Nerv und Seite ohne Zahlen („N. medianus links: Neuropathie
+//        über dem Carpaltunnel …", „N. suralis rechts: unauffällig") und
+//        (2) eine Beurteilung, die die gewählten Fragestellungen
+//        beantwortet und alles weitere Pathologische nennt.
+//        Grundlage ist NUR die Färbung nach Näds Grenzwerten; wo kein
+//        Normwert besteht, wird nichts behauptet. Das CTS wird nach
+//        Bland eingestuft (Näds Gewohnheit). Alles ist ein Vorschlag:
+//        Näd liest, ändert im Fenster und kopiert selbst.
+//        GRUNDSATZ: Rechnet nur im Fenster — nichts wird gespeichert.
+
+"use strict";
+window.TB = window.TB || {};
+
+TB.enmgBefund = (function () {
+
+  // ---- Die Fragestellungen (Näd 13.10.: „im Verlauf ergänzen wir") ------
+  var FRAGEN = [
+    { id: "pnp", text: "Polyneuropathie?", erkennen: /polyneuro|\bpnp\b/i },
+    { id: "cts", text: "Karpaltunnelsyndrom?", erkennen: /karpal|carpal|\bcts\b/i },
+    { id: "sus", text: "Sulcus-ulnaris-Syndrom?", erkennen: /sulcus|ulnaris|cubital|kubital/i },
+    { id: "peron", text: "Peroneusläsion am Fibulaköpfchen?", erkennen: /peron|fibul/i },
+    { id: "radik", text: "Radikulopathie?", erkennen: /radikul|radicul|wurzel/i },
+    { id: "plexus", text: "Plexusläsion?", erkennen: /plexus/i },
+    { id: "mnd", text: "Motoneuronerkrankung?", erkennen: /motoneuron|\bals\b|\bmnd\b/i },
+    { id: "myo", text: "Myopathie?", erkennen: /myopath|myositis/i },
+    { id: "nmt", text: "Störung der neuromuskulären Übertragung?", erkennen: /myasth|übertragung|repetitiv|lambert/i },
+    { id: "verlauf", text: "Verlaufskontrolle?", erkennen: /verlauf|kontrolle|vergleich/i }
+  ];
+  function fragenAusText(t) {
+    var s = String(t || ""), aus = [];
+    FRAGEN.forEach(function (f) { if (f.erkennen.test(s)) aus.push(f.id); });
+    // „Kompressionsneuropathie der Armnerven?" = CTS + Sulcus ulnaris
+    if (/kompression/i.test(s) && /arm/i.test(s)) {
+      if (aus.indexOf("cts") === -1) aus.push("cts");
+      if (aus.indexOf("sus") === -1) aus.push("sus");
+    }
+    return aus;
+  }
+
+  var BLAND = ["", "sehr leicht", "leicht", "moderat", "schwer", "sehr schwer",
+               "extrem schwer"];
+  // Was eine rote NLG je Normzeile bedeutet (Ort in Alltagsworten)
+  var ORT = { va: "am Vorderarm", oa: "am Oberarm",
+              sulcus: "über dem Sulcus (Ellbogen)", mus: "am Unterschenkel",
+              mknie: "im Segment Fibulaköpfchen–Kniekehle" };
+
+  function rot(b) { return !!(b && b.farbe === "rot"); }
+  function gefaerbt(b) { return !!(b && b.farbe); }
+
+  // ---- Gruppen: je Nerv und Seite alle Blöcke zusammen -------------------
+  function gruppen(erg) {
+    var liste = [], index = {};
+    (erg.bloecke || []).forEach(function (b) {
+      var nerv = TB.enmg.erkenneNerv(b.nervText);
+      var name = b.nervName || (nerv ? nerv.name : b.nervText);
+      var schl = (nerv ? nerv.id : name) + "|" + (b.seite || "");
+      if (!index[schl]) {
+        index[schl] = { id: nerv ? nerv.id : null, name: name, seite: b.seite || "",
+                        motor: [], sens: [] };
+        liste.push(index[schl]);
+      }
+      index[schl][b.art === "motor" ? "motor" : "sens"].push(b);
+    });
+    liste.forEach(analysiere);
+    return liste;
+  }
+
+  function analysiere(g) {
+    var a = { dmlRot: false, dml: null, msap: null, mnlgRot: [], mnlgOk: [],
+              fRot: false, sampRot: false, snlgRot: false, sensDa: false,
+              sensAmpDa: false, gefaerbt: false, unplausibel: [],
+              ring: { median: null, ulnar: null } };
+    g.motor.forEach(function (b) {
+      b.zeilen.forEach(function (z, i) {
+        var be = z.bew || {}, w = z.werte;
+        if (i === 0) { a.dml = w.lat; a.msap = w.amp; }
+        if (gefaerbt(be.lat) || gefaerbt(be.nlg) || gefaerbt(be.fLat)) a.gefaerbt = true;
+        if (rot(be.lat)) a.dmlRot = true;
+        if (be.nlg) {
+          var ort = zielVon(be.nlg);
+          (rot(be.nlg) ? a.mnlgRot : a.mnlgOk).push(ort);
+        }
+        if (rot(be.fLat)) a.fRot = true;
+        if (z.unplausibel) a.unplausibel.push(w.nlg);
+      });
+    });
+    g.sens.forEach(function (b) {
+      b.zeilen.forEach(function (z) {
+        var be = z.bew || {}, w = z.werte;
+        if (z.vergleich === "ringfinger") {
+          var art = /ulnar/i.test(b.nervText) ? "ulnar" : "median";
+          a.ring[art] = w.peak !== undefined && w.peak !== null ? w.peak : w.lat;
+          return;
+        }
+        if (z.unplausibel) { a.unplausibel.push(w.nlg); return; }
+        if (z.ohneNorm) return;
+        a.sensDa = true;
+        if (w.amp !== null && w.amp !== undefined && w.amp > 0) a.sensAmpDa = true;
+        if (gefaerbt(be.amp) || gefaerbt(be.nlg)) a.gefaerbt = true;
+        if (rot(be.amp)) a.sampRot = true;
+        if (rot(be.nlg)) a.snlgRot = true;
+      });
+    });
+    g.a = a;
+    g.muster = muster(g);
+    g.rot = a.dmlRot || a.mnlgRot.length > 0 || a.fRot || a.sampRot ||
+            a.snlgRot || (a.sensDa && !a.sensAmpDa);
+  }
+  function zielVon(bew) { return String(bew.zeileId || ""); }
+
+  // ---- Fokale Muster -------------------------------------------------------
+  function muster(g) {
+    var a = g.a;
+    if (g.id === "medianus") {
+      var vaRot = a.mnlgRot.indexOf("va") !== -1;
+      var sensAbs = a.sensDa && !a.sensAmpDa;
+      if ((a.dmlRot || a.snlgRot || sensAbs) && !vaRot) {
+        var grad;
+        if (sensAbs && a.msap !== null && a.msap < 0.2) grad = 6;
+        else if (a.dml !== null && a.dml > 6.5) grad = 5;
+        else if (sensAbs) grad = 4;
+        else if (a.dmlRot) grad = 3;
+        else grad = 2;
+        return { art: "cts", grad: grad };
+      }
+    }
+    if (g.id === "ulnaris" && a.mnlgRot.indexOf("sulcus") !== -1 &&
+        a.mnlgRot.indexOf("va") === -1) return { art: "sus" };
+    if (g.id === "peronaeus" && a.mnlgRot.indexOf("mknie") !== -1 &&
+        a.mnlgRot.indexOf("mus") === -1) return { art: "peron" };
+    return null;
+  }
+  function seiteText(s) { return s ? " " + s : ""; }
+  function musterSatz(g) {
+    var m = g.muster;
+    if (!m) return "";
+    if (m.art === "cts") return "Neuropathie über dem Carpaltunnel (Grad " + m.grad +
+      " nach Bland – " + BLAND[m.grad] + ")";
+    if (m.art === "sus") return "Neuropathie über dem Sulcus nervi ulnaris (Ellbogen)";
+    return "Leitungsverzögerung über dem Fibulaköpfchen";
+  }
+  function einzelheiten(g, ohneMuster) {
+    var a = g.a, t = [];
+    if (a.dmlRot && !(ohneMuster && g.muster)) t.push("verlängerte distale motorische Latenz");
+    a.mnlgRot.forEach(function (o) {
+      if (ohneMuster && g.muster && (o === "sulcus" || o === "mknie")) return;
+      t.push("verlangsamte motorische NLG" + (ORT[o] ? " " + ORT[o] : ""));
+    });
+    if (a.fRot) t.push("verlängerte F-Wellen-Latenz");
+    if (a.sensDa && !a.sensAmpDa) {
+      if (!(ohneMuster && g.muster)) t.push("kein sensibles Potential ableitbar");
+    } else {
+      if (a.sampRot && !(ohneMuster && g.muster && g.muster.art === "cts"))
+        t.push("reduzierte sensible Amplitude");
+      if (a.snlgRot && !(ohneMuster && g.muster)) t.push("verlangsamte sensible NLG");
+    }
+    return t;
+  }
+
+  // ---- (1) Zusammenfassung je Nerv und Seite ---------------------------------
+  function zusammenfassung(erg) {
+    var gs = gruppen(erg), zeilen = [];
+    // Ringfinger-Vergleich: Medianus- und Ulnaris-Zeile derselben Seite
+    var ring = {};
+    gs.forEach(function (g) {
+      var r = ring[g.seite] = ring[g.seite] || { median: null, ulnar: null };
+      if (g.a.ring.median !== null) r.median = g.a.ring.median;
+      if (g.a.ring.ulnar !== null) r.ulnar = g.a.ring.ulnar;
+    });
+    gs.forEach(function (g) {
+      var a = g.a, teile = [];
+      // Eine Gruppe nur aus Vergleichszeilen (z. B. Ulnaris-Ringfinger)
+      // bekommt keine eigene Zeile — sie steht beim Medianus.
+      if (!g.motor.length && !a.sensDa && !a.unplausibel.length) return;
+      var ms = musterSatz(g);
+      if (ms) teile.push(ms);
+      teile = teile.concat(einzelheiten(g, true));
+      var satz;
+      if (teile.length) satz = teile.join(", ");
+      else if (a.gefaerbt) satz = "unauffällig";
+      else satz = "keine Normwerte hinterlegt – bitte selbst beurteilen";
+      var r = ring[g.seite];
+      if (g.id === "medianus" && r && r.median !== null && r.ulnar !== null) {
+        var d = Math.round((r.median - r.ulnar) * 10) / 10;
+        satz += "; Ringfinger-Vergleich Medianus–Ulnaris: " + (d > 0 ? "+" : "") +
+          d.toFixed(1) + " ms (Peak-Latenz)";
+      }
+      if (a.unplausibel.length)
+        satz += "; Messwert" + (a.unplausibel.length > 1 ? "e" : "") +
+          " unplausibel (NLG " + a.unplausibel.join(" und ") + " m/s) – Distanz prüfen";
+      zeilen.push(g.name + seiteText(g.seite) + ": " + satz + ".");
+    });
+    (erg.freitext || []).forEach(function (t) { zeilen.push(t); });
+    return zeilen.join("\n");
+  }
+
+  // ---- (2) Beurteilung ------------------------------------------------------
+  function beidseits(liste, satzFn) {
+    // gleiche Aussage links und rechts → „beidseits"
+    var nachText = {}, reihe = [];
+    liste.forEach(function (x) {
+      var k = satzFn(x, "");
+      if (!nachText[k]) { nachText[k] = []; reihe.push(k); }
+      nachText[k].push(x);
+    });
+    return reihe.map(function (k) {
+      var xs = nachText[k];
+      if (xs.length === 2 && xs[0].seite && xs[1].seite && xs[0].seite !== xs[1].seite)
+        return satzFn(xs[0], " beidseits");
+      return xs.map(function (x) { return satzFn(x, seiteText(x.seite)); }).join(" ");
+    });
+  }
+
+  function beurteilung(erg, fragen) {
+    var gs = gruppen(erg), saetze = [], erklaert = {};
+    fragen = fragen || [];
+    function nerv(id) { return gs.filter(function (g) { return g.id === id; }); }
+
+    if (fragen.indexOf("pnp") !== -1) {
+      var nichtFokal = gs.filter(function (g) {
+        if (!g.rot) return false;
+        if (!g.muster) return true;
+        return einzelheiten(g, true).length > 0;
+      });
+      var beine = nichtFokal.filter(function (g) {
+        return g.id === "suralis" || g.id === "peronaeus" || g.id === "tibialis"; });
+      var arme = nichtFokal.length - beine.length;
+      var suralGemessen = nerv("suralis").length > 0;
+      if (nichtFokal.length >= 2 && beine.length >= 1) {
+        var nurSens = nichtFokal.every(function (g) {
+          var a = g.a;
+          return !a.dmlRot && !a.mnlgRot.length && !a.fRot; });
+        var amp = 0, leitung = 0;
+        nichtFokal.forEach(function (g) {
+          var a = g.a;
+          if (a.sampRot || (a.sensDa && !a.sensAmpDa)) amp++;
+          if (a.snlgRot || a.dmlRot || a.mnlgRot.length || a.fRot) leitung++;
+        });
+        var typ = (amp && leitung) ? "gemischt axonal-demyelinisierenden"
+          : (amp ? "am ehesten axonalen" : "überwiegend demyelinisierenden");
+        var eig = [nurSens ? "sensiblen" : "sensomotorischen"];
+        if (beine.length >= arme) eig.push("distal betonten");
+        eig.push(typ);
+        saetze.push("Befundkonstellation passend zu einer " + eig.join(", ") +
+          " Polyneuropathie.");
+        nichtFokal.forEach(function (g) { erklaert[g.id + g.seite] = true; });
+      } else if (nichtFokal.length === 1 && beine.length === 1) {
+        var g1 = beine[0];
+        saetze.push("Isoliert auffälliger " + g1.name + seiteText(g1.seite) +
+          " – für eine Polyneuropathie allein nicht ausreichend.");
+        erklaert[g1.id + g1.seite] = true;
+      } else if (nichtFokal.length === 0) {
+        saetze.push(suralGemessen ? "Keine Hinweise auf eine Polyneuropathie."
+          : "Keine neurographischen Hinweise auf eine Polyneuropathie (N. suralis nicht gemessen).");
+      } else {
+        saetze.push("Auffällige Befunde ohne Beteiligung der unteren Extremität – kein typisches Polyneuropathie-Muster.");
+      }
+    }
+
+    // Welches Segment muss gemessen sein, damit „kein Hinweis" stimmt?
+    var PFLICHT = { sus: "sulcus", peron: "mknie" };
+    function gemessen(g, art) {
+      if (!g.motor.length && !g.a.sensDa) return false;   // nur Vergleichszeilen
+      var seg = PFLICHT[art];
+      if (!seg) return true;
+      return g.a.mnlgRot.indexOf(seg) !== -1 || g.a.mnlgOk.indexOf(seg) !== -1;
+    }
+    function fokal(id, art, ja, nein, fehlt, segmentFehlt) {
+      if (fragen.indexOf(art) === -1) return;
+      var liste = nerv(id).filter(function (g) { return g.motor.length || g.a.sensDa; });
+      if (!liste.length) { saetze.push(fehlt); return; }
+      beidseits(liste, function (g, seite) {
+        if (g.muster && g.muster.art === art) {
+          erklaert[g.id + g.seite] = true;
+          return ja(g, seite);
+        }
+        if (!gemessen(g, art)) return segmentFehlt.replace("%s", seite) ;
+        return nein + seite + ".";
+      }).forEach(function (s) { saetze.push(s); });
+    }
+    fokal("medianus", "cts", function (g, s) {
+      return "Karpaltunnelsyndrom" + s + " (Grad " + g.muster.grad + " nach Bland – " +
+        BLAND[g.muster.grad] + ")."; },
+      "Kein Hinweis auf ein Karpaltunnelsyndrom",
+      "Karpaltunnelsyndrom: N. medianus nicht gemessen.", "");
+    fokal("ulnaris", "sus", function (g, s) {
+      return "Hinweise auf eine Ulnarisneuropathie am Ellbogen" + s + "."; },
+      "Kein Hinweis auf ein Sulcus-ulnaris-Syndrom",
+      "Sulcus-ulnaris-Syndrom: N. ulnaris nicht gemessen.",
+      "Sulcus-ulnaris-Syndrom%s: Ellbogensegment nicht gemessen – nicht beurteilbar.");
+    fokal("peronaeus", "peron", function (g, s) {
+      return "Hinweise auf eine Peroneusläsion am Fibulaköpfchen" + s + "."; },
+      "Kein Hinweis auf eine Peroneusläsion am Fibulaköpfchen",
+      "Peroneusläsion: N. peroneus nicht gemessen.",
+      "Peroneusläsion am Fibulaköpfchen%s: Segment über dem Fibulaköpfchen nicht gemessen – nicht beurteilbar.");
+
+    ["radik", "plexus", "mnd", "myo", "nmt"].forEach(function (id) {
+      if (fragen.indexOf(id) === -1) return;
+      var f = FRAGEN.filter(function (x) { return x.id === id; })[0];
+      saetze.push("Zur Frage „" + f.text.replace("?", "") +
+        "“: neurographisch allein nicht zu beantworten – bitte Myografie ergänzen.");
+    });
+    if (fragen.indexOf("verlauf") !== -1)
+      saetze.push("Vergleich mit der Voruntersuchung: bitte ergänzen.");
+
+    // Zusätzlich Pathologisches, das keine Antwort erklärt hat
+    gs.forEach(function (g) {
+      if (!g.rot || erklaert[g.id + g.seite]) return;
+      if (g.muster && g.muster.art === "cts")
+        saetze.push("Zusätzlich: Karpaltunnelsyndrom" + seiteText(g.seite) +
+          " (Grad " + g.muster.grad + " nach Bland – " + BLAND[g.muster.grad] + ").");
+      else if (g.muster)
+        saetze.push("Zusätzlich: " + musterSatz(g) + seiteText(g.seite) + ".");
+      else
+        saetze.push("Zusätzlich auffällig: " + g.name + seiteText(g.seite) + " (" +
+          einzelheiten(g, false).join(", ") + ").");
+    });
+    if (!saetze.length) {
+      var gefaerbtIrgendwo = gs.some(function (g) { return g.a.gefaerbt; });
+      saetze.push(gefaerbtIrgendwo ? "Unauffällige Neurographie der untersuchten Nerven."
+        : "Keine Normwerte für die gemessenen Nerven – bitte selbst beurteilen.");
+    }
+    return saetze.length > 1
+      ? saetze.map(function (s) { return "• " + s; }).join("\n") : saetze[0];
+  }
+
+  // ---- Text → HTML (für das Kopieren) ----------------------------------------
+  function esc(t) {
+    return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function alsHtml(text) {
+    var P = '<p style="font-family:Arial;font-size:10pt;margin:0">';
+    var zeilen = String(text || "").split("\n"), html = [], liste = [];
+    function listeZu() {
+      if (!liste.length) return;
+      html.push('<ul style="font-family:Arial;font-size:10pt;margin:0">' +
+        liste.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul>");
+      liste = [];
+    }
+    zeilen.forEach(function (z) {
+      if (/^\s*[•\-]\s+/.test(z)) { liste.push(z.replace(/^\s*[•\-]\s+/, "")); return; }
+      listeZu();
+      html.push(z.trim() ? P + esc(z) + "</p>" : P + "<br></p>");
+    });
+    listeZu();
+    return html.join("");
+  }
+
+  return { FRAGEN: FRAGEN, fragenAusText: fragenAusText, gruppen: gruppen,
+           zusammenfassung: zusammenfassung, beurteilung: beurteilung,
+           alsHtml: alsHtml, BLAND: BLAND };
+})();
