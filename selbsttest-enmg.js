@@ -153,6 +153,21 @@ TB.selbsttestEnmgBefund = function () {
     fall("Das Wort „als“ ist keine ALS-Frage",
       B.fragenAusText("Schwäche, als Kind schon").indexOf("mnd") === -1 &&
       B.fragenAusText("ALS?").indexOf("mnd") !== -1);
+    // 18.15: Nadel-EMG-Tabelle des Viking (Feld emg_npp), erfundene Muskeln
+    var emgRoh = "Nadel EMG Untersuchung:\r\r\x07Einstichakt\x07Spontanaktivität\x07Potentiale motorischer Einheiten\x07\x07" +
+      "\x07Muscle\x07Einstich\x07Fib.\x07PSW\x07Fasz.\x07Dauer\x07Amplitude\x07Polyphasie\x07Muster\x07Anspannung\x07\x07\x07\x07\x07" +
+      "M. tibialis anterior.L\x07normal\x07keine\x07keine\x07keine\x07\x07\x07vermehrt\x07dicht\x07maximal\x07\x07\x07\x07\x07" +
+      "M. vastus lateralis.R\x07normal\x07++\x07+\x07+\x07verlängert\x07erhöht\x07keine\x07gelichtet\x07maximal\x07\x07\x07\x07\x07\r\rAbkürzungen:\t\r";
+    var et = V.emgTabelle(emgRoh);
+    fall("Nadel-EMG-Tabelle: 2 Muskeln, Seiten, Näds Wortlaut",
+      et.length === 2 && et[0].seite === "links" &&
+      et[0].befund === "keine pathologische Spontanaktivität, vermehrt polyphasische Potentiale, unauffälliges Interferenzmuster",
+      et.map(function (m) { return m.muskel + ": " + m.befund; }).join(" | "));
+    fall("Nadel-EMG-Tabelle: Fib./PSW ⇒ Spontanaktivität, Dauer/Amplitude/gelichtet ⇒ neurogen, Polyphasie allein unspezifisch",
+      et[1].spont && et[1].fasz && et[1].neurogen && !et[0].spont && !et[0].neurogen && et[0].unspez.length === 1);
+    var bt = B.beurteilung({ bloecke: [], myografie: et }, ["mnd"]);
+    fall("Frage Motoneuron mit Denervierung: Muskeln genannt, „Verteilung bitte beurteilen“",
+      /pathologische Spontanaktivität in M\. vastus lateralis rechts/.test(bt) && /Verteilung bitte beurteilen/.test(bt), bt);
     fall("Fragestellung „Kompressionsneuropathie der Armnerven?“ → CTS + Sulcus ulnaris",
       B.fragenAusText("Polyneuropathie? Kompressionsneuropathie der Armnerven?").join(",") === "pnp,cts,sus");
     var sp = TB.enmg.spalten(mot[0]).map(function (s) { return s.feld; }).join(",");

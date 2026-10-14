@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "18.14 · ENMG: Viking-Zeilen, Myografie, kein falsches CTS · 14.10.2026";
+TB.FASSUNG = "18.15 · ENMG: Nadel-EMG-Tabelle des Viking + Myografie-Zeilen · 14.10.2026";
 
 TB.speicher = (function () {
 

@@ -335,6 +335,9 @@ TB.enmgBefund = (function () {
             "untersuchten Muskeln).");
           if (fasz.length) saetze.push("Vereinzelte Faszikulationen (" + namen(fasz) +
             ") ohne Denervierungszeichen – vereinbar mit benignen Faszikulationen.");
+          var unsp = myo.filter(function (m) { return m.unspez && m.unspez.length; });
+          if (unsp.length) saetze.push("Unspezifisch: " + unsp.map(function (m) {
+            return m.unspez.join(", ") + " (" + m.muskel + ")"; }).join("; ") + ".");
         } else {
           saetze.push(frage + (spont.length ? "pathologische Spontanaktivität in " + namen(spont) : "") +
             (spont.length && neuro.length ? "; " : "") +

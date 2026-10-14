@@ -110,10 +110,75 @@ TB.enmgViking = (function () {
     var keineSpont = /kein(e)?\s+(eindeutige\s+)?(pathologische\s+)?spontanaktivit/.test(k);
     var spont = !keineSpont && /spontanaktivit|fibrillation|positive scharfe|\bpsw\b/.test(k);
     var fasz = /faszikulation/.test(k) && !/kein(e)?\s+faszikulation/.test(k);
-    var neurogen = /neurogen|erhöhte amplitud|riesenpotential|polyphas/.test(k) ||
+    var neurogen = /neurogen|erhöhte amplitud|riesenpotential/.test(k) ||
       (/gelichtet/.test(k) && !/schmerz|mitarbeit|minderinnervation/.test(k));
     return { muskel: muskel, seite: seite, befund: b.replace(/\.$/, ""),
-             spont: spont, fasz: fasz, neurogen: neurogen };
+             spont: spont, fasz: fasz, neurogen: neurogen,
+             unspez: /polyphas/.test(k) ? ["Polyphasie"] : [], quelle: "text" };
+  }
+
+  // ---- Nadel-EMG-Tabelle des Viking (18.15) -----------------------------------
+  // Feld „emg_npp": Kopfzeilen mit verbundenen Zellen, dann je Muskel eine
+  // Zeile: Muskel · Einstich · Fib. · PSW · Fasz. · Dauer · Amplitude ·
+  // Polyphasie · Muster · Anspannung. Die Spalten werden über die Kopfzeile
+  // „Muscle …" gesucht, die Muskelzeilen an „M. …" erkannt. Daraus wird
+  // eine Zeile in Näds Wortlaut („keine pathologische Spontanaktivität,
+  // unauffälliges Interferenzmuster") plus die Merkmale für die Beurteilung.
+  function leer(w) { return !w || /^(keine?|normal|0|-|–|n\.?\s*a\.?)$/i.test(w); }
+  function emgTabelle(text) {
+    var t = String(text || "").split("\x07").map(sauber), aus = [];
+    var k = -1;
+    for (var i = 0; i < t.length; i++) if (/^(muscle|muskel)$/i.test(t[i])) { k = i; break; }
+    if (k === -1) return aus;
+    var kopf = [];
+    for (var j = k; j < t.length && t[j] !== ""; j++) kopf.push(t[j].toLowerCase());
+    var n = kopf.length;
+    function sp(re) { for (var x = 0; x < n; x++) if (re.test(kopf[x])) return x; return -1; }
+    var S = { einstich: sp(/einstich/), fib: sp(/^fib/), psw: sp(/psw|scharf/), fasz: sp(/fasz/),
+              dauer: sp(/dauer/), amp: sp(/amplitude/), poly: sp(/polyphas/),
+              muster: sp(/muster/), anspannung: sp(/anspannung/) };
+    for (i = k + n; i < t.length; i++) {
+      if (!/^M{1,2}\.\s/.test(t[i])) continue;
+      var z = t.slice(i, i + n);
+      i += n - 1;
+      function w(x) { return x >= 0 ? (z[x] || "") : ""; }
+      var name = z[0].replace(/\s*\.\s*([RL])\s*$/i, function (a, s1) {
+        return s1.toUpperCase() === "R" ? " rechts" : " links"; });
+      var seite = /rechts$/.test(name) ? "rechts" : (/links$/.test(name) ? "links" : "");
+      var fib = w(S.fib), psw = w(S.psw), fz = w(S.fasz);
+      var spont = !leer(fib) || !leer(psw), fasz = !leer(fz);
+      var teile = [];
+      if (!leer(w(S.einstich))) teile.push("Einstichaktivität " + w(S.einstich));
+      teile.push(spont ? "pathologische Spontanaktivität (" +
+        [!leer(fib) ? "Fib. " + fib : "", !leer(psw) ? "PSW " + psw : ""].filter(Boolean).join(", ") + ")"
+        : "keine pathologische Spontanaktivität");
+      if (fasz) teile.push("Faszikulationen (" + fz + ")");
+      var neurogen = false, unspez = [];
+      var dauer = w(S.dauer).toLowerCase(), amp = w(S.amp).toLowerCase(), poly = w(S.poly);
+      if (dauer && !leer(dauer)) {
+        teile.push("Potentialdauer " + w(S.dauer));
+        if (/verläng|erhöh|lang/.test(dauer)) neurogen = true;
+      }
+      if (amp && !leer(amp)) {
+        teile.push("Amplituden " + w(S.amp));
+        if (/erhöh|gross|groß|hoch/.test(amp)) neurogen = true;
+      }
+      if (!leer(poly)) {
+        var pt = /vermehrt/i.test(poly) ? "vermehrt polyphasische Potentiale" : "Polyphasie " + poly;
+        teile.push(pt); unspez.push(pt);
+      }
+      var muster = w(S.muster).toLowerCase(), ansp = w(S.anspannung).toLowerCase();
+      if (/dicht|voll|interferenz/.test(muster) || muster === "") {
+        if (muster) teile.push("unauffälliges Interferenzmuster");
+      } else {
+        teile.push("Interferenzmuster " + w(S.muster) +
+          (ansp && !/maxim/.test(ansp) ? " (Anspannung " + w(S.anspannung) + ")" : ""));
+        if (/gelichtet|einzel|reduziert/.test(muster) && !/submax|schwach|gering/.test(ansp)) neurogen = true;
+      }
+      aus.push({ muskel: name, seite: seite, befund: teile.join(", "), spont: spont,
+                 fasz: fasz, neurogen: neurogen, unspez: unspez, quelle: "tabelle" });
+    }
+    return aus;
   }
 
   // ---- Der Deuter ---------------------------------------------------------
@@ -231,7 +296,7 @@ TB.enmgViking = (function () {
     bloecke = bloecke.filter(function (b) { return b.zeilen.length; });
 
     // Freier Text ausserhalb der Felder (z. B. das EMG der Kollegin)
-    var myo = [], freitext = [];
+    var myo = emgTabelle(f.emg_npp), freitext = [];
     ab.frei.concat(nachTexte).forEach(function (t) {
       String(t).replace(/[\x07\x0C]/g, " ").split(/[\r\x0B]+/).forEach(function (zeile) {
         var z = sauber(zeile);
@@ -255,5 +320,6 @@ TB.enmgViking = (function () {
   }
 
   return { lese: lese, deute: deute, tabelle: tabelle, nervTitel: nervTitel,
-           abschnitte: abschnitte, myografieZeile: myografieZeile };
+           abschnitte: abschnitte, myografieZeile: myografieZeile,
+           emgTabelle: emgTabelle };
 })();
