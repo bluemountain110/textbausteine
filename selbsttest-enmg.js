@@ -120,6 +120,39 @@ TB.selbsttestEnmgBefund = function () {
     fall("Bland 4: kein SNAP, DML 5.5 ms → schwer", /Grad 4 nach Bland – schwer/.test(blandFall("5.5", null)), blandFall("5.5", null));
     fall("Bland 5: DML 7.0 ms → sehr schwer", /Grad 5 nach Bland – sehr schwer/.test(blandFall("7.0", "6")), blandFall("7.0", "6"));
 
+    // 18.14: Näds Testbefund vom 14.10. (nachgebaut mit erfundenen Werten):
+    // Viking schreibt die Handgelenk-Reizung als „Palmar“ und die NLG auf
+    // eine Fortsetzungszeile; darunter stehen Näds Myographien.
+    var rohC = viking(
+      [["N. medianus.R"], ["Carpus", "3.3 ms", "5.5 mV", "M. abductor pollicis brevis-Carpus", "", "70 mm", " m/s"],
+       ["Cubitus", "7.3 ms", "5.9 mV", "Carpus-Cubitus", "1.1", "250 mm", "63 m/s"]],
+      [["N. medianus.R"], ["Palmar", "2.5 ms", "3.2 ms", "9 µV", "Palmar-Index; Digitus secundus [II]", "2.5 ms", " mm", " m/s"],
+       ["", " ms", " ms", " µV", "Index; Digitus secundus [II]-Palmar", "2.5 ms", "150 mm", "60 m/s"]],
+      [], "\rALS?").replace("\r\x15\r\x13FILLIN VikingSubReport:conclusn",
+        "\r\rMyographien\x0bM. tibialis anterior links: keine pathologische Spontanaktivität, unauffälliges Interferenzmuster\r" +
+        "M. gastrocnemius medialislinks: keine pathologische Spontanaktivität, unauffälliges Interferenzmuster, vereinzelte Faszikulationen\r" +
+        "\x15\r\x13FILLIN VikingSubReport:conclusn");
+    var c = V.deute(rohC); TB.enmg.bewerte(c);
+    var cm = c.bloecke.filter(function (b) { return b.art === "sens"; })[0];
+    fall("Viking-Fortsetzungszeile: NLG und Distanz gehören zur Zeile darüber (eine Messung)",
+      cm && cm.zeilen.length === 1 && cm.zeilen[0].werte.nlg === 60 && cm.zeilen[0].werte.amp === 9,
+      cm ? JSON.stringify(cm.zeilen.map(function (z) { return z.werte; })) : "kein Block");
+    fall("„Palmar“ mit 150 mm gilt als Handgelenk-Messung (mit Normwert), nicht als Vergleich",
+      cm && !cm.zeilen[0].ohneNorm);
+    var zc = B.zusammenfassung(c);
+    fall("Kein falsches CTS bei unauffälligem Medianus (Näds Fund 14.10.)",
+      /N\. medianus rechts: unauffällig\./.test(zc) && !/Carpaltunnel/.test(zc), zc.split("\n")[0]);
+    fall("Myographien unter der Tabelle erkannt (2 Muskeln, Seite auch bei „medialislinks“)",
+      c.myografie.length === 2 && c.myografie[1].seite === "links" &&
+      /medialis links$/.test(c.myografie[1].muskel) && c.myografie[1].fasz && !c.myografie[1].spont,
+      c.myografie.map(function (m) { return m.muskel; }).join(" | "));
+    var bc = B.beurteilung(c, B.fragenAusText(c.fragestellungText));
+    fall("Frage „ALS?“ → keine Hinweise auf Motoneuronerkrankung + benigne Faszikulationen",
+      /Keine elektrophysiologischen Hinweise auf eine Motoneuronerkrankung/.test(bc) &&
+      /vereinbar mit benignen Faszikulationen/.test(bc), bc.split("\n")[0]);
+    fall("Das Wort „als“ ist keine ALS-Frage",
+      B.fragenAusText("Schwäche, als Kind schon").indexOf("mnd") === -1 &&
+      B.fragenAusText("ALS?").indexOf("mnd") !== -1);
     fall("Fragestellung „Kompressionsneuropathie der Armnerven?“ → CTS + Sulcus ulnaris",
       B.fragenAusText("Polyneuropathie? Kompressionsneuropathie der Armnerven?").join(",") === "pnp,cts,sus");
     var sp = TB.enmg.spalten(mot[0]).map(function (s) { return s.feld; }).join(",");

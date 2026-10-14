@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "18.13 · ENMG: Viking-Bericht lesen + Befund-Vorschlag · 14.10.2026";
+TB.FASSUNG = "18.14 · ENMG: Viking-Zeilen, Myografie, kein falsches CTS · 14.10.2026";
 
 TB.speicher = (function () {
 

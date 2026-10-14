@@ -18,7 +18,7 @@
 window.TB = window.TB || {};
 
 TB.enmgViking = (function () {
-  var NLG_MAX = 90, NLG_MIN = 5;
+  var NLG_MAX = 90, NLG_MIN = 5, PALMAR_MAX_MM = 120;
 
   function zahl(t) {
     var m = /-?\d+(?:[.,]\d+)?/.exec(String(t || ""));
@@ -57,14 +57,17 @@ TB.enmgViking = (function () {
     while (n < t.length && sauber(t[n]) !== "") n++;
     if (n < 2 || n >= t.length) return null;
     var kopf = t.slice(0, n).map(sauber);
-    var zeilen = [], fehler = 0;
-    for (var i = n + 1; i + n < t.length; i += n + 1) {
+    var zeilen = [], fehler = 0, i;
+    for (i = n + 1; i + n < t.length; i += n + 1) {
       var zellen = t.slice(i, i + n).map(sauber);
       if (sauber(t[i + n]) !== "") fehler++;
       if (zellen.every(function (z) { return z === ""; })) continue;
       zeilen.push(zellen);
     }
-    return { kopf: kopf, zeilen: zeilen, fehler: fehler };
+    // 18.14: Text NACH der Tabelle (z. B. Näds Myographien, die er im
+    // Viking-Bericht unter die sensible Tabelle schreibt)
+    var nachher = t.slice(i).join(" ");
+    return { kopf: kopf, zeilen: zeilen, fehler: fehler, nachher: nachher };
   }
   function spalten(kopf) {
     var s = {};
@@ -93,10 +96,30 @@ TB.enmgViking = (function () {
              seite: m[2].toUpperCase() === "R" ? "rechts" : "links" };
   }
 
+  // ---- Myografie aus Freitext (18.14) --------------------------------------
+  // Näd schreibt die Nadel-EMG-Befunde vorerst von Hand in den Viking-
+  // Bericht: „M. tibialis anterior links: keine pathologische
+  // Spontanaktivität, unauffälliges Interferenzmuster". Erkannt werden
+  // Muskel, Seite und drei Merkmale — der Wortlaut bleibt Näds.
+  function myografieZeile(z) {
+    var m = /^(?:EMG\s+)?(M{1,2}\.\s*[^:]{2,80}?):\s*(.+)$/i.exec(z);
+    if (!m) return null;
+    var muskel = m[1].replace(/(\S)(links|rechts)\s*$/i, "$1 $2").replace(/\s+/g, " ").trim();
+    var seite = /links\s*$/i.test(muskel) ? "links" : (/rechts\s*$/i.test(muskel) ? "rechts" : "");
+    var b = m[2].trim(), k = b.toLowerCase();
+    var keineSpont = /kein(e)?\s+(eindeutige\s+)?(pathologische\s+)?spontanaktivit/.test(k);
+    var spont = !keineSpont && /spontanaktivit|fibrillation|positive scharfe|\bpsw\b/.test(k);
+    var fasz = /faszikulation/.test(k) && !/kein(e)?\s+faszikulation/.test(k);
+    var neurogen = /neurogen|erhöhte amplitud|riesenpotential|polyphas/.test(k) ||
+      (/gelichtet/.test(k) && !/schmerz|mitarbeit|minderinnervation/.test(k));
+    return { muskel: muskel, seite: seite, befund: b.replace(/\.$/, ""),
+             spont: spont, fasz: fasz, neurogen: neurogen };
+  }
+
   // ---- Der Deuter ---------------------------------------------------------
   function deute(roh) {
     var ab = abschnitte(roh), f = ab.felder;
-    var reste = [], bloecke = [];
+    var reste = [], bloecke = [], nachTexte = [];
 
     // Patient (Name, Geburtsdatum TT/MM/JJJJ, ID) und Untersuchungsdatum
     var patText = sauber(String(f.pat_b || "").replace(/\x07/g, " "));
@@ -146,23 +169,46 @@ TB.enmgViking = (function () {
         var hatWert = ["lat", "amp", "nlg", "peak", "abstand"].some(function (k) {
           return w[k] !== null && w[k] !== undefined; });
         if (!hatWert) return;   // leere Wiederholungszeile des Geräts
-        var zeile = { segment: stim && seg && seg.indexOf("-") > 0
-                        ? stim + " (" + seg + ")" : (stim || seg),
-                      stimulation: stim, werte: w, geraetNorm: {} };
-        var segKlein = (seg + " " + stim).toLowerCase();
-        // Palmar = Reizort Hohlhand (Vergleichsmessung); entscheidend ist
-        // die Stimulations-Spalte, nicht die Segment-Beschriftung.
-        if (art === "sens" && /palmar/i.test(stim)) {
-          zeile.ohneNorm = true; zeile.vergleich = "palmar";
+        // 18.14: Der Viking schreibt eine Reizung manchmal auf ZWEI
+        // Zeilen — oben Reizort, Latenz und Amplitude, darunter (ohne
+        // Reizort) Segment, Distanz und NLG. Diese Fortsetzung gehört zur
+        // Zeile darüber (Näds Testbefund 14.10.: sonst „kein SNAP“ → CTS).
+        var vor = block.zeilen[block.zeilen.length - 1];
+        if (!stim && vor && w.lat === null && w.amp === null &&
+            (w.peak === null || w.peak === undefined) &&
+            (vor.werte.nlg === null || vor.werte.nlg === undefined)) {
+          if (w.nlg !== null) vor.werte.nlg = w.nlg;
+          if (w.abstand !== null) vor.werte.abstand = w.abstand;
+          if (seg) vor.segmentGeraet = seg;
+          einordnen(vor, art);
+          return;
         }
-        if (art === "sens" && /dig\s*iv/.test(segKlein)) {
-          zeile.ohneNorm = true; zeile.vergleich = "ringfinger";
-        }
-        if (w.nlg !== null && (w.nlg > NLG_MAX || w.nlg < NLG_MIN)) {
-          zeile.ohneNorm = true; zeile.unplausibel = true;
-        }
+        var zeile = { stimulation: stim, segmentGeraet: seg, werte: w, geraetNorm: {} };
+        einordnen(zeile, art);
         block.zeilen.push(zeile);
       });
+      if (tab.nachher) nachTexte.push(tab.nachher);
+    }
+    // Beschriftung und Rolle einer Zeile (auch nach dem Zusammenführen)
+    function einordnen(zeile, art) {
+      var stim = zeile.stimulation || "", seg = zeile.segmentGeraet || "", w = zeile.werte;
+      zeile.segment = stim && seg && seg.indexOf("-") > 0 ? stim + " (" + seg + ")" : (stim || seg);
+      zeile.ohneNorm = false; zeile.vergleich = ""; zeile.unplausibel = false;
+      var segKlein = (seg + " " + stim).toLowerCase();
+      // Palmar = Reizort Hohlhand (Vergleichsmessung, kurze Strecke). Die
+      // Viking-Beschriftung ist nicht verlässlich (Näds Vorlage nennt
+      // auch die Handgelenk-Reizung „Palmar“): Ab 120 mm Distanz gilt die
+      // Zeile als Standardmessung Handgelenk–Finger.
+      if (art === "sens" && /palmar/i.test(stim) &&
+          (w.abstand === null || w.abstand === undefined || w.abstand < PALMAR_MAX_MM)) {
+        zeile.ohneNorm = true; zeile.vergleich = "palmar";
+      }
+      if (art === "sens" && /dig\s*iv/.test(segKlein)) {
+        zeile.ohneNorm = true; zeile.vergleich = "ringfinger";
+      }
+      if (w.nlg !== null && w.nlg !== undefined && (w.nlg > NLG_MAX || w.nlg < NLG_MIN)) {
+        zeile.ohneNorm = true; zeile.unplausibel = true;
+      }
     }
     lesen("motor", f.mnc_b);
     lesen("sens", f.snc_b);
@@ -185,14 +231,22 @@ TB.enmgViking = (function () {
     bloecke = bloecke.filter(function (b) { return b.zeilen.length; });
 
     // Freier Text ausserhalb der Felder (z. B. das EMG der Kollegin)
-    var freitext = ab.frei.map(function (t) {
-      return sauber(t.replace(/[\x07\x0C]/g, " ")); }).filter(Boolean);
+    var myo = [], freitext = [];
+    ab.frei.concat(nachTexte).forEach(function (t) {
+      String(t).replace(/[\x07\x0C]/g, " ").split(/[\r\x0B]+/).forEach(function (zeile) {
+        var z = sauber(zeile);
+        if (!z) return;
+        var m = myografieZeile(z);
+        if (m) myo.push(m);
+        else if (!/^(myograph|myografie|elektromyogra|emg:?$)/i.test(z)) freitext.push(z);
+      });
+    });
     // Bereits ausgefüllte Beurteilung (Vorlage der Kollegin) — nur Hinweis
     var vorhanden = sauber(String(f.conclusn || "").replace(/\x07/g, " "))
       .replace(/^Beurteilung:\s*/i, "");
 
     return { patient: patient, bloecke: bloecke, reste: reste,
-             fragestellungText: frage, freitext: freitext,
+             fragestellungText: frage, freitext: freitext, myografie: myo,
              vorhandeneBeurteilung: vorhanden, format: "viking" };
   }
 
@@ -201,5 +255,5 @@ TB.enmgViking = (function () {
   }
 
   return { lese: lese, deute: deute, tabelle: tabelle, nervTitel: nervTitel,
-           abschnitte: abschnitte };
+           abschnitte: abschnitte, myografieZeile: myografieZeile };
 })();

@@ -25,14 +25,18 @@ TB.enmgBefund = (function () {
     { id: "peron", text: "Peroneusläsion am Fibulaköpfchen?", erkennen: /peron|fibul/i },
     { id: "radik", text: "Radikulopathie?", erkennen: /radikul|radicul|wurzel/i },
     { id: "plexus", text: "Plexusläsion?", erkennen: /plexus/i },
-    { id: "mnd", text: "Motoneuronerkrankung?", erkennen: /motoneuron|\bals\b|\bmnd\b/i },
+    { id: "mnd", text: "Motoneuronerkrankung?", erkennen: /[Mm]otoneuron|\bALS\b|\bMND\b|[Aa]myotroph/ },
     { id: "myo", text: "Myopathie?", erkennen: /myopath|myositis/i },
     { id: "nmt", text: "Störung der neuromuskulären Übertragung?", erkennen: /myasth|übertragung|repetitiv|lambert/i },
     { id: "verlauf", text: "Verlaufskontrolle?", erkennen: /verlauf|kontrolle|vergleich/i }
   ];
   function fragenAusText(t) {
     var s = String(t || ""), aus = [];
-    FRAGEN.forEach(function (f) { if (f.erkennen.test(s)) aus.push(f.id); });
+    FRAGEN.forEach(function (f) {
+      // „ALS“ nur in Grossbuchstaben (das Wort „als“ ist keine Frage)
+      var re = f.id === "mnd" ? f.erkennen : new RegExp(f.erkennen.source, "i");
+      if (re.test(s)) aus.push(f.id);
+    });
     // „Kompressionsneuropathie der Armnerven?" = CTS + Sulcus ulnaris
     if (/kompression/i.test(s) && /arm/i.test(s)) {
       if (aus.indexOf("cts") === -1) aus.push("cts");
@@ -99,7 +103,11 @@ TB.enmgBefund = (function () {
         if (z.unplausibel) { a.unplausibel.push(w.nlg); return; }
         if (z.ohneNorm) return;
         a.sensDa = true;
-        if (w.amp !== null && w.amp !== undefined && w.amp > 0) a.sensAmpDa = true;
+        // 18.14: Ein Potential ist da, sobald Amplitude ODER NLG ODER
+        // Latenz gemessen wurde — „kein SNAP“ nur, wenn alles fehlt.
+        if ((w.amp !== null && w.amp !== undefined && w.amp > 0) ||
+            (w.nlg !== null && w.nlg !== undefined) ||
+            (w.lat !== null && w.lat !== undefined)) a.sensAmpDa = true;
         if (gefaerbt(be.amp) || gefaerbt(be.nlg)) a.gefaerbt = true;
         if (rot(be.amp)) a.sampRot = true;
         if (rot(be.nlg)) a.snlgRot = true;
@@ -194,6 +202,12 @@ TB.enmgBefund = (function () {
           " unplausibel (NLG " + a.unplausibel.join(" und ") + " m/s) – Distanz prüfen";
       zeilen.push(g.name + seiteText(g.seite) + ": " + satz + ".");
     });
+    // 18.14: Myografie (aus dem Freitext des Viking-Berichts) in Näds Wortlaut
+    var myo = erg.myografie || [];
+    if (myo.length) {
+      zeilen.push("Myografie:");
+      myo.forEach(function (m) { zeilen.push(m.muskel + ": " + m.befund + "."); });
+    }
     (erg.freitext || []).forEach(function (t) { zeilen.push(t); });
     return zeilen.join("\n");
   }
@@ -298,12 +312,51 @@ TB.enmgBefund = (function () {
       "Peroneusläsion: N. peroneus nicht gemessen.",
       "Peroneusläsion am Fibulaköpfchen%s: Segment über dem Fibulaköpfchen nicht gemessen – nicht beurteilbar.");
 
+    // 18.14: Fragen, die die Myografie beantwortet
+    var myo = erg.myografie || [], myoErklaert = false;
+    function namen(liste) { return liste.map(function (m) { return m.muskel; }).join(", "); }
+    var spont = myo.filter(function (m) { return m.spont; });
+    var neuro = myo.filter(function (m) { return m.neurogen; });
+    var fasz = myo.filter(function (m) { return m.fasz; });
     ["radik", "plexus", "mnd", "myo", "nmt"].forEach(function (id) {
       if (fragen.indexOf(id) === -1) return;
       var f = FRAGEN.filter(function (x) { return x.id === id; })[0];
-      saetze.push("Zur Frage „" + f.text.replace("?", "") +
-        "“: neurographisch allein nicht zu beantworten – bitte Myografie ergänzen.");
+      var frage = "Zur Frage „" + f.text.replace("?", "") + "“: ";
+      if (!myo.length || id === "nmt") {
+        saetze.push(frage + "neurographisch allein nicht zu beantworten – bitte " +
+          (id === "nmt" ? "repetitive Stimulation" : "Myografie") + " ergänzen.");
+        return;
+      }
+      myoErklaert = true;
+      if (id === "mnd") {
+        if (!spont.length && !neuro.length) {
+          saetze.push("Keine elektrophysiologischen Hinweise auf eine Motoneuronerkrankung " +
+            "(keine pathologische Spontanaktivität, keine neurogenen Veränderungen in den " +
+            "untersuchten Muskeln).");
+          if (fasz.length) saetze.push("Vereinzelte Faszikulationen (" + namen(fasz) +
+            ") ohne Denervierungszeichen – vereinbar mit benignen Faszikulationen.");
+        } else {
+          saetze.push(frage + (spont.length ? "pathologische Spontanaktivität in " + namen(spont) : "") +
+            (spont.length && neuro.length ? "; " : "") +
+            (neuro.length ? "neurogene Veränderungen in " + namen(neuro) : "") +
+            " – Verteilung bitte beurteilen.");
+        }
+        return;
+      }
+      if (!spont.length && !neuro.length)
+        saetze.push(frage + "Myografie ohne pathologische Spontanaktivität und ohne neurogene " +
+          "Veränderungen in den untersuchten Muskeln.");
+      else
+        saetze.push(frage + (spont.length ? "pathologische Spontanaktivität in " + namen(spont) : "") +
+          (spont.length && neuro.length ? "; " : "") +
+          (neuro.length ? "neurogene Veränderungen in " + namen(neuro) : "") +
+          " – Verteilung bitte beurteilen.");
     });
+    if (!myoErklaert && (spont.length || neuro.length))
+      saetze.push("Zusätzlich in der Myografie: " +
+        (spont.length ? "pathologische Spontanaktivität in " + namen(spont) : "") +
+        (spont.length && neuro.length ? "; " : "") +
+        (neuro.length ? "neurogene Veränderungen in " + namen(neuro) : "") + ".");
     if (fragen.indexOf("verlauf") !== -1)
       saetze.push("Vergleich mit der Voruntersuchung: bitte ergänzen.");
 
