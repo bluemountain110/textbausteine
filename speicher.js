@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "18.16 · Windows-Skript holt seine Updates selbst (Ordner skript) · 14.10.2026";
+TB.FASSUNG = "18.17 · Sammelrunde: Norm-Spalte, grenzwertig, Nur-anzeigen, anon-Funde · 15.10.2026";
 
 TB.speicher = (function () {
 

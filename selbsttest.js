@@ -1121,6 +1121,32 @@ TB.selbsttest = (function () {
       fall("Ausgabe trägt ihr Aussehen selbst (Inline-Stile, keine Klassen)",
         ht.html.indexOf('style="') !== -1 && ht.html.indexOf("class=") === -1 &&
         ht.text.indexOf("Suralis") !== -1, "");
+      // ---- 18.17: Norm-Spalte (E1 = (a)) und „grenzwertig" ------------
+      fall("18.17: Norm-Spalte neben dem Wert, keine graue Klammer mehr",
+        (ht.html.indexOf('font-size:8pt">&le; ') !== -1 ||
+         ht.html.indexOf('font-size:8pt">&ge; ') !== -1) &&
+        ht.html.indexOf("(&le;") === -1 && ht.html.indexOf("(&ge;") === -1 &&
+        ht.text.indexOf("Norm") !== -1, "");
+      var nervSur = TB.enmg.erkenneNerv("N. suralis");
+      var bwG = TB.enmg.bewertung(nervSur, "snlg", 42.5, 50);
+      fall("18.17: Suralis NLG 42.5 bei Grenze 43.9 ist grenzwertig (bis 5 % ausserhalb)",
+        !!bwG && bwG.farbe === "grenzwertig", JSON.stringify(bwG));
+      var bwR = TB.enmg.bewertung(nervSur, "snlg", 41, 50);
+      fall("18.17: Suralis NLG 41 bleibt rot (mehr als 5 % ausserhalb)",
+        !!bwR && bwR.farbe === "rot", JSON.stringify(bwR));
+      var ergG = { patient: {}, bloecke: [{ art: "sens", nervText: "N. suralis",
+        seite: "rechts", zeilen: [{ segment: "US",
+          werte: { lat: 2.8, amp: 5, nlg: 42.5 },
+          bew: { nlg: { farbe: "grenzwertig", grenze: 43.9, richtung: "min",
+                        zeileId: "snlg", zeileName: "sens. orthodr. US NLG" },
+                 amp: { farbe: "gruen", grenze: 3.7, richtung: "min",
+                        zeileId: "samp", zeileName: "sens. orthodr. US AMP" } } }] }] };
+      var zsG = TB.enmgBefund.zusammenfassung(ergG);
+      fall("18.17: Zusammenfassung nennt Grenzwertiges („nicht sicher pathologisch“)",
+        /grenzwertige sensible NLG \(nicht sicher pathologisch\)/.test(zsG), zsG);
+      var btG = TB.enmgBefund.beurteilung(ergG, ["pnp"]);
+      fall("18.17: Grenzwertiges zählt in der Beurteilung nicht als pathologisch",
+        /Keine Hinweise auf eine Polyneuropathie\./.test(btG), btG);
       fall("PDF-Zeichen: Oktal-Umlaut und Windows-Sonderzeichen",
         TB.enmgLeserPdf.dekodiere("\\344h") === "äh" &&
         TB.enmgLeserPdf.dekodiere("\\200") === "€",
@@ -1553,6 +1579,45 @@ TB.selbsttest = (function () {
         t6.indexOf("Untersuchungsspital") !== -1, leck6.join(", "));
       fall("Anonym 18.12: verlorene KISIM-Umbrüche repariert (Wort „HerzerkrankungBelastungs…“ getrennt)",
         /koronare Herzerkrankung\nBelastungsabhängiges/.test(t6), "");
+      // ---- 18.17: die Funde vom 13.10. (jeder Fund ein fester Fall,
+      // alle Daten erfunden — Lehre L43) ------------------------------
+      var probeF = [
+        "Musterlingen, 12.10.2026 / MuU / BHP",
+        "",
+        "Probemann Felix 01.05.1950",
+        "",
+        "Facharzt FMH Neurologie",
+        "Anamnese",
+        "Felix Probemann ist seit Wochen müde. Die Sanitas Grundversicherung, 02.99887-6, übernimmt die Kosten.",
+        "Hausärztin Dr. med. Petra Kovář betreut ihn. Rückfragen an dienstarzt@spital oder das Sekretariat.",
+        "LA Dr. med. Peter Musterberg Steinmann",
+        "Kontrolle gemäss Eintrag vom 12.10.2026 / hin",
+        "Standort: Im Dorf 2 CH - 8999 Musterlingen",
+        "Beurteilung",
+        "Müdigkeit unklarer Ursache."
+      ].join("\n");
+      var rF = A.anonymisiere(probeF, { heute: new Date(2026, 9, 15) });
+      var tF = rF.text;
+      fall("Anonym 18.17: Patientenzeile „Nachname Vorname Geburtsdatum“ unter „Ort, Datum / Kürzel“ erkannt",
+        tF.indexOf("Patient: 76 Jahre") !== -1 && tF.indexOf("Probemann") === -1 &&
+        tF.indexOf("Felix") === -1 && tF.indexOf("[Patient]") !== -1, "");
+      fall("Anonym 18.17: Versichertennummer nach dem Kassennamen wird [Nr]",
+        /Sanitas Grundversicherung, \[Nr\]/.test(tF) && tF.indexOf("02.99887-6") === -1, "");
+      fall("Anonym 18.17: Name mit Zusatzzeichen (Kovář) wird erkannt und ersetzt",
+        tF.indexOf("Kovář") === -1 && /Hausärztin \[Arzt\] betreut/.test(tF), "");
+      fall("Anonym 18.17: mehrere Visum-Kürzel nach dem Datum fallen weg („/ MuU / BHP“, „/ hin“)",
+        tF.indexOf("MuU") === -1 && tF.indexOf("BHP") === -1 && !/\/ hin\b/.test(tF) &&
+        tF.indexOf("Kontrolle gemäss Eintrag vom 12.10.2026") !== -1, "");
+      fall("Anonym 18.17: Mailadresse ohne Endung („…@spital“) wird [E-Mail]",
+        tF.indexOf("dienstarzt@spital") === -1 && /Rückfragen an \[E-Mail\]/.test(tF), "");
+      fall("Anonym 18.17: Arzt-Zeile mit „LA“ und dreiteiligem Namen fällt ganz weg",
+        tF.indexOf("Musterberg") === -1 && tF.indexOf("Steinmann") === -1 &&
+        !/^\s*LA\b/m.test(tF), "");
+      fall("Anonym 18.17: PLZ/Ort mit „CH - “ (Leerzeichen) wird [PLZ Ort], Hausnummer-Rest verschwindet",
+        tF.indexOf("8999") === -1 && tF.indexOf("Musterlingen") === -1 &&
+        /\[PLZ Ort\]/.test(tF) && !/\d\s+\[PLZ Ort\]/.test(tF), "");
+      fall("Anonym 18.17: eigene Kopfzeile „Facharzt FMH Neurologie“ mitten im Text fällt weg",
+        tF.indexOf("FMH") === -1, "");
       fall("Anonym 18.10: Dateiname ohne Patientenbezug",
         /^Bericht-anonym-\d{4}-\d\d-\d\d-\d{6}\.txt$/.test(A.dateiname()), A.dateiname());
       var tr = TB.speicher.holenPerKuerzel("anon");
@@ -1561,6 +1626,29 @@ TB.selbsttest = (function () {
         !tr || (tr.kategorie === "Werkzeuge" && !!TB.ansichtBerichtAnonym), "");
     } catch (e) {
       f.push({ name: "Anonymisier-Prüfungen liefen durch", ok: false,
+        detail: String(e && e.message || e) });
+    }
+    return f;
+  }
+
+  // ---- 18.17: Ausgabeart „Nur anzeigen" (Nachschlage-Bausteine) --------
+  function pruefeAnzeigen() {
+    var f = [];
+    function fall(name, ok, detail) {
+      f.push({ name: name, ok: !!ok, detail: detail || "" });
+    }
+    try {
+      fall("ansicht-anzeigen.js vorhanden (Ausgabeart „Nur anzeigen“)",
+        !!(TB.ansichtAnzeigen && TB.ansichtAnzeigen.oeffne));
+      var tx = TB.ansichtAnzeigen.textMitPunkten(
+        "<p>Titel</p><ul><li>eins</li><li>zwei</li></ul><ol><li>drei</li></ol>");
+      fall("Nur anzeigen: reiner Text trägt •- und Nummern-Punkte",
+        tx === "Titel\n• eins\n• zwei\n1. drei", JSON.stringify(tx));
+      fall("Bearbeiten kennt die dritte Ausgabeart (Beschriftungen vorhanden)",
+        !!(TB.anzeigenTexte && TB.anzeigenTexte.artAnzeigen &&
+           TB.anzeigenTexte.artAnzeigenText), "");
+    } catch (e) {
+      f.push({ name: "Anzeigen-Prüfungen liefen durch", ok: false,
         detail: String(e && e.message || e) });
     }
     return f;
@@ -1582,6 +1670,7 @@ TB.selbsttest = (function () {
       pruefeKisunla().map(function (f) { f.gruppe = "Etappe 13"; return f; }),
       pruefeBerichtMc().map(function (f) { f.gruppe = "Bericht Memory Clinic"; return f; }),
       pruefeBerichtAnonym().map(function (f) { f.gruppe = "Bericht anonymisieren"; return f; }),
+      pruefeAnzeigen().map(function (f) { f.gruppe = "Sammelrunde 18.17"; return f; }),
       (TB.selbsttestEnmgBefund ? TB.selbsttestEnmgBefund()
         : [{ name: "ENMG-Befund-Prüfungen geladen (selbsttest-enmg.js)", ok: false, detail: "" }])
         .map(function (f) { f.gruppe = "ENMG-Befund"; return f; })
@@ -1611,7 +1700,9 @@ TB.selbsttest = (function () {
     ];
     var gruppe = "";
     ergebnisse.forEach(function (f) {
-      if (f.gruppe !== gruppe) { gruppe = f.gruppe; zeilen.push("— " + gruppe + " —"); }
+      // 18.17: Die Ergebniszeile gehört zu keiner Gruppe — vorher stand
+      // über ihr die Überschrift „— undefined —" (Näds Fund 14.10.).
+      if (!f.istSumme && f.gruppe !== gruppe) { gruppe = f.gruppe; zeilen.push("— " + gruppe + " —"); }
       zeilen.push((f.ok ? "GRÜN  " : "ROT   ") + f.name + (f.detail ? "  [" + f.detail + "]" : ""));
     });
     ergebnisse = ergebnisse.filter(function (f) { return !f.istSumme; });

@@ -3,8 +3,10 @@
 // Zweck: Die ENMG-Ansicht: Export-Datei (Keypoint-PDF, Word .docx oder
 //        seit 18.13 der Viking-Bericht als altes Word .doc) hineinziehen,
 //        Messwerte als Tabelle mit Färbung sehen (rot = ausserhalb
-//        Deiner Grenzwerte, grün = innerhalb, schwarz = kein Normwert),
-//        neben jedem gefärbten Wert steht klein die angewandte Grenze —
+//        Deiner Grenzwerte, orange = grenzwertig bis 5 % ausserhalb
+//        (18.17), grün = innerhalb, schwarz = kein Normwert); die
+//        angewandte Grenze steht seit 18.17 in einer eigenen
+//        Norm-Spalte neben jedem bewerteten Wert (E1 = (a)) —
 //        der Patient steht gross über der Tabelle, bevor irgendetwas
 //        kopiert wird. Seit 18.13 darunter der BEFUND-VORSCHLAG:
 //        Fragestellungen zum Anklicken, Zusammenfassung je Nerv und
@@ -102,10 +104,18 @@ TB.ansichtEnmg = (function () {
       s.title = T().ohneZuordnung;
       td.appendChild(s); return;
     }
-    var w = el("span", bew.farbe === "rot" ? "enmg-rot" : "enmg-gruen",
+    // 18.17: Die Grenze steht in der Norm-Spalte daneben (normZelle).
+    var w = el("span", bew.farbe === "rot" ? "enmg-rot" :
+      bew.farbe === "grenzwertig" ? "enmg-grenzwertig" : "enmg-gruen",
       String(wert));
-    w.title = bew.zeileName;
+    w.title = bew.zeileName +
+      (bew.farbe === "grenzwertig" ? " — " + T().grenzwertigKurz : "");
     td.appendChild(w);
+  }
+  function normZelle(td, bew) {
+    if (!bew || bew.grenze === null || bew.grenze === undefined) {
+      td.textContent = ""; return;
+    }
     var g = el("span", "enmg-grenze",
       (bew.richtung === "max" ? "≤ " : "≥ ") + bew.grenze);
     g.title = T().zuordnungKurz.replace("%s", bew.zeileName)
@@ -136,7 +146,8 @@ TB.ansichtEnmg = (function () {
       sp.forEach(function (s) {
         if (s.feld === "segment") return;
         var td = el("td", "enmg-wert");
-        wertZelle(td, w[s.feld], s.bewertet ? b[s.feld] : null);
+        if (s.norm) normZelle(td, b[s.feld]);
+        else wertZelle(td, w[s.feld], s.bewertet ? b[s.feld] : null);
         tr.appendChild(td);
       });
       tabelle.appendChild(tr);

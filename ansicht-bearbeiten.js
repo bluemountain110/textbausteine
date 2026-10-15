@@ -196,13 +196,18 @@ TB.ansichtBearbeiten = (function () {
     var artZeile = el("div", "feldzeile");
     artZeile.appendChild(el("label", "", T.artTitel));
     var artWahl = el("select");
-    [["fenster", T.artFenster], ["marken", T.artMarken]].forEach(function (a) {
+    // 18.17: dritte Art „Nur anzeigen" (Nachschlage-Bausteine, Näds
+    // Dauerregel 13.10.) — Beschriftungen aus TB.anzeigenTexte.
+    [["fenster", T.artFenster], ["marken", T.artMarken],
+     ["anzeigen", TB.anzeigenTexte.artAnzeigen]].forEach(function (a) {
       var o = el("option", "", a[1]); o.value = a[0]; artWahl.appendChild(o);
     });
-    artWahl.value = (b && b.ausgabeart === "marken") ? "marken" : "fenster";
+    artWahl.value = (b && (b.ausgabeart === "marken" || b.ausgabeart === "anzeigen"))
+      ? b.ausgabeart : "fenster";
     var artHinweis = el("div", "erklaerung");
     function artErklaeren() {
-      artHinweis.textContent = artWahl.value === "marken" ? T.artMarkenText : T.artFensterText;
+      artHinweis.textContent = artWahl.value === "marken" ? T.artMarkenText :
+        artWahl.value === "anzeigen" ? TB.anzeigenTexte.artAnzeigenText : T.artFensterText;
       artHinweis.className = artWahl.value === "marken" ? "hinweis-warn" : "erklaerung";
     }
     artWahl.addEventListener("change", function () { artErklaeren(); pruefeMakros(); });

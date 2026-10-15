@@ -75,6 +75,16 @@ TB.fensterModus = (function () {
         }
         uebergebenBaustein(b, ergebnis);
       });
+    } else if (art === "anzeigen") {
+      // 18.17: Nachschlage-Fenster (;;txirr): nur zeigen, Kopieren auf
+      // Knopfdruck; Schliessen schliesst das ganze Fenster. Ist der
+      // Baustein noch nicht angekommen, öffnet pruefeNeu nach dem
+      // Abgleich (wie bei ;;kisew).
+      TB.oberflaeche.geheZu("bausteine");
+      var ba = TB.speicher.holenPerKuerzel(kuerzel);
+      if (!ba) return;
+      if (!document.querySelector("dialog.anzeigen"))
+        TB.ansichtAnzeigen.oeffne(ba, true);
     } else if (art === "enmg") {
       // ENMG: Die Daten kommen aus der hineingezogenen Datei, nicht aus
       // dem Abgleich — es gibt nichts vorzubelegen.
@@ -102,10 +112,10 @@ TB.fensterModus = (function () {
       // Erst „da", wenn der Baustein angekommen ist (s. zeigeWerk).
       return art + "|" + (TB.speicher.holenPerKuerzel(art) ? "1" : "0");
     }
-    if (art === "baustein") {
+    if (art === "baustein" || art === "anzeigen") {
       // Erst „da", wenn der Baustein angekommen ist — dann öffnet
-      // pruefeNeu das Ausfüll-Fenster genau EINMAL.
-      return "baustein|" + (TB.speicher.holenPerKuerzel(kuerzel) ? "1" : "0");
+      // pruefeNeu das Fenster genau EINMAL.
+      return art + "|" + (TB.speicher.holenPerKuerzel(kuerzel) ? "1" : "0");
     }
     var m = (art === "eeg") ? TB.eeg.master() : TB.status.master();
     var teil = (art === "status")
@@ -252,7 +262,7 @@ TB.fensterModus = (function () {
     art = p.get("fenster") || "";
     if (art !== "eeg" && art !== "status" && art !== "enmg" &&
         art !== "baustein" && art !== "kisew" && art !== "kisbest" &&
-        art !== "anon") return;
+        art !== "anon" && art !== "anzeigen") return;
     kuerzel = p.get("kuerzel") || "";
     nonce = p.get("nonce") || "";
     ziel = (p.get("ziel") === "axenita") ? "axenita" : "kisim";

@@ -11,7 +11,7 @@
 ; Welt: "prod" ist die normale Welt mit Deinen echten Bausteinen.
 ; Fuer einen Test gegen die Testwelt hier "dev" eintragen und das
 ; Skript neu starten.
-global FASSUNG := "18.16.1 - 14.10.2026 (Probe)"
+global FASSUNG := "18.17 - 15.10.2026"
 ; Wie oft das Skript selbst nach Nachschub schaut. Kurz gewählt,
 ; weil die Vorab-Prüfung winzig ist und die ganze Sammlung nur bei
 ; einer echten Änderung geholt wird (Näds Entscheid 23.9.).

@@ -944,3 +944,11 @@ dialog.anon .erklaerung { font-size: 12.5px; margin-bottom: 8px; }
   .anon-spalten { grid-template-columns: 1fr; }
   .anon-eingabe, .anon-vorschau { height: 32vh; }
 }
+
+/* 18.17: Nachschlage-Fenster (Nur anzeigen, z. B. ;;txirr) */
+dialog.anzeigen { width: min(720px, 94vw); max-height: 92vh; }
+.anzeigen-text { margin: 10px 0 4px; max-height: 60vh; overflow: auto;
+  border: 1px solid var(--linie, #d5d5d5); border-radius: 8px;
+  padding: 10px 12px; background: var(--feld, #fff); }
+/* 18.17: grenzwertig = bis 5 % ausserhalb der Grenze (orange) */
+.enmg-grenzwertig { color: #b06f00; font-weight: 600; }

@@ -170,9 +170,11 @@ TB.selbsttestEnmgBefund = function () {
       /pathologische Spontanaktivität in M\. vastus lateralis rechts/.test(bt) && /Verteilung bitte beurteilen/.test(bt), bt);
     fall("Fragestellung „Kompressionsneuropathie der Armnerven?“ → CTS + Sulcus ulnaris",
       B.fragenAusText("Polyneuropathie? Kompressionsneuropathie der Armnerven?").join(",") === "pnp,cts,sus");
-    var sp = TB.enmg.spalten(mot[0]).map(function (s) { return s.feld; }).join(",");
-    fall("Spalten Viking motorisch: mit Fläche Δ und Abstand, ohne Dauer",
-      sp === "segment,lat,amp,areaDiff,abstand,nlg,fLat", sp);
+    // 18.17: hinter jeder bewerteten Spalte steht die Norm-Spalte (E1 = (a))
+    var sp = TB.enmg.spalten(mot[0]).map(function (s) {
+      return s.norm ? s.feld + "Norm" : s.feld; }).join(",");
+    fall("Spalten Viking motorisch: mit Fläche Δ, Abstand und Norm-Spalten (18.17), ohne Dauer",
+      sp === "segment,lat,latNorm,amp,areaDiff,abstand,nlg,nlgNorm,fLat,fLatNorm", sp);
     var h = B.alsHtml("• Eins\n• Zwei");
     fall("Beurteilung als HTML: Aufzählung wird <ul> mit 2 Punkten",
       (h.match(/<li>/g) || []).length === 2 && /<ul/.test(h));

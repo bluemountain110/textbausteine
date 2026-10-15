@@ -63,13 +63,17 @@ StatusOeffnen(ziel, kuerzel) {
 
 ; 18.2: Fenster, die nichts zurueckgeben (Einwilligung drucken,
 ; MediService-Bestellung) - nur oeffnen, kein Warten auf ein Paket.
-FensterNurOeffnen(artName) {
+; 18.17: nimmt ein Kuerzel mit (?fenster=anzeigen&kuerzel=txirr).
+FensterNurOeffnen(artName, kuerzel := "") {
     adresse := AppAdresse()
     if (adresse = "") {
         Toast(TX["fensterKeineAdresse"], true)
         return
     }
-    BrowserOeffne(adresse "?fenster=" artName)
+    url := adresse "?fenster=" artName
+    if (kuerzel != "")
+        url := url "&kuerzel=" kuerzel
+    BrowserOeffne(url)
 }
 
 FensterStart(art, kuerzel, ziel) {

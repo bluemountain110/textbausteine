@@ -53,6 +53,10 @@ TB.enmgBefund = (function () {
               mknie: "im Segment Fibulaköpfchen–Kniekehle" };
 
   function rot(b) { return !!(b && b.farbe === "rot"); }
+  // 18.17: „grenzwertig" (bis 5 % ausserhalb) zählt NICHT als
+  // pathologisch (rot bleibt falsch), wird in der Zusammenfassung aber
+  // beim Namen genannt — Näds Entscheid 14.10.
+  function gw(b) { return !!(b && b.farbe === "grenzwertig"); }
   function gefaerbt(b) { return !!(b && b.farbe); }
 
   // ---- Gruppen: je Nerv und Seite alle Blöcke zusammen -------------------
@@ -77,6 +81,7 @@ TB.enmgBefund = (function () {
     var a = { dmlRot: false, dml: null, msap: null, mnlgRot: [], mnlgOk: [],
               fRot: false, sampRot: false, snlgRot: false, sensDa: false,
               sensAmpDa: false, gefaerbt: false, unplausibel: [],
+              grenzwertig: [],
               ring: { median: null, ulnar: null } };
     g.motor.forEach(function (b) {
       b.zeilen.forEach(function (z, i) {
@@ -84,11 +89,15 @@ TB.enmgBefund = (function () {
         if (i === 0) { a.dml = w.lat; a.msap = w.amp; }
         if (gefaerbt(be.lat) || gefaerbt(be.nlg) || gefaerbt(be.fLat)) a.gefaerbt = true;
         if (rot(be.lat)) a.dmlRot = true;
+        if (gw(be.lat)) a.grenzwertig.push("distale motorische Latenz");
         if (be.nlg) {
           var ort = zielVon(be.nlg);
           (rot(be.nlg) ? a.mnlgRot : a.mnlgOk).push(ort);
+          if (gw(be.nlg))
+            a.grenzwertig.push("motorische NLG" + (ORT[ort] ? " " + ORT[ort] : ""));
         }
         if (rot(be.fLat)) a.fRot = true;
+        if (gw(be.fLat)) a.grenzwertig.push("F-Wellen-Latenz");
         if (z.unplausibel) a.unplausibel.push(w.nlg);
       });
     });
@@ -111,6 +120,8 @@ TB.enmgBefund = (function () {
         if (gefaerbt(be.amp) || gefaerbt(be.nlg)) a.gefaerbt = true;
         if (rot(be.amp)) a.sampRot = true;
         if (rot(be.nlg)) a.snlgRot = true;
+        if (gw(be.amp)) a.grenzwertig.push("sensible Amplitude");
+        if (gw(be.nlg)) a.grenzwertig.push("sensible NLG");
       });
     });
     g.a = a;
@@ -187,6 +198,11 @@ TB.enmgBefund = (function () {
       var ms = musterSatz(g);
       if (ms) teile.push(ms);
       teile = teile.concat(einzelheiten(g, true));
+      // 18.17: Grenzwertiges wird beim Namen genannt, bleibt aber
+      // ausdrücklich „nicht sicher pathologisch" (Näd 14.10.).
+      if (a.grenzwertig.length)
+        teile.push("grenzwertige " + a.grenzwertig.join(", grenzwertige ") +
+          " (nicht sicher pathologisch)");
       var satz;
       if (teile.length) satz = teile.join(", ");
       else if (a.gefaerbt) satz = "unauffällig";

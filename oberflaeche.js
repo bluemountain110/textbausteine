@@ -271,6 +271,12 @@ TB.oberflaeche = (function () {
       TB.statistik.bausteinBenutzt(b.id);
       return;
     }
+    // 18.17: „Nur anzeigen" (Nachschlage-Bausteine wie ;;txirr) zeigt
+    // den Text im Fenster — kopiert wird dort nur auf Knopfdruck.
+    if (b.ausgabeart === "anzeigen") {
+      TB.ansichtAnzeigen.oeffne(b, false);
+      return;
+    }
     TB.ansichtAusfuellen.starte(b, function (ergebnis, fassungsHinweis) {
       abschliessen(b, ergebnis, fassungsHinweis);
     });

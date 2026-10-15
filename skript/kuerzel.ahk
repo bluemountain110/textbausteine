@@ -262,6 +262,15 @@ BausteinStarten(b, ziel, loeschen) {
     ; jede MASKE der Kategorie "Diagnosen" (z. B. ;;dxad) laeuft als
     ; App-Fenster und kommt als Titel + Strg+Tab + Rest zurueck.
     kjk := StrLower(String(b.Has("kuerzel") ? b["kuerzel"] : ""))
+    ; 18.17: "Nur anzeigen" (Nachschlage-Bausteine wie ;;txirr, Naeds
+    ; Dauerregel 13.10.): nichts einsetzen - die App-Seite zeigt den
+    ; Text in einem Fenster, Kopieren gibt es dort auf Knopfdruck.
+    if (String(b.Has("ausgabeart") ? b["ausgabeart"] : "") = "anzeigen") {
+        if (loeschen > 0)
+            Send "{Backspace " loeschen "}"
+        FensterNurOeffnen("anzeigen", kjk)
+        return
+    }
     if (kjk = "kisew" or kjk = "kisbest" or kjk = "anon") {
         if (loeschen > 0)
             Send "{Backspace " loeschen "}"

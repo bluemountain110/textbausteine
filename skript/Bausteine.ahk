@@ -182,6 +182,9 @@ SetTimer(Nachschubtakt, TAKT_MS)
 ; und kurz nach dem Start auf GitHub nach einer neuen Fassung schauen.
 SetTimer(UpdNachStartMelden, -1500)
 SetTimer(UpdPruefenStill, -6000)
+; 18.17: zusaetzlich alle 2 Stunden still nachsehen (nur einspielen,
+; wenn 10 Minuten lang nichts getippt wurde - update.ahk, UpdTakt).
+SetTimer(UpdTakt, 7200000)
 
 ; Die Tastenkombination zum Merken kommt aus den App-Einstellungen und
 ; kann dort auch abgeschaltet werden (Feinschliff 20.9.).

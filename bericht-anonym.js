@@ -21,14 +21,17 @@
 window.TB = window.TB || {};
 
 TB.berichtAnonym = (function () {
-  var B = "A-ZÄÖÜ", K = "a-zäöüßéèêàâçëïîôûñ";
+  // 18.17 (Fund 13.10.): Die Buchstabenklassen umfassen ALLE lateinischen
+  // Buchstaben mit Zusatzzeichen (á, ř, š, ć …) — Namen wie „Kovář"
+  // oder „Hernández" wurden sonst nicht als Namen erkannt.
+  var B = "A-ZÄÖÜÀ-ÖØ-ÞĀ-ž", K = "a-zäöüßà-öø-ÿā-ž";
   // Ein Namens-Wort: gross beginnend, danach klein, Bindestrich-Namen
   // (Müller-Meier) und O'Brien-Formen inbegriffen.
   var NW = "[" + B + "][" + K + "]+(?:['’][" + B + "][" + K + "]+)?(?:-[" + B + "][" + K + "]+)?";
   var PART = "(?:von|van|de|der|den|del|della|di|da|dos|du|le|la|zu|ten|ter)";
   var NAME = "(?:(?:[" + B + "]\\.\\s?)?" + NW + "|[" + B + "]\\.)(?:[ \\t]+(?:" + PART + "[ \\t]+)?(?:" + NW + "|[" + B + "]\\.))*";
-  var KEIN_BUCHST = "(?<![A-Za-zÄÖÜäöüßéèêàâçëïîôûñ])";
-  var KEIN_BUCHST_N = "(?![A-Za-zÄÖÜäöüßéèêàâçëïîôûñ])";
+  var KEIN_BUCHST = "(?<![A-Za-zÄÖÜäöüßÀ-ÖØ-öø-ÿĀ-ž])";
+  var KEIN_BUCHST_N = "(?![A-Za-zÄÖÜäöüßÀ-ÖØ-öø-ÿĀ-ž])";
 
   var MONATE = { januar: 1, februar: 2, "märz": 3, maerz: 3, april: 4, mai: 5,
     juni: 6, juli: 7, august: 8, september: 9, oktober: 10, november: 11,
@@ -159,7 +162,7 @@ TB.berichtAnonym = (function () {
     // „Herr Peter Müller-Meier" → Peter, Müller-Meier, Müller, Meier
     var aus = [];
     String(text || "").split(/[\s,;\/()]+/).forEach(function (w) {
-      w = w.replace(/^[^A-Za-zÄÖÜäöü]+|[^A-Za-zÄÖÜäöüßéèêàâçëïîôûñ]+$/g, "");
+      w = w.replace(/^[^A-Za-zÄÖÜäöüÀ-ÖØ-öø-ÿĀ-ž]+|[^A-Za-zÄÖÜäöüßÀ-ÖØ-öø-ÿĀ-ž]+$/g, "");
       if (!istNamensWort(w)) return;
       aus.push(w);
       if (w.indexOf("-") > 0) w.split("-").forEach(function (t) {
@@ -266,7 +269,8 @@ TB.berichtAnonym = (function () {
     if (!e.geburt) {
       var jetztJ = new Date().getFullYear();
       zeilen.filter(function (z) { return z.trim(); }).slice(0, 20).some(function (z) {
-        var k = new RegExp("^\\s*(?:(?:Herrn?|Frau)\\s+)?(" + NW + "(?:[ ,]+" + NW + "){0,3})\\s*,\\s*(" + DATUM + ")").exec(z);
+        // 18.17 (Fund 13.10.): auch OHNE Komma („Muster Hans 01.05.1950")
+        var k = new RegExp("^\\s*(?:(?:Herrn?|Frau)\\s+)?(" + NW + "(?:[ ,]+" + NW + "){0,3})(?:\\s*,\\s*|\\s+)(" + DATUM + ")").exec(z);
         if (!k) return false;
         var dd = leseDatum(k[2]);
         if (!dd || dd.j > jetztJ - 10) return false;
@@ -303,6 +307,27 @@ TB.berichtAnonym = (function () {
         return true;
       });
     }
+    // 18.17 (Fund 13.10.): die Patientenzeile „Nachname Vorname
+    // Geburtsdatum" steht direkt unter der Zeile „Ort, Datum / Kürzel"
+    // (im Original fett) — auch tiefer im Text, auch ohne Komma.
+    (function () {
+      for (var zi = 0; zi < zeilen.length - 1; zi++) {
+        if (!berichtsDatum(zeilen[zi].trim())) continue;
+        var zj = zi + 1;
+        while (zj < zeilen.length && !zeilen[zj].trim()) zj++;
+        if (zj >= zeilen.length) continue;
+        var kz = new RegExp("^\\s*(?:(?:Herrn?|Frau)\\s+)?(" + NW +
+          "(?:[ ,]+" + NW + "){0,3})(?:\\s*,\\s*|\\s+)(" + DATUM + ")\\s*$")
+          .exec(zeilen[zj].trim());
+        if (!kz) continue;
+        var dd2 = leseDatum(kz[2]);
+        if (!dd2 || dd2.j > new Date().getFullYear() - 10) continue;
+        var st2 = namensStuecke(kz[1]).filter(function (w) { return !fachwort(w); });
+        if (!st2.length) continue;
+        if (!e.geburt) { e.geburt = dd2; e.geburtRoh = kz[2]; }
+        e.name = e.name.concat(st2);
+      }
+    })();
     // „Herr/Frau NAME, geb. …" mitten im Text
     var hm = new RegExp("(Herrn?|Frau)[ \\t]+(" + NAME + ")\\s*,?\\s*(?:\\(|geb|\\*)", "g");
     var x;
@@ -373,7 +398,8 @@ TB.berichtAnonym = (function () {
   var RE_KONTAKT = /(\btel\b|\btel\.|telefon|\bfax\b|e-?mail|@|www\.|https?:|\.ch\b|\.com\b|postfach|\b0\d{2}\s?\d{3}\s?\d{2}\s?\d{2}\b|\+41)/i;
   var RE_STRASSE = new RegExp("(?:" + VOR + "(?:" + NW + "[\\s-])?[" + B + "]?[" + K + "-]*(?:strasse|straße|str\\.|gasse|weg|platz|allee|rain|halde|matte|graben|quai|steig|ring|acker|park|hof)\\s+\\d+\\s?[a-zA-Z]?\\b|\\b(?:Rue|Route|Chemin|Avenue|Via|Viale|Piazza|Place)\\s+[^,\\n]{2,30}?\\s+\\d+[a-z]?\\b)", "g");
   var KANTONE = "(?:ZH|AG|BE|LU|UR|SZ|OW|NW|GL|ZG|FR|SO|BS|BL|SH|AR|AI|SG|GR|TG|TI|VD|VS|NE|GE|JU)";
-  var RE_PLZ_ORT = new RegExp("(?:CH-\\s?)?\\b[1-9]\\d{3}\\s+" + NW + "(?:[\\s-](?:" + NW + "|am|an|im|bei|b\\.)){0,3}(?:\\s+" + KANTONE + "\\b)?", "g");
+  // 18.17 (Fund 13.10.): auch „CH - 8952 …" mit Leerzeichen um den Strich
+  var RE_PLZ_ORT = new RegExp("(?:CH\\s?[-–]\\s?)?\\b[1-9]\\d{3}\\s+" + NW + "(?:[\\s-](?:" + NW + "|am|an|im|bei|b\\.)){0,3}(?:\\s+" + KANTONE + "\\b)?", "g");
   var RE_TITEL_ZEILE = /\b(Prof\.|PD\b|Dr\.|med\.|pract\.|lic\.|dipl\.|Dipl\.|FMH\b|MSc\b|PhD\b)/;
   var RE_INSTITUTION = new RegExp(VOR + "(Spital|Klinik|Institut|Praxis|Zentrum|Abteilung|Departement|Limmattal|Ambulatorium|Universität|Gruppenpraxis|Ärztezentrum|AG|GmbH)(?![A-Za-zäöü])");
 
@@ -417,16 +443,27 @@ TB.berichtAnonym = (function () {
          .replace(/\bLimmi\b/g, "Untersuchungsspital");
     // 2. Kontakt und Nummern
     t = t.replace(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, "[E-Mail]")
+         // 18.17 (Fund 13.10.): auch Adressen ohne Endung („…@spital")
+         .replace(/[\w.+-]+@[\w-]+\b/g, "[E-Mail]")
          .replace(/\b(?:https?:\/\/|www\.)\S+/gi, "")
          .replace(/\b[\w-]+\.(?:ch|com|de|org|net|swiss)\b(?:\/\S*)?/gi, "");
     t = t.replace(/\b756[.\s]?\d{4}[.\s]?\d{4}[.\s]?\d{2}\b/g, "[Nr]");
+    // 18.17 (Fund 13.10.): Versichertennummer hinter dem Kassennamen
+    // („Sanitas Grundversicherung, 02.24434-5") und die Nummernform
+    // selbst (zwei Ziffern, Punkt, 4–6 Ziffern, Strich, Prüfziffer).
+    t = t.replace(new RegExp("\\b(Sanitas|CSS|Helsana|S[Ww][Ii][Cc][Aa]|Concordia|CONCORDIA|Visana|Assura|KPT|Sympany|Atupri|EGK|ÖKK|Groupe\\s+Mutuel|Mutuel|Aquilana|Agrisano|Sanagate|Arcosana|Vivao|Krankenkasse|Krankenversicherung)\\b([^\\n]{0,40}?[\\s,:])(\\d[\\d.\\-\\/]{4,})", "g"),
+      "$1$2[Nr]");
+    t = t.replace(/\b\d{2}\.\d{4,6}[-.]\d{1,2}\b/g, "[Nr]");
     // Geräte-Patientennummern: „#486756“, „#486756:486756“
     t = t.replace(/#\d{3,}(?::\d+)*/g, "[Nr]");
     // Radiologie-Systemblock: „2026-06-02 14:14:10 - Name Name, …“
     t = t.replace(new RegExp("^(\\s*\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}(?::\\d{2})?\\s*-\\s*)(" + NAME + ")(?=\\s*[,;]|\\s*$)"), "$1[Arzt]");
     // Visum-Kürzel: „vis 02.06.2026 12:43 spi“, „02.06.2026 / spi“
     t = t.replace(/\b(vis\s+\d{1,2}\.\d{1,2}\.\d{2,4}\s+\d{1,2}:\d{2})\s+[a-zäöü]{1,5}\b/g, "$1")
-         .replace(/^(\s*\d{1,2}\.\d{1,2}\.\d{4})\s*\/\s*[A-Za-zäöü0-9]{1,10}\s*$/, "$1");
+         // 18.17 (Fund 13.10.): auch MEHRERE Visum-Kürzel nach dem Datum
+         // („12.10.2026 / MuU / BHP", „… / hin"), Datum auch mitten in
+         // der Zeile — die Kürzel stehen am Zeilenende.
+         .replace(/(\d{1,2}\.\d{1,2}\.\d{4})((?:\s*\/\s*[A-Za-zÄÖÜäöü]{1,6}\d{0,3}){1,4})\s*$/, "$1");
     t = t.replace(/\b((?:Fall|PID|Pat(?:ienten)?|Auftrags|Untersuchungs|Versicherten|Versicherungs|Policen|Kunden|Akten|Kassen|AHV)[-.\s]?(?:Nr\.?|Nummer|ID|Id)\s*[:#]?\s*)\d[\d.\-\/]*/gi, "$1[Nr]")
          .replace(/\b(PID|ID)(\s*:\s*)\d[\d\s-]*\d/g, "$1$2[Nr]");
     t = t.replace(/(?:\+41|0041)\s?\(?0?\)?\s?\d{2}[\s.\/-]?\d{3}[\s.-]?\d{2}[\s.-]?\d{2}\b|\b0\d{2}[\s.\/-]?\d{3}[\s.-]?\d{2}[\s.-]?\d{2}\b/g, "[Telefon]");
@@ -483,12 +520,18 @@ TB.berichtAnonym = (function () {
       var amAnfang = /^\s*[-–•·*]?\s*$/.test(vorher);
       var nachKomma = /,\s*$/.test(vorher) || /\[Adresse\]\s*,?\s*$/.test(vorher);
       var nachWohn = /\b(in|aus|nach|wohnhaft)\s*$/i.test(vorher);
+      // 18.17 (Fund 13.10.): PLZ/Ort mitten in Fusszeilen, die ein
+      // Kürzel wie FMH oder eine Telefon-/Fax-Angabe einleitet
+      var nachKuerzel = /\b(FMH|Facharzt|Fachärztin|Tel\.?|Telefon|Fax)\s*$/i.test(vorher);
       var istJahr = zahl >= 1900 && zahl <= 2099;
-      if (/^CH-/.test(ganz) || hatteStrasse || (amAnfang && kurz) ||
-          ((nachKomma || nachWohn) && !istJahr) || (nachKomma && kurz))
+      if (/^CH\s?[-–]/.test(ganz) || hatteStrasse || (amAnfang && kurz) ||
+          ((nachKomma || nachWohn || nachKuerzel) && !istJahr) || (nachKomma && kurz))
         return "[PLZ Ort]";
       return ganz;
     });
+    // 18.17 (Fund 13.10.): übrig gebliebene Hausnummer direkt vor dem
+    // Platzhalter („… 2 [PLZ Ort]") verschwindet mit.
+    t = t.replace(/(^|\s)\d{1,3}[a-z]?\s+(?=\[PLZ Ort\])/g, "$1");
     t = t.replace(new RegExp("\\b([Ww]ohnhaft|[Ww]ohnt|[Ll]ebt|[Ww]ohnend|[Zz]uhause|[Zz]u Hause)([ \\t]+(?:in|im|bei|allein in|alleine in)[ \\t]+)(" + NW + ")", "g"),
       function (ganz, a, b, ort) { return fachwort(ort) ? ganz : a + b + "[Ort]"; });
     // 8. Gesammelte Namen überall
@@ -510,7 +553,7 @@ TB.berichtAnonym = (function () {
     if (!PLATZ1.test(t)) return false;
     var rest = t.replace(PLATZ, " ")
       .replace(new RegExp(ROLLEN, "g"), " ")
-      .replace(new RegExp(VOR + "(Herrn?|Frau|Hr\\.|Fr\\.|und|sowie|Tel\\.?|Telefon|Fax|E-Mail|Mail|Web|Postfach|CH|Leitende[rn]?|Arzt|Ärztin|Ärzte|Neurologie|FMH|für|z\\.\\s?H\\.|zu\\s+Handen|Direktwahl|Zentrale|Sekretariat|" + KANTONE + ")(?![A-Za-zäöü])", "gi"), " ")
+      .replace(new RegExp(VOR + "(Herrn?|Frau|Hr\\.|Fr\\.|und|sowie|Tel\\.?|Telefon|Fax|E-Mail|Mail|Web|Postfach|CH|Leitende[rn]?|Stellvertretende[rn]?|Stv\\.?|LA|LÄ|Arzt|Ärztin|Ärzte|Ärztliche[rs]?|Leiter(?:in)?|Chefarzt|Chefärztin|Neurologie|Radiologie|Neuroradiologie|Nuklearmedizin|Spital|Klinik|Institut|Zentrum|FMH|für|z\\.\\s?H\\.|zu\\s+Handen|Direktwahl|Zentrale|Sekretariat|" + KANTONE + ")(?![A-Za-zäöü])", "gi"), " ")
       .replace(/[\s\d.,;:\/|•·\-–()+]+/g, "");
     return rest.length === 0;
   }
@@ -593,6 +636,11 @@ TB.berichtAnonym = (function () {
       if (RE_GRUSS.test(t)) { modus = "unterschrift"; prot.push({ art: "Gruss/Unterschrift", text: t }); return; }
       if (RE_ANREDE.test(t)) { ernten(t); prot.push({ art: "Anrede", text: t }); return; }
       if (RE_KOPF.test(t)) { ernten(t); prot.push({ art: "Patienten-/Kopfangaben", text: t }); return; }
+      // 18.17 (Fund 13.10.): die eigene Kopfzeile mitten im Text
+      // („Facharzt FMH Neurologie", mehrfach wiederholt) fällt ganz weg.
+      if (/\bFMH\b/.test(t) && woerter(t).length <= 6) {
+        ernten(t); prot.push({ art: "Briefkopf im Text", text: t }); return;
+      }
       if (geburt && woerter(t).length <= 14 && new RegExp(DATUM_ALLE).test(t)) {
         var hatGeb = false;
         (t.match(new RegExp(DATUM_ALLE, "g")) || []).forEach(function (x) {

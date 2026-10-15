@@ -292,6 +292,18 @@ UpdPruefenStill() {
     UpdPruefen(false)
 }
 
+; 18.17 (Naeds Entscheid 15.10.): Zusaetzlich alle 2 Stunden still
+; nachsehen. Eingespielt wird nur, wenn seit 10 Minuten weder Tastatur
+; noch Maus benutzt wurden - sonst in 10 Minuten erneut versuchen.
+; So kommt eine Abend-Lieferung auch ohne Neustart an.
+UpdTakt() {
+    if (A_TimeIdlePhysical < 600000) {
+        SetTimer(UpdTakt, -600000)
+        return
+    }
+    UpdPruefenStill()
+}
+
 UpdPruefenMenue(*) {
     UpdPruefen(true)
 }

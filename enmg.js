@@ -7,17 +7,22 @@
 //        (linear zwischen den 5-Jahres-Stützstellen), ordnet die
 //        Geräte-Segmente den Normzeilen zu (Schlüsselwörter, sonst
 //        Reihenfolge distal → proximal) und färbt jeden Messwert:
-//        rot = ausserhalb, grün = innerhalb, schwarz = kein Normwert.
-//        Lieber schwarz als falsch gefärbt (Lehre I2). Dazu die
-//        Ausgabe als Tabelle (HTML mit Inline-Stilen, Lehre I1, und
-//        reiner Text). GRUNDSATZ: Ein eingelesener Export ist ein
+//        rot = ausserhalb, grün = innerhalb, schwarz = kein Normwert,
+//        seit 18.17 orange = GRENZWERTIG (bis 5 % ausserhalb der
+//        Grenze, Näds Entscheid 14.10. — zählt in der Beurteilung
+//        nicht als pathologisch). Lieber schwarz als falsch gefärbt
+//        (Lehre I2). Dazu die Ausgabe als Tabelle (HTML mit
+//        Inline-Stilen, Lehre I1, und reiner Text); seit 18.17 steht
+//        die Grenze als eigene Norm-Spalte direkt neben jedem
+//        bewerteten Messwert (E1-Entscheid (a), 14.10.).
+//        GRUNDSATZ: Ein eingelesener Export ist ein
 //        Patientenbefund — er wird NIE gespeichert, NIE abgeglichen.
 
 "use strict";
 window.TB = window.TB || {};
 
 TB.enmg = (function () {
-  var ROT = "#c00000", GRUEN = "#1a7a1a";
+  var ROT = "#c00000", GRUEN = "#1a7a1a", ORANGE = "#b06f00";
 
   // ---- Ablage der Normwerte (nie Patientendaten) ----------------------
   function normwerte() {
@@ -127,10 +132,14 @@ TB.enmg = (function () {
     return zuordnung;
   }
 
+  // 18.17: bis 5 % ausserhalb der Grenze heisst „grenzwertig" (orange)
+  // und zählt in der Beurteilung nicht als pathologisch (Näd 14.10.;
+  // Beispiel: Suralis 44 m/s bei Grenze 44.8 → grenzwertig).
   function farbeFuer(wert, grenze, richtung) {
     if (wert === null || wert === undefined || grenze === null) return null;
-    var rot = (richtung === "max") ? (wert > grenze) : (wert < grenze);
-    return rot ? "rot" : "gruen";
+    var drueber = (richtung === "max") ? (wert - grenze) : (grenze - wert);
+    if (drueber <= 0) return "gruen";
+    return (drueber <= Math.abs(grenze) * 0.05) ? "grenzwertig" : "rot";
   }
   function bewertung(nerv, zeileId, wert, alter) {
     if (!nerv || wert === null || wert === undefined) return null;
@@ -187,20 +196,31 @@ TB.enmg = (function () {
   function zahl(w) {
     return (w === null || w === undefined) ? "" : String(w);
   }
+  // 18.17: Die Grenze steht nicht mehr als graue Klammer am Wert,
+  // sondern in der eigenen Norm-Spalte daneben (E1 = (a)).
   function wertHtml(w, bew) {
     if (w === null || w === undefined) return "";
     if (!bew || !bew.farbe) return zahl(w);
-    var farbe = bew.farbe === "rot" ? ROT : GRUEN;
+    var farbe = bew.farbe === "rot" ? ROT :
+                bew.farbe === "grenzwertig" ? ORANGE : GRUEN;
     return '<span style="color:' + farbe + ';font-weight:' +
-      (bew.farbe === "rot" ? "bold" : "normal") + '">' + zahl(w) +
-      '</span> <span style="color:#808080;font-size:8pt">(' +
-      (bew.richtung === "max" ? "&le; " : "&ge; ") + bew.grenze + ')</span>';
+      (bew.farbe === "rot" ? "bold" : "normal") + '">' + zahl(w) + '</span>';
   }
   function wertText(w, bew) {
     if (w === null || w === undefined) return "";
     if (!bew || !bew.farbe) return zahl(w);
-    return zahl(w) + (bew.farbe === "rot" ? " (!)" : "") +
-      " (" + (bew.richtung === "max" ? "<=" : ">=") + bew.grenze + ")";
+    return zahl(w) + (bew.farbe === "rot" ? " (!)" :
+      bew.farbe === "grenzwertig" ? " (grenzwertig)" : "");
+  }
+  // Inhalt der Norm-Spalte: „≤ 4.2" bzw. „≥ 50" — leer ohne Bewertung.
+  function normHtml(bew) {
+    if (!bew || bew.grenze === null || bew.grenze === undefined) return "";
+    return '<span style="color:#808080;font-size:8pt">' +
+      (bew.richtung === "max" ? "&le; " : "&ge; ") + bew.grenze + "</span>";
+  }
+  function normText(bew) {
+    if (!bew || bew.grenze === null || bew.grenze === undefined) return "";
+    return (bew.richtung === "max" ? "<= " : ">= ") + bew.grenze;
   }
   var TD = '<td style="border:1px solid #808080;padding:2px 6px;' +
            'font-family:Arial;font-size:10pt;text-align:right">';
@@ -222,11 +242,21 @@ TB.enmg = (function () {
       : [["segment", T.spalteSegment, false], ["abstand", T.spalteAbstand, false],
          ["lat", T.spalteLat, false], ["peak", T.spaltePeak, false],
          ["amp", T.spalteAmpU, true], ["nlg", T.spalteNlg, true]];
-    return alle.filter(function (a) {
+    var aus = [];
+    alle.filter(function (a) {
       if (a[0] === "segment") return true;
       return block.zeilen.some(function (z) {
         return z.werte[a[0]] !== null && z.werte[a[0]] !== undefined; });
-    }).map(function (a) { return { feld: a[0], titel: a[1], bewertet: a[2] }; });
+    }).forEach(function (a) {
+      aus.push({ feld: a[0], titel: a[1], bewertet: a[2] });
+      // 18.17 (E1 = (a)): hinter jedem bewerteten Messwert eine eigene
+      // Norm-Spalte — aber nur, wenn in diesem Block überhaupt eine
+      // Bewertung dieser Spalte vorliegt (sonst bliebe sie ganz leer).
+      if (a[2] && block.zeilen.some(function (z) {
+            return z.bew && z.bew[a[0]]; }))
+        aus.push({ feld: a[0], titel: T.spalteNorm, norm: true });
+    });
+    return aus;
   }
   function tabelleHtmlText(ergebnis) {
     var T = TB.enmgTexte, html = [], text = [];
@@ -256,10 +286,12 @@ TB.enmg = (function () {
         var w = z.werte, b = z.bew || {};
         h += "<tr>" + sp.map(function (s) {
           if (s.feld === "segment") return TDL + z.segment + "</td>";
+          if (s.norm) return TD + normHtml(b[s.feld]) + "</td>";
           return TD + (s.bewertet ? wertHtml(w[s.feld], b[s.feld]) : zahl(w[s.feld])) + "</td>";
         }).join("") + "</tr>";
         text.push(sp.map(function (s) {
           if (s.feld === "segment") return z.segment;
+          if (s.norm) return normText(b[s.feld]);
           return s.bewertet ? wertText(w[s.feld], b[s.feld]) : zahl(w[s.feld]);
         }).join("  |  "));
       });
