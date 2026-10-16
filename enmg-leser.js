@@ -163,9 +163,35 @@ TB.enmgLeser = (function () {
         bekannt[schluessel(String(z.segment || "").split("|")[0])] = true;
       });
     });
+    // 18.19 (Näds Bild 16.10.): Kurvenseiten schreiben dieselben Teile
+    // anders zusammen („Rechts Peroneus profundus", „Dist. CF - EDB",
+    // „Ankle - Abd hal Ankle - Abd hal"). Besteht eine Zeile NUR aus
+    // bekannten Bausteinen — Segment-Teilen, Wörtern der Nerv-Titel,
+    // Seite und Art —, ist sie Rauschen.
+    var teile = {};
+    function merk(t) {
+      var x = String(t || "").toLowerCase().replace(/\s+/g, " ").trim();
+      if (x.length >= 2) teile[x] = true;
+    }
+    bloecke.forEach(function (b) {
+      String(b.nervText || "").split(/\s+/).forEach(merk);
+      b.zeilen.forEach(function (z) {
+        String(z.segment || "").split(/\s*[-|]\s*/).forEach(merk);
+      });
+    });
+    ["rechts", "links", "motorisch", "sensorisch", "sensibel", "motor", "sens"].forEach(merk);
+    var liste = Object.keys(teile).sort(function (a, b) { return b.length - a.length; });
+    function nurBekanntes(r) {
+      var t = " " + String(r).toLowerCase().replace(/\s+/g, " ") + " ";
+      liste.forEach(function (x) {
+        t = t.split(x).join(" ");
+      });
+      return !/[a-zäöüß0-9]/i.test(t.replace(/[-|.,:;()\/\s]/g, ""));
+    }
     return reste.filter(function (r) {
       var k = schluessel(r);
       if (!k || bekannt[k] || gesehen[k]) return false;
+      if (nurBekanntes(r)) return false;
       if (/^([\d.,]+\s*(mv|µv|uv|ms|s)\s*\/\s*d\s*)+$/i.test(r.trim())) return false;
       if (/^(seite|page)\s*\d+/i.test(r.trim())) return false;
       if (/^(patientendaten|motorische kurven|sensible kurven|sensorische kurven)$/i.test(r.trim()))

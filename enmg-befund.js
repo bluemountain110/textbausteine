@@ -251,13 +251,15 @@ TB.enmgBefund = (function () {
       if (a.unplausibel.length)
         satz += "; Messwert" + (a.unplausibel.length > 1 ? "e" : "") +
           " unplausibel (NLG " + a.unplausibel.join(" und ") + " m/s) – Distanz prüfen";
-      zeilen.push(g.name + seiteText(g.seite) + ": " + satz + ".");
+      // 18.19 (Näd 16.10.): jeder Nerv als echter Aufzählungspunkt —
+      // eingerückt, auch wenn er über mehrere Zeilen geht.
+      zeilen.push("• " + g.name + seiteText(g.seite) + ": " + satz + ".");
     });
     // 18.14: Myografie (aus dem Freitext des Viking-Berichts) in Näds Wortlaut
     var myo = erg.myografie || [];
     if (myo.length) {
       zeilen.push("Myografie:");
-      myo.forEach(function (m) { zeilen.push(m.muskel + ": " + m.befund + "."); });
+      myo.forEach(function (m) { zeilen.push("• " + m.muskel + ": " + m.befund + "."); });
     }
     (erg.freitext || []).forEach(function (t) { zeilen.push(t); });
     return zeilen.join("\n");
@@ -429,17 +431,21 @@ TB.enmgBefund = (function () {
     if (fragen.indexOf("verlauf") !== -1)
       saetze.push("Vergleich mit der Voruntersuchung: bitte ergänzen.");
 
-    // Zusätzlich Pathologisches, das keine Antwort erklärt hat
+    // Zusätzlich Pathologisches, das keine Antwort erklärt hat.
+    // 18.19: „Zusätzlich" nur, wenn davor schon etwas steht; die
+    // Einzelheiten nach einem Gedankenstrich statt in einer zweiten
+    // Klammer (Näds Bild 16.10.: „(… (im demyelinisierenden Bereich))").
     gs.forEach(function (g) {
       if (!g.rot || erklaert[g.id + g.seite]) return;
+      var vor = saetze.length ? "Zusätzlich: " : "";
       if (g.muster && g.muster.art === "cts")
-        saetze.push("Zusätzlich: Karpaltunnelsyndrom" + seiteText(g.seite) +
+        saetze.push(vor + "Karpaltunnelsyndrom" + seiteText(g.seite) +
           " (Grad " + g.muster.grad + " nach Bland – " + BLAND[g.muster.grad] + ").");
       else if (g.muster)
-        saetze.push("Zusätzlich: " + musterSatz(g) + seiteText(g.seite) + ".");
+        saetze.push(vor + musterSatz(g) + seiteText(g.seite) + ".");
       else
-        saetze.push("Zusätzlich auffällig: " + g.name + seiteText(g.seite) + " (" +
-          einzelheiten(g, false).join(", ") + ").");
+        saetze.push((saetze.length ? "Zusätzlich auffällig: " : "Auffällig: ") +
+          g.name + seiteText(g.seite) + " – " + einzelheiten(g, false).join(", ") + ".");
     });
     if (!saetze.length) {
       var gefaerbtIrgendwo = gs.some(function (g) { return g.a.gefaerbt; });

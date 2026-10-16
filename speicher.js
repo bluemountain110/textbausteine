@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "18.18 · ENMG: Tabellen je Art, Chen-Amplituden, AAN-Demyelinisierung, ;;enmg am Arbeitsplatz · 15.10.2026";
+TB.FASSUNG = "18.19 · Nachbesserung 18.18: Bericht ohne Patientenzeile, Aufzählung je Nerv, nur der weisse Kasten · 16.10.2026";
 
 TB.speicher = (function () {
 

@@ -73,7 +73,12 @@ FensterNurOeffnen(artName, kuerzel := "") {
     url := adresse "?fenster=" artName
     if (kuerzel != "")
         url := url "&kuerzel=" kuerzel
-    BrowserOeffne(url)
+    ; 18.19: Nachschlage-Fenster (;;txirr) nur so gross wie der Kasten
+    ; (Naed 16.10.: "nur der weisse Kasten").
+    if (artName = "anzeigen")
+        BrowserOeffne(url, 900, 860)
+    else
+        BrowserOeffne(url)
 }
 
 FensterStart(art, kuerzel, ziel) {
@@ -116,11 +121,11 @@ FensterZielIstEinfeld(ziel) {
     return false
 }
 
-BrowserOeffne(url) {
+BrowserOeffne(url, wunschBreite := 1360, wunschHoehe := 1000) {
     ; Bevorzugt ein randloses App-Fenster (Chrome, sonst Edge) in
     ; grosszuegiger Groesse, mittig - zur Not der Standardbrowser.
-    breite := Min(1360, A_ScreenWidth - 80)
-    hoehe := Min(1000, A_ScreenHeight - 80)
+    breite := Min(wunschBreite, A_ScreenWidth - 80)
+    hoehe := Min(wunschHoehe, A_ScreenHeight - 80)
     x := Max(0, (A_ScreenWidth - breite) // 2)
     y := Max(0, (A_ScreenHeight - hoehe) // 2 - 10)
     lage := ' --window-size=' breite ',' hoehe ' --window-position=' x ',' y

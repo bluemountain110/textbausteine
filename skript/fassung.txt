@@ -1,15 +1,15 @@
 # Bausteine-Skript - Verzeichnis fuer das Selbst-Update (wird erzeugt, nicht von Hand aendern)
-fassung=18.18
+fassung=18.19
 datei=autostart.ahk|2658|DAC3A4DA
 datei=Bausteine.ahk|8463|A4425B5F
 datei=einfuegen.ahk|3583|2114C058
 datei=fenster-bericht-mc.ahk|37069|5A556398
 datei=fenster-masken.ahk|8869|6912300E
 datei=fenster-pruefstand.ahk|8657|9BCD320B
-datei=fenster-url.ahk|7631|5979E6E9
+datei=fenster-url.ahk|7891|028F51CC
 datei=fenster.ahk|25846|E3145994
 datei=json.ahk|4056|962C92F4
-datei=konfiguration.ahk|3715|E5ADD4A5
+datei=konfiguration.ahk|3715|B84F5ECC
 datei=kuerzel.ahk|23649|DF27F724
 datei=makros-masken.ahk|19511|B3942915
 datei=makros.ahk|8858|60999609

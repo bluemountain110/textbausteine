@@ -355,6 +355,29 @@ TB.selbsttestEnmg1818 = function () {
       kw === TB.statusTexte.fensterKnopfWord && TB.fensterModus.knopfText() === TB.statusTexte.fensterKnopf, kw);
     fall(";;enmg: Ansicht liefert die KISIM-Felder einzeln (Fragestellung/Befund/Beurteilung)",
       typeof TB.ansichtEnmg.aktuelleFelder === "function");
+    // ---- 18.19: Näds Funde aus dem Spital-Test 16.10. ----------------------
+    fall("18.19: Bericht ohne Patientenzeile (Name/geb./Alter stehen nur im Fenster)",
+      ht.html.indexOf("geb. ") === -1 && ht.text.indexOf("Muster, Hans") === -1 &&
+      ht.html.indexOf("ENMG vom") === -1);
+    fall("18.19: Normwert-Quelle kursiv",
+      /<i>Normwerte: [^<]*<\/i>/.test(ht.html));
+    var zs = B.zusammenfassung(a).split("\n");
+    fall("18.19: Zusammenfassung — jeder Nerv ein Aufzählungspunkt (wird <ul>/<li>)",
+      zs.length >= 3 && zs.every(function (l) { return /^• N\. /.test(l); }) &&
+      (B.alsHtml(zs.join("\n")).match(/<li>/g) || []).length === zs.length, zs.join(" | "));
+    var ohneFrage = B.beurteilung(lies(
+      [["N. peroneus communis.L"], ["Tarsus", "6.0 ms", "3.0 mV", "M. extensor digitorum brevis-Tarsus", "", "80 mm", " m/s"]], []), []);
+    fall("18.19: Beurteilung ohne Fragestellung — „Auffällig: … – …“, keine Doppelklammer",
+      /^Auffällig: N\. peroneus communis links – verlängerte distale motorische Latenz \(im demyelinisierenden Bereich\)\.$/.test(ohneFrage) &&
+      ohneFrage.indexOf("))") === -1, ohneFrage);
+    var kr = TB.enmgLeser.deute([
+      ["Nerve", "Lat", "Amp"], ["", "ms", "mV"], ["Peroneus profundus Motorisch Rechts"],
+      ["OSG - EDB", "6.5", "1.3"], ["Dist. CF - OSG", "17.3", "0.9"],
+      ["Tibialis Motorisch Links"], ["Ankle - Abd hal", "4.4", "0.3"],
+      ["Rechts Peroneus profundus"], ["Dist. CF - EDB"], ["Links Tibialis Rechts Tibialis"],
+      ["Ankle - Abd hal Ankle - Abd hal"], ["Leitungsblock fraglich"]], []);
+    fall("18.19: Rauschfilter — umgestellte Kurven-Beschriftungen weg, echter Text bleibt (Näds Bild 16.10.)",
+      kr.reste.length === 1 && kr.reste[0] === "Leitungsblock fraglich", JSON.stringify(kr.reste));
   } catch (e) {
     fall("ENMG-18.18-Prüfungen liefen durch", false, String(e && e.stack || e));
   }

@@ -411,20 +411,9 @@ TB.enmg = (function () {
     return { html: html + h, text: text.join("\n") };
   }
   function tabelleHtmlText(ergebnis) {
+    // 18.19 (Näd 16.10.): Die Patientenzeile gehört nicht in den Befund —
+    // sie steht nur oben im Fenster (zur Kontrolle vor dem Übergeben).
     var T = TB.enmgTexte, html = [], text = [];
-    var p = ergebnis.patient || {};
-    var kopf = [];
-    if (p.name) kopf.push(p.name);
-    if (p.geburtsdatum) kopf.push("geb. " + p.geburtsdatum);
-    if (ergebnis.alter !== null && ergebnis.alter !== undefined)
-      kopf.push(ergebnis.alter + " J.");
-    if (p.untersuchungsdatum) kopf.push("ENMG vom " + p.untersuchungsdatum);
-    if (kopf.length) {
-      html.push('<p style="font-family:Arial;font-size:10pt"><b>' +
-        esc(kopf.join(" · ")) + "</b></p>");
-      text.push(kopf.join(" · "));
-      text.push("");
-    }
     ["motor", "sens"].forEach(function (art) {
       var bl = (ergebnis.bloecke || []).filter(function (b) {
         return (b.art === "motor") === (art === "motor"); });
@@ -433,8 +422,9 @@ TB.enmg = (function () {
       html.push(t.html); text.push(t.text, "");
     });
     var q = T.quelleZeile.replace("%s", quelle());
-    html.push('<p style="font-family:Arial;font-size:8pt;color:#808080">' +
-      esc(q) + "</p>");
+    // 18.19: Normwert-Quelle kursiv (Näd 16.10.)
+    html.push('<p style="font-family:Arial;font-size:8pt;color:#808080"><i>' +
+      esc(q) + "</i></p>");
     text.push(q);
     return { html: html.join("\n"), text: text.join("\n") };
   }

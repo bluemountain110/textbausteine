@@ -311,6 +311,7 @@ TB.ansichtEnmg = (function () {
     if (!t.length && ergebnis.fragestellungText) return ergebnis.fragestellungText;
     return t.join(" ");
   }
+  var LEER = '<p style="font-family:Arial;font-size:10pt;margin:0"><br></p>';
   function zusammensetzen(mitTabelle, mitText) {
     var B = TB.enmgBefund, html = [], text = [];
     var P = '<p style="font-family:Arial;font-size:10pt;margin:8px 0 2px"><b>';
@@ -319,15 +320,18 @@ TB.ansichtEnmg = (function () {
       html.push(P + T().fragestellungTitel + "</b> " +
         B.alsHtml(fr).replace(/^<p[^>]*>|<\/p>$/g, "") + "</p>");
       text.push(T().fragestellungTitel + " " + fr, "");
+      if (mitTabelle) html.push(LEER);   // 18.19: Leerzeile vor den Tabellen
     }
     if (mitTabelle) {
       var ht = TB.enmg.tabelleHtmlText(ergebnis);
       html.push(ht.html); text.push(ht.text, "");
     }
     if (mitText) {
-      html.push(P + T().zusammenfassungTitel + "</b></p>" + B.alsHtml(zusText));
+      // 18.19 (Näd 16.10.): eine echte Leerzeile vor Zusammenfassung und
+      // Beurteilung — Abstände (margin) gehen in KISIM/Word verloren.
+      html.push(LEER + P + T().zusammenfassungTitel + "</b></p>" + B.alsHtml(zusText));
       text.push(T().zusammenfassungTitel, zusText, "");
-      html.push(P + T().beurteilungTitel + "</b></p>" + B.alsHtml(beuText));
+      html.push(LEER + P + T().beurteilungTitel + "</b></p>" + B.alsHtml(beuText));
       text.push(T().beurteilungTitel, beuText);
     }
     return { html: html.join("\n"), text: text.join("\n") };
@@ -361,7 +365,7 @@ TB.ansichtEnmg = (function () {
     return {
       indikation: fr ? { text: fr, html: B.alsHtml(fr) } : null,
       befund: { text: tab.text + "\n\n" + T().zusammenfassungTitel + "\n" + zusText,
-                html: tab.html + "\n" + P + T().zusammenfassungTitel + "</b></p>" +
+                html: tab.html + "\n" + LEER + P + T().zusammenfassungTitel + "</b></p>" +
                       B.alsHtml(zusText) },
       beurteilung: { text: beuText, html: B.alsHtml(beuText) },
       block: aktuellerText()
