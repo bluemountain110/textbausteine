@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "18.21 · ENMG: Keypoint-EMG wie im Spital, grenzwertig im Befund rot, Klick = normwertig · 16.10.2026";
+TB.FASSUNG = "18.22 · ENMG: Myografie-Tabelle und Kurzbefund, geeichte Balken, Anpassungs-Hinweis; KISIM-Tippen · 16.10.2026";
 
 TB.speicher = (function () {
 

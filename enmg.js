@@ -251,12 +251,71 @@ TB.enmg = (function () {
     }).map(function (x) { return x.b; });
   }
 
+  // 18.22: Muskeln wie die Nerven — alphabetisch, links vor rechts
+  // (Näd 16.10.: „so geordnet wie besprochen").
+  function muskelSchluessel(m) {
+    return String(m.muskel || "").replace(/^m{1,2}\.\s*/i, "")
+      .replace(/\s+(links|rechts)\s*$/i, "").toLowerCase();
+  }
+  function sortiereMuskeln(liste) {
+    var RANG = { links: 0, rechts: 1 };
+    return liste.map(function (m, i) { return { m: m, i: i }; }).sort(function (x, y) {
+      var c = muskelSchluessel(x.m).localeCompare(muskelSchluessel(y.m), "de");
+      if (c) return c;
+      var sx = RANG[x.m.seite] !== undefined ? RANG[x.m.seite] : 2,
+          sy = RANG[y.m.seite] !== undefined ? RANG[y.m.seite] : 2;
+      return sx !== sy ? sx - sy : x.i - y.i;
+    }).map(function (x) { return x.m; });
+  }
+  // 18.22: die Myografie-Tabelle unter den Normwerten — Spalten wie im
+  // Bericht des Geräts; leere Spalten (z. B. „Hinweise“) fallen weg.
+  // Die Interpretation steht wie am Gerät grün (normal) bzw. rot.
+  function myoTabelle(ergebnis) {
+    var myo = (ergebnis.myografie || []).filter(function (m) { return m.tabelle; });
+    if (!myo.length) return { html: "", text: "" };
+    var gruppen = [], index = {};
+    myo.forEach(function (m) {
+      var k = m.tabelle.kopf.join("|");
+      if (!index[k]) { index[k] = { kopf: m.tabelle.kopf, zeilen: [] }; gruppen.push(index[k]); }
+      index[k].zeilen.push(m.tabelle.zellen);
+    });
+    var html = [], text = [];
+    gruppen.forEach(function (g) {
+      var spalten = g.kopf.map(function (t, i) { return i; }).filter(function (i) {
+        return i < 2 || g.zeilen.some(function (z) { return String(z[i] || "").trim() !== ""; });
+      });
+      var h = '<p style="font-family:Arial;font-size:10pt;margin:8px 0 2px"><b>' +
+        TB.enmgTexte.myoTitel + "</b></p>" +
+        '<table style="border-collapse:collapse;width:100%;margin-bottom:8px"><tr>' +
+        spalten.map(function (i, n) {
+          return (n === 0 ? TH.replace('style="', 'style="width:30%;') : TH) + esc(g.kopf[i]) + "</td>";
+        }).join("") + "</tr>";
+      text.push(TB.enmgTexte.myoTitel);
+      text.push(spalten.map(function (i) { return g.kopf[i]; }).join("  |  "));
+      g.zeilen.forEach(function (z) {
+        h += "<tr>" + spalten.map(function (i) {
+          var w = esc(z[i] || "");
+          if (/interpretation/i.test(g.kopf[i]) && w) {
+            var normal = /^(normal|unauffällig)$/i.test(String(z[i]).trim());
+            w = '<span style="color:' + (normal ? GRUEN : ROT) + ';font-weight:bold">' + w + "</span>";
+          }
+          return TDL + w + "</td>";
+        }).join("") + "</tr>";
+        text.push(spalten.map(function (i) { return z[i] || ""; }).join("  |  "));
+      });
+      html.push(h + "</table>");
+      text.push("");
+    });
+    return { html: html.join("\n"), text: text.join("\n") };
+  }
+
   // ---- Ein ganzes Lese-Ergebnis bewerten --------------------------------
   function bewerte(ergebnis) {
     var alter = alterAusDaten(ergebnis.patient.geburtsdatum,
                               ergebnis.patient.untersuchungsdatum);
     ergebnis.alter = alter;
     ergebnis.bloecke = sortiere(ergebnis.bloecke || []);
+    if (ergebnis.myografie) ergebnis.myografie = sortiereMuskeln(ergebnis.myografie);
     (ergebnis.bloecke || []).forEach(function (block) {
       var nerv = erkenneNerv(block.nervText);
       block.nervId = nerv ? nerv.id : null;
@@ -436,6 +495,9 @@ TB.enmg = (function () {
     html.push('<p style="font-family:Arial;font-size:8pt;color:#808080"><i>' +
       esc(q) + "</i></p>");
     text.push(q);
+    // 18.22 (Näd 16.10.): unterhalb der Normwerte die Myografie-Tabelle
+    var mt = myoTabelle(ergebnis);
+    if (mt.html) { html.push(mt.html); text.push("", mt.text); }
     return { html: html.join("\n"), text: text.join("\n") };
   }
 
@@ -450,6 +512,6 @@ TB.enmg = (function () {
     tabelleHtmlText: tabelleHtmlText, spalten: spalten,
     spaltenFuerArt: spaltenFuerArt, nervAnzeige: nervAnzeige,
     nervZeile: nervZeile, sortiere: sortiere, nachfuehren: nachfuehren,
-    farbeFuer: farbeFuer
+    farbeFuer: farbeFuer, myoTabelle: myoTabelle, sortiereMuskeln: sortiereMuskeln
   };
 })();

@@ -143,8 +143,8 @@ TB.selbsttestEnmgBefund = function () {
     fall("Kein falsches CTS bei unauffälligem Medianus (Näds Fund 14.10.)",
       /N\. medianus rechts: unauffällig\./.test(zc) && !/Carpaltunnel/.test(zc), zc.split("\n")[0]);
     fall("Myographien unter der Tabelle erkannt (2 Muskeln, Seite auch bei „medialislinks“)",
-      c.myografie.length === 2 && c.myografie[1].seite === "links" &&
-      /medialis links$/.test(c.myografie[1].muskel) && c.myografie[1].fasz && !c.myografie[1].spont,
+      c.myografie.length === 2 && c.myografie.some(function (m) {
+        return m.seite === "links" && /medialis links$/.test(m.muskel) && m.fasz && !m.spont; }),
       c.myografie.map(function (m) { return m.muskel; }).join(" | "));
     var bc = B.beurteilung(c, B.fragenAusText(c.fragestellungText));
     fall("Frage „ALS?“ → keine Hinweise auf Motoneuronerkrankung + benigne Faszikulationen",
@@ -409,7 +409,7 @@ TB.selbsttestEnmg1818 = function () {
     TB.enmg.bewerte(kp);
     var kpB = B.beurteilung(kp, []), kpZ = B.zusammenfassung(kp);
     fall("18.20: Keypoint-EMG in Zusammenfassung und Beurteilung (Denervation genannt)",
-      /Myografie:/.test(kpZ) && /• M\. Abd pollicis brevis rechts: .*pathologische Spontanaktivität/.test(kpZ) &&
+      /Myografie:/.test(kpZ) && /• M\. Abd pollicis brevis rechts: subakute Denervation/.test(kpZ) &&
       /pathologische Spontanaktivität in M\. Abd pollicis brevis rechts/.test(kpB), kpB);
     var kp2 = TB.enmgLeser.deute([["EMG Befunde"], ["Einstisch Spontan Aktivität Willkür. Aktivität"],
       ["Muskel Interpretation Aktivität Fib PSW Fasz Amp IP Hinweise"],
@@ -422,6 +422,41 @@ TB.selbsttestEnmg1818 = function () {
       /^keine pathologische Spontanaktivität/.test(kp2.myografie[0].befund) &&
       /^Einstichaktivität erhöht/.test(kp2.myografie[1].befund),
       kp2.myografie.map(function (m) { return m.muskel + ": " + m.befund; }).join(" | "));
+    // ---- 18.22: Näds Funde vom 16.10. spätabends ----------------------------
+    var kp3 = TB.enmgLeser.deute([["EMG Befunde"], ["Muskel Interpretation Aktivität Fib PSW Fasz Amp IP Hinweise"],
+      ["Rechts Tibialis anterior subakute Denervation 3/10 4/10 1/10 3.5 mV Voll"],
+      ["Rechts Gastroc caput med subakute Denervation 7/10 7/10 1/10 3.5 mV Voll"],
+      ["Links Biceps Normal 0/10 0/10 0/10 3.5 mV Voll"],
+      ["Rechts Biceps Normal 0/10 0/10 0/10 3.5 mV Voll"]], []);
+    TB.enmg.bewerte(kp3);
+    fall("18.22: Muskeln alphabetisch, links vor rechts",
+      kp3.myografie.map(function (m) { return m.muskel; }).join(", ") ===
+      "M. Biceps links, M. Biceps rechts, M. Gastroc caput med rechts, M. Tibialis anterior rechts",
+      kp3.myografie.map(function (m) { return m.muskel; }).join(", "));
+    var mt = E.myoTabelle(kp3);
+    fall("18.22: Myografie-Tabelle unter den Normwerten — Spalten wie am Gerät, leere „Hinweise“ weg, Interpretation farbig",
+      /Myografie \(Nadel-EMG\)/.test(mt.html) && /Interpretation/.test(mt.html) && !/Hinweise/.test(mt.html) &&
+      /color:#c00000;font-weight:bold">subakute Denervation/.test(mt.html) &&
+      /color:#1a7a1a;font-weight:bold">Normal/.test(mt.html) && /Rechts Gastroc caput med/.test(mt.html) &&
+      E.tabelleHtmlText(kp3).html.indexOf("Myografie (Nadel-EMG)") !== -1);
+    var kz = B.zusammenfassung(kp3);
+    fall("18.22: Zusammenfassung je Muskel kurz („subakute Denervation mit Faszikulationen“, „unauffällig“)",
+      /• M\. Gastroc caput med rechts: subakute Denervation mit Faszikulationen\./.test(kz) &&
+      /• M\. Biceps links: unauffällig\./.test(kz), kz);
+    var pnpMyo = lies([["N. peroneus communis.R"], ["Tarsus", "4.0 ms", "0.5 mV", "M. extensor digitorum brevis-Tarsus", "", "80 mm", " m/s"]],
+      [["N. suralis.R"], ["Crus", "2.5 ms", "3.0 ms", "1 µV", "Tarsus-Crus", "2.5 ms", "120 mm", "50 m/s"]]);
+    pnpMyo.myografie = kp3.myografie;
+    var pb = B.beurteilung(pnpMyo, ["pnp"]);
+    fall("18.22: Denervation in Gastrocnemius/Tibialis anterior passt zur axonalen PNP (Näd 16.10.), nicht als „Zusätzlich“",
+      /am ehesten axonalen/.test(pb) &&
+      /Spontanaktivität in M\. Gastroc caput med rechts, M\. Tibialis anterior rechts passt zur axonalen Schädigung/.test(pb) &&
+      !/Zusätzlich in der Myografie/.test(pb), pb);
+    var bl = TB.ansichtEnmg._balkenLage(51.3, { grenze: 43.24, richtung: "min" }, "nlg");
+    var bl2 = TB.ansichtEnmg._balkenLage(43.5, { grenze: 43.24, richtung: "min" }, "nlg");
+    var bl3 = TB.ansichtEnmg._balkenLage(3.0, { grenze: 4.0, richtung: "max" }, "lat");
+    fall("18.22: Balken geeicht — NLG 51.3 bei Grenze 43.2 steht klar im Normalen, 43.5 knapp, DML 3.0 bei 4.0 links im Grünen",
+      bl.links > 75 && bl2.links < 55 && bl2.links > 50 && bl3.links < 25,
+      [bl.links, bl2.links, bl3.links].map(function (x) { return Math.round(x); }).join(" / "));
     var mb = String(TB.speicher.merkeBenutzt);
     fall("18.20: Benutzen schreibt den Baustein nie zurück (kein Hochladen, kein neuer Zeitstempel)",
       mb.indexOf("merkeOffen") === -1 && mb.indexOf("aktualisiertAm") === -1);

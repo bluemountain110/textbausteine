@@ -256,14 +256,38 @@ TB.enmgBefund = (function () {
       zeilen.push("• " + g.name + seiteText(g.seite) + ": " + satz + ".");
     });
     // 18.14: Myografie (aus dem Freitext des Viking-Berichts) in Näds Wortlaut
+    // 18.22 (Näd 16.10.): je Muskel eine KURZE Zusammenfassung; die
+    // Einzelwerte stehen in der Myografie-Tabelle unter den Normwerten.
     var myo = erg.myografie || [];
     if (myo.length) {
       zeilen.push("Myografie:");
-      myo.forEach(function (m) { zeilen.push("• " + m.muskel + ": " + m.befund + "."); });
+      myo.forEach(function (m) {
+        zeilen.push("• " + m.muskel + ": " + (m.tabelle ? kurz(m) : m.befund) + ".");
+      });
     }
     (erg.freitext || []).forEach(function (t) { zeilen.push(t); });
     return zeilen.join("\n");
   }
+
+  // 18.22: Kurzbefund eines Muskels — die Interpretation des Geräts, wenn
+  // es eine gibt, sonst aus den Merkmalen.
+  function kurz(m) {
+    var i = String(m.interp || "").trim();
+    if (i && !/^(normal|unauffällig)$/i.test(i)) {
+      var t = i.charAt(0).toLowerCase() + i.slice(1);
+      return t + (m.fasz && !/fasz/i.test(t) ? " mit Faszikulationen" : "");
+    }
+    if (m.myopath) return "myopathisches Muster";
+    if (m.spont && m.neurogen) return "pathologische Spontanaktivität und chronisch neurogene Veränderungen";
+    if (m.spont) return "pathologische Spontanaktivität" + (m.fasz ? " und Faszikulationen" : "");
+    if (m.neurogen) return "chronisch neurogene Veränderungen";
+    if (m.fasz) return "Faszikulationen, sonst unauffällig";
+    return "unauffällig";
+  }
+  // Distale Beinmuskeln: Spontanaktivität dort passt zu einer axonalen
+  // Polyneuropathie (Näd 16.10.: „pathologische Spontanaktivität in
+  // Gastrocnemius und Tibialis anterior passt zu axonaler PNP").
+  var DISTAL_BEIN = /gastroc|soleus|tib(ialis)?\.?\s*ant|ext(ensor)?\.?\s*dig|ext(ensor)?\.?\s*hal|\bedb\b|abd(uctor)?\.?\s*hal|peron|fibular|interosse\w*\s+ped|\bfuss|\bfoot/i;
 
   // ---- (2) Beurteilung ------------------------------------------------------
   function beidseits(liste, satzFn) {
@@ -285,6 +309,7 @@ TB.enmgBefund = (function () {
   function beurteilung(erg, fragen) {
     var gs = gruppen(erg), saetze = [], erklaert = {};
     fragen = fragen || [];
+    (erg.myografie || []).forEach(function (m) { delete m.erklaert; });
     function nerv(id) { return gs.filter(function (g) { return g.id === id; }); }
 
     if (fragen.indexOf("pnp") !== -1) {
@@ -321,6 +346,16 @@ TB.enmgBefund = (function () {
         saetze.push("Befundkonstellation passend zu einer " + eig.join(", ") +
           " Polyneuropathie" + (!typ && leitung
             ? " (Leitungsverzögerungen ohne Erreichen der Demyelinisierungskriterien)" : "") + ".");
+        // 18.22: Denervation distal am Bein gehört zum PNP-Bild
+        var distal = (erg.myografie || []).filter(function (m) {
+          return m.spont && DISTAL_BEIN.test(m.muskel); });
+        if (distal.length) {
+          saetze.push("Die pathologische Spontanaktivität in " +
+            distal.map(function (m) { return m.muskel; }).join(", ") +
+            (/axonal/.test(typ) ? " passt zur axonalen Schädigung."
+                                : " spricht für eine (zusätzliche) axonale Komponente."));
+          distal.forEach(function (m) { m.erklaert = true; });
+        }
         if (demyelNerven.length === 1)
           saetze.push("Demyelinisierungskriterien nur im " + demyelNerven[0].name +
             seiteText(demyelNerven[0].seite) +
@@ -380,6 +415,7 @@ TB.enmgBefund = (function () {
     var myo = erg.myografie || [], myoErklaert = false;
     function namen(liste) { return liste.map(function (m) { return m.muskel; }).join(", "); }
     var spont = myo.filter(function (m) { return m.spont; });
+    var spontRest = myo.filter(function (m) { return m.spont && !m.erklaert; });
     var neuro = myo.filter(function (m) { return m.neurogen; });
     var fasz = myo.filter(function (m) { return m.fasz; });
     var myopath = myo.filter(function (m) { return m.myopath; });
@@ -423,10 +459,10 @@ TB.enmgBefund = (function () {
           (neuro.length ? "neurogene Veränderungen in " + namen(neuro) : "")) +
           " – Verteilung bitte beurteilen.");
     });
-    if (!myoErklaert && (spont.length || neuro.length || myopath.length))
+    if (!myoErklaert && (spontRest.length || neuro.length || myopath.length))
       saetze.push("Zusätzlich in der Myografie: " +
-        zusatzMyopath((spont.length ? "pathologische Spontanaktivität in " + namen(spont) : "") +
-        (spont.length && neuro.length ? "; " : "") +
+        zusatzMyopath((spontRest.length ? "pathologische Spontanaktivität in " + namen(spontRest) : "") +
+        (spontRest.length && neuro.length ? "; " : "") +
         (neuro.length ? "neurogene Veränderungen in " + namen(neuro) : "")) + ".");
     if (fragen.indexOf("verlauf") !== -1)
       saetze.push("Vergleich mit der Voruntersuchung: bitte ergänzen.");

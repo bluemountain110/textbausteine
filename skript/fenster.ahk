@@ -176,7 +176,7 @@ LueckenFenster(b, ziel, loeschen) {
 ; modus "vorschau": erscheint neben der Schreibmarke, nimmt den Fokus
 ; nicht. modus "suche": erscheint mit Fokus im Suchfeld.
 WahlZeigen(modus, praefix, tippLaenge, ziel) {
-    global wahlFenster, wahlListe, wahlSuche, wahlHinweis, wahlTippLaenge, wahlZiel, wahlModus
+    global wahlFenster, wahlListe, wahlSuche, wahlHinweis, wahlTippLaenge, wahlZiel, wahlModus, wahlCtrl
     wahlTippLaenge := tippLaenge
     wahlZiel := ziel
     wahlCtrl := ""
@@ -238,8 +238,15 @@ WahlZeigen(modus, praefix, tippLaenge, ziel) {
         wahlFenster.Show("x" x " y" y " w" breite)
         wahlSuche.Focus()
     }
-    else
+    else {
         wahlFenster.Show("NoActivate x" x " y" y " w" breite)
+        ; 18.22: Waechter - hat trotz NoActivate ein anderes Fenster den
+        ; Fokus bekommen, geht er sofort ans Schreibfeld zurueck.
+        if (ziel != 0 and WinExist("A") != ziel) {
+            try WinActivate(ziel)
+            WahlFokusZurueck()
+        }
+    }
 }
 
 WahlZu() {

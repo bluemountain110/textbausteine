@@ -147,14 +147,38 @@ TB.ansichtEnmg = (function () {
   // 9.10.): Messbereich 0 bis doppelte Grenze, die Grenze in der Mitte;
   // grüner Teil = normal, oranger Streifen = grenzwertig (5 %), roter
   // Teil = pathologisch; der Punkt ist Dein Messwert (am Rand geklemmt).
-  function balken(wert, bew) {
+  // 18.22 (Näd 16.10.: „NLG 51.3 ist hochnormal, sieht aber knapp normal
+  // aus"): Die Skala misst das VERHÄLTNIS zur Grenze, logarithmisch. Die
+  // Mitte ist Deine Grenze; die normale Hälfte reicht bis zu dem, was
+  // klar normal ist (NLG/Latenz: 30 % besser als die Grenze, Amplitude:
+  // das Dreifache), die pathologische bis 50 % schlechter (Amplitude:
+  // ein Viertel). Der orange Streifen ist genau die 5 %-Zone.
+  var SPANNE = { nlg: [1.3, 1.5], lat: [1.3, 1.5], fLat: [1.3, 1.5], amp: [3, 4] };
+  function balkenLage(wert, bew, feld) {
+    var sp = SPANNE[feld] || [1.3, 1.5];
+    var r = Math.max(wert, 1e-6) / bew.grenze;
+    var d = (bew.richtung === "max") ? -Math.log(r) : Math.log(r);   // > 0 = normal
+    var anteil = d >= 0 ? 0.5 + 0.5 * Math.min(1, d / Math.log(sp[0]))
+                        : 0.5 - 0.5 * Math.min(1, -d / Math.log(sp[1]));
+    var band = 50 * Math.min(1, Math.log(1 / 0.95) / Math.log(sp[1]));
+    // Bei oberen Grenzen liegt die normale Seite links
+    var links = (bew.richtung === "max") ? (1 - anteil) * 100 : anteil * 100;
+    return { links: Math.max(3, Math.min(97, links)), band: band };
+  }
+  function balken(wert, bew, feld) {
     var g = bew.grenze;
     if (!(g > 0) || typeof wert !== "number") return null;
     var max = bew.richtung === "max";
-    var b = el("span", "enmg-balken" + (max ? " enmg-balken-max" : " enmg-balken-min"));
-    var pos = Math.max(3, Math.min(97, wert / (2 * g) * 100));
+    var b = el("span", "enmg-balken");
+    var l = balkenLage(wert, bew, feld);
+    var R = "#e7a3a3", O = "#f2c98a", G = "#a9d8a9";
+    b.style.background = max
+      ? "linear-gradient(to right," + G + " 0%," + G + " 50%," + O + " 50%," + O + " " +
+        (50 + l.band) + "%," + R + " " + (50 + l.band) + "%," + R + " 100%)"
+      : "linear-gradient(to right," + R + " 0%," + R + " " + (50 - l.band) + "%," + O + " " +
+        (50 - l.band) + "%," + O + " 50%," + G + " 50%," + G + " 100%)";
     var punkt = el("span", "enmg-balken-punkt enmg-punkt-" + bew.farbe);
-    punkt.style.left = pos + "%";
+    punkt.style.left = l.links + "%";
     b.appendChild(punkt);
     b.title = (max ? "≤ " : "≥ ") + g + " · " + wert;
     return b;
@@ -168,11 +192,28 @@ TB.ansichtEnmg = (function () {
     var tabelle = el("table", "enmg-tabelle enmg-tabelle-art");
     var kopfzeile = el("tr");
     sp.forEach(function (s) { kopfzeile.appendChild(el("th", "", s.titel)); });
+    // 18.22 (Näd 16.10.): Hat Näd einen Wert als normwertig gewertet,
+    // steht rechts der Zeile, WAS geändert wurde — mit „rückgängig“.
+    // Die Spalte erscheint nur im Fenster und nur, wenn es etwas gibt.
+    function anpassungen(z) {
+      var aus = [], b = z.bew || {};
+      sp.forEach(function (s) {
+        var bw = b[s.feld];
+        if (!s.norm && s.bewertet && bw && bw.farbe === "normal" &&
+            aus.every(function (x) { return x.feld !== s.feld; }))
+          aus.push({ feld: s.feld, titel: s.titel, bew: bw, wert: z.werte[s.feld] });
+      });
+      return aus;
+    }
+    var mitHinweis = bloecke.some(function (bl) {
+      return bl.zeilen.some(function (z) { return anpassungen(z).length; }); });
+    if (mitHinweis) kopfzeile.appendChild(el("th", "", T().anpassungTitel));
+    var breite = sp.length + (mitHinweis ? 1 : 0);
     tabelle.appendChild(kopfzeile);
     bloecke.forEach(function (block) {
       var nz = el("tr", "enmg-nervzeile");
       var nt = el("td", "", TB.enmg.nervZeile(block));
-      nt.colSpan = sp.length;
+      nt.colSpan = breite;
       if (!block.nervId)
         nt.appendChild(el("span", "marke enmg-marke-warn", T().unbekannterNerv));
       nz.appendChild(nt);
@@ -195,12 +236,30 @@ TB.ansichtEnmg = (function () {
             wertZelle(td, w[s.feld], s.bewertet ? b[s.feld] : null);
             var bw = s.bewertet ? b[s.feld] : null;
             if (bw && bw.farbe && w[s.feld] !== null && w[s.feld] !== undefined) {
-              var ba = balken(w[s.feld], bw);
+              var ba = balken(w[s.feld], bw, s.feld);
               if (ba) td.appendChild(ba);
             }
           }
           tr.appendChild(td);
         });
+        if (mitHinweis) {
+          var liste = anpassungen(z);
+          var hz = el("td", liste.length ? "enmg-anpassung" : "");
+          liste.forEach(function (a) {
+            var zeile = el("div", "", T().anpassungText
+              .replace("%s", a.titel.replace(/\s*\(.*\)$/, "")).replace("%s", String(a.wert)));
+            var zurueck = el("button", "leise enmg-rueckgaengig", T().rueckgaengig);
+            zurueck.addEventListener("click", function () {
+              a.bew.farbe = a.bew.farbeVorher || "rot"; delete a.bew.farbeVorher;
+              if (zusGeaendert || beuGeaendert) melde(T().normalVonHand, true);
+              else vorschlagNeu();
+              neuZeichnen();
+            });
+            zeile.appendChild(zurueck);
+            hz.appendChild(zeile);
+          });
+          tr.appendChild(hz);
+        }
         tabelle.appendChild(tr);
       });
     });
@@ -300,6 +359,13 @@ TB.ansichtEnmg = (function () {
     wurzel.appendChild(el("div", "enmg-legende", T().legende));
     wurzel.appendChild(el("div", "enmg-quelle",
       T().quelleZeile.replace("%s", TB.enmg.quelle())));
+    // 18.22: die Myografie-Tabelle wie im Bericht, unter den Normwerten
+    var mt = TB.enmg.myoTabelle(ergebnis);
+    if (mt.html) {
+      var mk = el("div", "enmg-myo");
+      mk.innerHTML = mt.html;
+      wurzel.appendChild(mk);
+    }
 
     zeichneBefund(wurzel);
 
@@ -419,6 +485,7 @@ TB.ansichtEnmg = (function () {
 
   return { zeichne: zeichne, setzeFensterModus: setzeFensterModus,
            aktuellerText: aktuellerText, aktuelleFelder: aktuelleFelder,
+           _balkenLage: balkenLage,
            verarbeite: verarbeite,
            zusammensetzen: zusammensetzen };
 })();

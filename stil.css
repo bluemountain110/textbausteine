@@ -1000,3 +1000,8 @@ body.nur-kasten .anzeigen-text { max-height: calc(100vh - 190px); }
 .enmg-klickbar { cursor: pointer; border-bottom: 1px dotted currentColor; }
 .enmg-normal { color: #222; font-weight: 400; }
 .enmg-punkt-normal { background: #555; }
+
+/* 18.22: Anpassungs-Hinweis rechts der Zeile, Myografie-Tabelle im Fenster */
+.enmg-anpassung { font-size: 0.82em; color: #5a4a00; background: #fff8e0; white-space: nowrap; }
+.enmg-anpassung .enmg-rueckgaengig { margin-left: 6px; padding: 1px 6px; font-size: 0.95em; }
+.enmg-myo { margin-top: 10px; }

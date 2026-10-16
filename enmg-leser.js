@@ -176,6 +176,8 @@ TB.enmgLeser = (function () {
   // Einstich werden dann von hinten aus dem Text davor gelöst.
   var EMG_RE = new RegExp("^(rechts|links|re\\.?|li\\.?)\\s+(.+?)\\s+" +
     GRAD + "\\s+" + GRAD + "\\s+" + GRAD + "\\s*(.*)$", "i");
+  var KP_KOPF = ["Muskel", "Interpretation", "Einstich-Aktivität", "Fib", "PSW",
+                 "Fasz", "Amp", "IP", "Hinweise"];
   var AKT_RE = /\s+(erhöht|erhoeht|vermindert|reduziert|fehlend|gesteigert|normal)$/i;
   var INTERP_RE = /\s+((?:(?:akute|subakute|chronische?|floride|frische|alte)\s+)?(?:denervation|denervierung)|chronisch[- ]neurogen\w*|neurogen\w*|myopath\w*|reinnervation\w*|normal|unauffällig|pathologisch)$/i;
   function grad(t) {
@@ -223,9 +225,13 @@ TB.enmgLeser = (function () {
       : (/^dicht$/i.test(ip) ? "dichtes Interferenzmuster" : "Interferenzmuster " + ip.toLowerCase()));
     var befund = teile.join(", ") + (interp && !/^(normal|unauffällig)$/i.test(interp) ? " – " + interp : "") +
       (hinweis ? " (" + hinweis + ")" : "");
+    // 18.22: dazu die Zeile genau wie in der Keypoint-Tabelle
     return { muskel: "M. " + name.trim() + " " + seite, seite: seite, befund: befund,
              spont: spont, fasz: fasz, neurogen: neurogen, myopath: myopath,
-             unspez: [], quelle: "keypoint" };
+             interp: interp, unspez: [], quelle: "keypoint",
+             tabelle: { kopf: KP_KOPF,
+                        zellen: [(seite === "rechts" ? "Rechts " : "Links ") + name.trim(),
+                                 interp, akt, fib, psw, fz, amp, ip, hinweis] } };
   }
 
   // 18.18: Die Kurvenseiten des Keypoint wiederholen Segment- und
@@ -281,7 +287,7 @@ TB.enmgLeser = (function () {
       if (/^([\d.,]+\s*(mv|µv|uv|ms|s)\s*\/\s*d\s*)+$/i.test(r.trim())) return false;
       if (/^(seite|page)\s*\d+/i.test(r.trim())) return false;
       // 18.20: Mittelungs-Angaben der Kurvenseiten („Mitt.: 5 Mitt.: 1“)
-      if (/^(mitt\.?:?\s*\d+\s*)+$/i.test(r.trim())) return false;
+      if (/^(m\s*itt\.?\s*:?\s*\d+\s*)+$/i.test(r.trim())) return false;
       if (/^(patientendaten|motorische kurven|sensible kurven|sensorische kurven)$/i.test(r.trim()))
         return false;
       if (/(name:|geburtsdatum|patienten\s*-?\s*id|datum der untersuchung)/i.test(r))

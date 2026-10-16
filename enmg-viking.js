@@ -133,8 +133,9 @@ TB.enmgViking = (function () {
     var k = -1;
     for (var i = 0; i < t.length; i++) if (/^(muscle|muskel)$/i.test(t[i])) { k = i; break; }
     if (k === -1) return aus;
-    var kopf = [];
-    for (var j = k; j < t.length && t[j] !== ""; j++) kopf.push(t[j].toLowerCase());
+    var kopf = [], kopfO = [];
+    for (var j = k; j < t.length && t[j] !== ""; j++) { kopf.push(t[j].toLowerCase()); kopfO.push(t[j]); }
+    kopfO[0] = "Muskel";
     var n = kopf.length;
     function sp(re) { for (var x = 0; x < n; x++) if (re.test(kopf[x])) return x; return -1; }
     var S = { einstich: sp(/einstich/), fib: sp(/^fib/), psw: sp(/psw|scharf/), fasz: sp(/fasz/),
@@ -187,9 +188,12 @@ TB.enmgViking = (function () {
         if (/gelichtet|einzel|reduziert/.test(muster) && !/submax|schwach|gering/.test(ansp)) neurogen = true;
       }
       if (myopath) teile.push("myopathisches Muster (kurze, kleine Potentiale, frühe Rekrutierung)");
+      // 18.22: die Zeile so, wie sie im Bericht des Geräts steht (Tabelle)
+      var zellen = z.slice(0, n); zellen[0] = name;
       aus.push({ muskel: name, seite: seite, befund: teile.join(", "), spont: spont,
                  fasz: fasz, neurogen: neurogen && !myopath, myopath: myopath,
-                 unspez: unspez, quelle: "tabelle" });
+                 unspez: unspez, quelle: "tabelle",
+                 tabelle: { kopf: kopfO, zellen: zellen } });
     }
     return aus;
   }

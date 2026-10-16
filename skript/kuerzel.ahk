@@ -112,9 +112,17 @@ BeiZeichen(ih, zeichen) {
     VorschauNachziehen()
 }
 
+; 18.22 (Naed 16.10.: in KISIM erschien das Getippte manchmal nicht im
+; Feld, obwohl die Auswahl aufging): Das Fenster wird erst gezeigt,
+; wenn 90 ms keine Taste mehr kam. So bleibt der Tastatur-Horcher beim
+; schnellen Tippen frei, und Windows bekommt jede Taste sofort.
+VorschauNachziehen() {
+    SetTimer(VorschauJetzt, -90)
+}
+
 ; Ab ;; und mindestens einem Zeichen erscheint das Auswahl-Fenster
 ; neben der Schreibmarke — es zeigt nur, es stiehlt keinen Fokus.
-VorschauNachziehen() {
+VorschauJetzt() {
     global puffer
     if ImBrowserGesperrt() {
         WahlZu()
