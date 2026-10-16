@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "18.19 · Nachbesserung 18.18: Bericht ohne Patientenzeile, Aufzählung je Nerv, nur der weisse Kasten · 16.10.2026";
+TB.FASSUNG = "18.21 · ENMG: Keypoint-EMG wie im Spital, grenzwertig im Befund rot, Klick = normwertig · 16.10.2026";
 
 TB.speicher = (function () {
 
@@ -363,11 +363,16 @@ TB.speicher = (function () {
     return b;
   }
 
+  // 18.20 (Näds Fund 16.10.: ;;txirr fügte plötzlich ein): Benutzen ist
+  // KEINE Änderung des Bausteins. Früher schrieb jedes Benutzen den
+  // ganzen Baustein dieses Geräts mit neuem Zeitstempel zurück — war
+  // die Kopie hier veraltet, überschrieb sie neuere Einstellungen eines
+  // anderen Geräts (so ging „Nur anzeigen“ verloren). Jetzt merkt sich
+  // das Gerät nur noch den Zeitpunkt; die Zählung läuft wie bisher
+  // über die Statistik.
   function merkeBenutzt(id) {
     var b = holen(id);
-    if (b) { merkeOffen(id, b.aktualisiertAm);
-             b.zuletztBenutztAm = jetztISO(); b.aktualisiertAm = jetztISO();
-             sichern(); }
+    if (b) { b.zuletztBenutztAm = jetztISO(); sichern(); }
   }
 
   function inPapierkorb(id) {

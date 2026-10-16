@@ -995,3 +995,8 @@ body.nur-kasten dialog[open] { position: fixed; inset: 0; margin: 0;
   border: 0; border-radius: 0; box-shadow: none; box-sizing: border-box;
   overflow: auto; }
 body.nur-kasten .anzeigen-text { max-height: calc(100vh - 190px); }
+
+/* 18.21: Klick auf einen roten/orangen ENMG-Wert = als normwertig werten */
+.enmg-klickbar { cursor: pointer; border-bottom: 1px dotted currentColor; }
+.enmg-normal { color: #222; font-weight: 400; }
+.enmg-punkt-normal { background: #555; }

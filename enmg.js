@@ -302,9 +302,17 @@ TB.enmg = (function () {
   }
   // 18.17: Die Grenze steht nicht mehr als graue Klammer am Wert,
   // sondern in der eigenen Norm-Spalte daneben (E1 = (a)).
+  // 18.20 (Näd 16.10.): Orange nur im Fenster — im Befund steht ein
+  // grenzwertiger Wert ohne Farbe (er zählt ja nicht als pathologisch).
+  // 18.21 (Näd 16.10.): im Befund zeigt ein grenzwertiger Wert seine
+  // tatsächliche Seite — er liegt ausserhalb der Grenze, also rot (nicht
+  // fett). Hat Näd ihn im Fenster als normwertig gewertet („normal“),
+  // steht er schwarz.
   function wertHtml(w, bew) {
     if (w === null || w === undefined) return "";
-    if (!bew || !bew.farbe) return zahl(w);
+    if (!bew || !bew.farbe || bew.farbe === "normal") return zahl(w);
+    if (bew.farbe === "grenzwertig")
+      return '<span style="color:' + ROT + ';font-weight:normal">' + zahl(w) + "</span>";
     var farbe = bew.farbe === "rot" ? ROT :
                 bew.farbe === "grenzwertig" ? ORANGE : GRUEN;
     return '<span style="color:' + farbe + ';font-weight:' +
@@ -313,8 +321,7 @@ TB.enmg = (function () {
   function wertText(w, bew) {
     if (w === null || w === undefined) return "";
     if (!bew || !bew.farbe) return zahl(w);
-    return zahl(w) + (bew.farbe === "rot" ? " (!)" :
-      bew.farbe === "grenzwertig" ? " (grenzwertig)" : "");
+    return zahl(w) + (bew.farbe === "rot" || bew.farbe === "grenzwertig" ? " (!)" : "");
   }
   // Inhalt der Norm-Spalte: „≤ 4.2" bzw. „≥ 50" — leer ohne Bewertung.
   function normHtml(bew) {
@@ -358,7 +365,10 @@ TB.enmg = (function () {
       // Bewertung dieser Spalte vorliegt (sonst bliebe sie ganz leer).
       if (a[2] && block.zeilen.some(function (z) {
             return z.bew && z.bew[a[0]]; }))
-        aus.push({ feld: a[0], titel: T.spalteNorm, norm: true });
+        // 18.20 (Näd 16.10.): die Norm-Spalte nennt ihre Einheit
+        aus.push({ feld: a[0], norm: true,
+                   titel: (/\(([^)]+)\)/.exec(a[1]) ?
+                     T.spalteNorm + " (" + /\(([^)]+)\)/.exec(a[1])[1] + ")" : T.spalteNorm) });
     });
     return aus;
   }

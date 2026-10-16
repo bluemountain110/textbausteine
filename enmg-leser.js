@@ -72,6 +72,7 @@ TB.enmgLeser = (function () {
     var patient = leseKopf(texte);
     var bloecke = [], reste = [];
     var meinungen = null, art = null, block = null;
+    var emg = false, myografie = [];
 
     function istKopfzeile(z) {
       var erste = String(z[0] || "").trim().toLowerCase();
@@ -90,12 +91,28 @@ TB.enmgLeser = (function () {
       var z = zeilen[i];
       if (!z || !z.length) continue;
       if (istKopfzeile(z)) {
+        emg = false;
         var einheitZeile = zeilen[i + 1] || [];
         meinungen = bedeutungen(z, einheitZeile);
         art = artAusBedeutungen(meinungen);
         block = null;
         i++; // Einheiten-Zeile überspringen
         continue;
+      }
+      // 18.20: Nadel-EMG-Tabelle des Keypoint („EMG Befunde“, Kopf
+      // „Muskel Interpretation Aktivität Fib PSW Fasz Amp IP Hinweise“,
+      // Zeilen „Rechts Abd pollicis brevis subakute Denervation Erhöht
+      // 2/10 2/10 1/10 3.5 mV Voll“ — Näds Bild 16.10.).
+      var zt = z.map(function (c) { return String(c || ""); }).join(" ")
+        .replace(/\s+/g, " ").trim();
+      if (/^muskel\b/i.test(zt) && /\bfib\b/i.test(zt) && /\bpsw\b/i.test(zt)) {
+        emg = true; continue;
+      }
+      if (/^emg[- ]?befunde?$/i.test(zt) ||
+          (/^einsti/i.test(zt) && /spontan/i.test(zt))) continue;
+      if (emg) {
+        var mz = emgZeile(zt);
+        if (mz) { myografie.push(mz); continue; }
       }
       if (!meinungen) continue; // vor der ersten Tabelle: Kopfbereich
       if (istNervKopf(z)) {
@@ -143,7 +160,72 @@ TB.enmgLeser = (function () {
     }
     // Leere Blöcke (Nerv-Titel ohne Zeilen) fliegen raus.
     bloecke = bloecke.filter(function (b) { return b.zeilen.length; });
-    return { patient: patient, bloecke: bloecke, reste: ohneRauschen(reste, bloecke) };
+    return { patient: patient, bloecke: bloecke, reste: ohneRauschen(reste, bloecke),
+             myografie: myografie };
+  }
+
+  // ---- 18.20: eine Zeile der Keypoint-Nadel-EMG-Tabelle -----------------
+  // Spalten: Seite+Muskel · Interpretation · Einstich-Aktivität · Fib ·
+  // PSW · Fasz (je „n/10“) · Amplitude · IP (Interferenzmuster) ·
+  // Hinweise. Die Interpretation steht zwischen Muskelname und
+  // Aktivität und wird an bekannten Fachwörtern erkannt.
+  var GRAD = "(\\d+\\s*/\\s*\\d+|[0-4]\\+?|\\+{1,4}|-|–)";
+  // 18.21 (Näds Bild 16.10.): Die Spalte „Einstich Aktivität“ ist meist
+  // LEER, „Normal“ steht in der Interpretation. Darum zuerst nur die drei
+  // Spontanaktivitäts-Werte als Anker; Muskel, Interpretation und
+  // Einstich werden dann von hinten aus dem Text davor gelöst.
+  var EMG_RE = new RegExp("^(rechts|links|re\\.?|li\\.?)\\s+(.+?)\\s+" +
+    GRAD + "\\s+" + GRAD + "\\s+" + GRAD + "\\s*(.*)$", "i");
+  var AKT_RE = /\s+(erhöht|erhoeht|vermindert|reduziert|fehlend|gesteigert|normal)$/i;
+  var INTERP_RE = /\s+((?:(?:akute|subakute|chronische?|floride|frische|alte)\s+)?(?:denervation|denervierung)|chronisch[- ]neurogen\w*|neurogen\w*|myopath\w*|reinnervation\w*|normal|unauffällig|pathologisch)$/i;
+  function grad(t) {
+    var m = /(\d+)\s*\/\s*\d+/.exec(t || "");
+    if (m) return +m[1];
+    if (/\+/.test(t || "")) return (t.match(/\+/g) || []).length;
+    var n = parseInt(t, 10);
+    return isNaN(n) ? 0 : n;
+  }
+  function emgZeile(t) {
+    var m = EMG_RE.exec(t);
+    if (!m) return null;
+    var seite = /^r/i.test(m[1]) ? "rechts" : "links";
+    var name = m[2], interp = "", akt = "";
+    var mk = AKT_RE.exec(name);
+    if (mk) {
+      var ohne = name.slice(0, mk.index);
+      // „normal“ am Ende ist nur dann die Einstich-Aktivität, wenn davor
+      // noch eine Interpretation steht („… Normal Normal“).
+      if (!/^normal$/i.test(mk[1]) || INTERP_RE.test(ohne)) { akt = mk[1]; name = ohne; }
+    }
+    var mi = INTERP_RE.exec(name);
+    if (mi && mi.index > 0) { interp = mi[1]; name = name.slice(0, mi.index); }
+    var fib = m[3], psw = m[4], fz = m[5], rest = m[6] || "";
+    var amp = "", ip = "", hinweis = "";
+    var ma = /^([\d.,]+\s*[mµu]?V)\s*/i.exec(rest);
+    if (ma) { amp = ma[1]; rest = rest.slice(ma[0].length); }
+    var mp = /^(voll|dicht|gelichtet|reduziert|einzel\w*|gemischt|übergang\w*|fehlend|keine?)\b\s*/i.exec(rest);
+    if (mp) { ip = mp[1]; rest = rest.slice(mp[0].length); }
+    hinweis = rest.trim();
+    var spont = grad(fib) > 0 || grad(psw) > 0 || /denerv/i.test(interp);
+    var fasz = grad(fz) > 0;
+    var ipk = ip.toLowerCase(), ik = interp.toLowerCase();
+    var myopath = /myopath/.test(ik);
+    var neurogen = !myopath && (/neurogen|chronisch|reinnervation/.test(ik) ||
+                                /gelichtet|einzel|reduziert/.test(ipk));
+    var teile = [];
+    if (akt && !/^normal$/i.test(akt)) teile.push("Einstichaktivität " + akt.toLowerCase());
+    teile.push(spont && (grad(fib) > 0 || grad(psw) > 0)
+      ? "pathologische Spontanaktivität (Fib. " + fib + ", PSW " + psw + ")"
+      : (spont ? "pathologische Spontanaktivität" : "keine pathologische Spontanaktivität"));
+    if (fasz) teile.push("Faszikulationen (" + fz + ")");
+    if (amp) teile.push("Amplitude " + amp);
+    if (ip) teile.push(/^voll$/i.test(ip) ? "volles Interferenzmuster"
+      : (/^dicht$/i.test(ip) ? "dichtes Interferenzmuster" : "Interferenzmuster " + ip.toLowerCase()));
+    var befund = teile.join(", ") + (interp && !/^(normal|unauffällig)$/i.test(interp) ? " – " + interp : "") +
+      (hinweis ? " (" + hinweis + ")" : "");
+    return { muskel: "M. " + name.trim() + " " + seite, seite: seite, befund: befund,
+             spont: spont, fasz: fasz, neurogen: neurogen, myopath: myopath,
+             unspez: [], quelle: "keypoint" };
   }
 
   // 18.18: Die Kurvenseiten des Keypoint wiederholen Segment- und
@@ -182,11 +264,15 @@ TB.enmgLeser = (function () {
     ["rechts", "links", "motorisch", "sensorisch", "sensibel", "motor", "sens"].forEach(merk);
     var liste = Object.keys(teile).sort(function (a, b) { return b.length - a.length; });
     function nurBekanntes(r) {
-      var t = " " + String(r).toLowerCase().replace(/\s+/g, " ") + " ";
+      var t = " " + String(r).replace(/\s+/g, " ") + " ";
       liste.forEach(function (x) {
-        t = t.split(x).join(" ");
+        var re = new RegExp(x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+        t = t.replace(re, " ");
       });
-      return !/[a-zäöüß0-9]/i.test(t.replace(/[-|.,:;()\/\s]/g, ""));
+      // 18.20: Was übrig bleibt, sind höchstens Kürzel wie „HG“ (Näds
+      // Bild 16.10.: „HG - APB“ neben „Handgelenk - APB“).
+      var stuecke = t.split(/[\s\-|.,:;()\/]+/).filter(Boolean);
+      return stuecke.every(function (s) { return /^[A-ZÄÖÜ]{1,3}$/.test(s); });
     }
     return reste.filter(function (r) {
       var k = schluessel(r);
@@ -194,6 +280,8 @@ TB.enmgLeser = (function () {
       if (nurBekanntes(r)) return false;
       if (/^([\d.,]+\s*(mv|µv|uv|ms|s)\s*\/\s*d\s*)+$/i.test(r.trim())) return false;
       if (/^(seite|page)\s*\d+/i.test(r.trim())) return false;
+      // 18.20: Mittelungs-Angaben der Kurvenseiten („Mitt.: 5 Mitt.: 1“)
+      if (/^(mitt\.?:?\s*\d+\s*)+$/i.test(r.trim())) return false;
       if (/^(patientendaten|motorische kurven|sensible kurven|sensorische kurven)$/i.test(r.trim()))
         return false;
       if (/(name:|geburtsdatum|patienten\s*-?\s*id|datum der untersuchung)/i.test(r))

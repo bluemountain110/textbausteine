@@ -109,10 +109,27 @@ TB.ansichtEnmg = (function () {
     }
     // 18.17: Die Grenze steht in der Norm-Spalte daneben (normZelle).
     var w = el("span", bew.farbe === "rot" ? "enmg-rot" :
-      bew.farbe === "grenzwertig" ? "enmg-grenzwertig" : "enmg-gruen",
+      bew.farbe === "grenzwertig" ? "enmg-grenzwertig" :
+      bew.farbe === "normal" ? "enmg-normal" : "enmg-gruen",
       String(wert));
     w.title = bew.zeileName +
-      (bew.farbe === "grenzwertig" ? " — " + T().grenzwertigKurz : "");
+      (bew.farbe === "grenzwertig" ? " — " + T().grenzwertigKurz : "") +
+      (bew.farbe === "normal" ? " — " + T().normalGesetzt : "") +
+      (bew.farbe === "rot" || bew.farbe === "grenzwertig" ? " — " + T().klickNormal : "");
+    // 18.21 (Näd 16.10.): Ein Klick auf einen roten oder orangen Wert
+    // wertet ihn als normwertig (schwarz) — im Bericht, in der
+    // Zusammenfassung und in der Beurteilung. Ein zweiter Klick hebt es
+    // auf. Gilt nur für diesen Befund im Fenster, nichts wird gespeichert.
+    if (bew.farbe === "rot" || bew.farbe === "grenzwertig" || bew.farbe === "normal") {
+      w.classList.add("enmg-klickbar");
+      w.addEventListener("click", function () {
+        if (bew.farbe === "normal") { bew.farbe = bew.farbeVorher || "rot"; delete bew.farbeVorher; }
+        else { bew.farbeVorher = bew.farbe; bew.farbe = "normal"; }
+        if (zusGeaendert || beuGeaendert) melde(T().normalVonHand, true);
+        else vorschlagNeu();
+        neuZeichnen();
+      });
+    }
     td.appendChild(w);
   }
   function normZelle(td, bew) {
@@ -191,13 +208,11 @@ TB.ansichtEnmg = (function () {
   }
 
   // ---- Befund-Vorschlag (18.13) -------------------------------------------
-  function zeichneBefund(wurzel) {
+  // 18.20 (Näd 16.10.): Die Fragestellungen stehen OBEN — zwischen der
+  // Namenszeile und der ersten Tabelle; sie bestimmen die Beurteilung.
+  function zeichneFragen(wurzel) {
     var B = TB.enmgBefund;
-    var kasten = el("div", "enmg-befund");
-    kasten.appendChild(el("h3", "", T().befundTitel));
-    kasten.appendChild(el("div", "erklaerung", T().befundHinweis));
-
-    var fz = el("div", "status-teilmengen");
+    var fz = el("div", "status-teilmengen enmg-fragen");
     fz.appendChild(el("span", "enmg-befund-beschriftung", T().fragestellungTitel));
     B.FRAGEN.forEach(function (f) {
       var k = el("button", "status-chip" + (fragen.indexOf(f.id) !== -1 ? " aktiv" : ""),
@@ -211,10 +226,18 @@ TB.ansichtEnmg = (function () {
       });
       fz.appendChild(k);
     });
-    kasten.appendChild(fz);
+    wurzel.appendChild(fz);
     if (ergebnis.fragestellungText)
-      kasten.appendChild(el("div", "enmg-befund-export",
+      wurzel.appendChild(el("div", "enmg-befund-export",
         T().ausExport.replace("%s", ergebnis.fragestellungText)));
+  }
+
+  function zeichneBefund(wurzel) {
+    var B = TB.enmgBefund;
+    var kasten = el("div", "enmg-befund");
+    kasten.appendChild(el("h3", "", T().befundTitel));
+    kasten.appendChild(el("div", "erklaerung", T().befundHinweis));
+
 
     function feld(titel, wert, beiAenderung) {
       var l = el("label", "enmg-befund-feld");
@@ -258,6 +281,7 @@ TB.ansichtEnmg = (function () {
     wurzel.appendChild(kopf);
     if (ergebnis.alter === null || ergebnis.alter === undefined)
       wurzel.appendChild(el("div", "enmg-warnung", T().alterUnbekannt));
+    zeichneFragen(wurzel);
 
     ["motor", "sens"].forEach(function (art) {
       var bl = ergebnis.bloecke.filter(function (b) {

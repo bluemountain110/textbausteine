@@ -378,6 +378,53 @@ TB.selbsttestEnmg1818 = function () {
       ["Ankle - Abd hal Ankle - Abd hal"], ["Leitungsblock fraglich"]], []);
     fall("18.19: Rauschfilter — umgestellte Kurven-Beschriftungen weg, echter Text bleibt (Näds Bild 16.10.)",
       kr.reste.length === 1 && kr.reste[0] === "Leitungsblock fraglich", JSON.stringify(kr.reste));
+    // ---- 18.20: Näds Funde vom 16.10. abends ------------------------------
+    var spT = E.spaltenFuerArt(a.bloecke.filter(function (b) { return b.art === "motor"; }), "motor")
+      .filter(function (x) { return x.norm; }).map(function (x) { return x.titel; });
+    fall("18.20: Norm-Spalte nennt die Einheit („Norm (ms)“, „Norm (mV)“)",
+      spT.indexOf("Norm (ms)") !== -1 && spT.indexOf("Norm (mV)") !== -1, spT.join(", "));
+    var gwErg = lies([["N. suralis.R"]], [["N. suralis.R"], ["Crus", "2.5 ms", "3.0 ms", "9 µV", "Tarsus-Crus", "2.5 ms", "120 mm", "42.5 m/s"]]);
+    var gwZ = gwErg.bloecke[0].zeilen[0];
+    var gwHt = E.tabelleHtmlText(gwErg).html;
+    fall("18.21: grenzwertig ist im Fenster orange, im Befund rot (nicht fett)",
+      gwZ.bew.nlg && gwZ.bew.nlg.farbe === "grenzwertig" && gwHt.indexOf("#b06f00") === -1 &&
+      gwHt.indexOf('color:#c00000;font-weight:normal">42.5<') !== -1, gwZ.bew.nlg && gwZ.bew.nlg.farbe);
+    // Klick im Fenster = „als normwertig werten“ (wie ansicht-enmg.js)
+    gwZ.bew.nlg.farbeVorher = gwZ.bew.nlg.farbe; gwZ.bew.nlg.farbe = "normal";
+    var gwHt2 = E.tabelleHtmlText(gwErg).html, gwZs = B.zusammenfassung(gwErg);
+    fall("18.21: als normwertig gewertet → im Befund schwarz, Zusammenfassung „unauffällig“",
+      gwHt2.indexOf(">42.5<") !== -1 && gwHt2.indexOf('#c00000;font-weight:normal">42.5') === -1 &&
+      /N\. suralis rechts: unauffällig\./.test(gwZs), gwZs);
+    var kp = TB.enmgLeser.deute([["Nerve", "Lat", "Amp"], ["", "ms", "mV"], ["Medianus Motorisch Rechts"],
+      ["Handgelenk - APB", "3.2", "8.0"], ["Ulnaris Motorisch Rechts"], ["HG - ADM", "2.2", "9"],
+      ["Handgelenk - APB HG - APB"], ["Mitt.: 5 Mitt.: 1"], ["EMG Befunde"],
+      ["Einstisch", "Spontan Aktivität", "Willkür. Aktivität"],
+      ["Muskel", "Interpretation", "Aktivität", "Fib", "PSW", "Fasz", "Amp", "IP", "Hinweise"],
+      ["Rechts", "Ext indicis", "Normal", "0/10", "0/10", "0/10", "3.5 mV", "Voll"],
+      ["Rechts", "Abd pollicis brevis", "subakute Denervation", "Erhöht", "2/10", "2/10", "1/10", "3.5 mV", "Voll"]], []);
+    fall("18.20: Keypoint-Nadel-EMG gelesen (2 Muskeln, Denervation erkannt), keine Rausch-Zeilen",
+      kp.myografie.length === 2 && !kp.myografie[0].spont && kp.myografie[1].spont &&
+      kp.myografie[1].fasz && /subakute Denervation/.test(kp.myografie[1].befund) && kp.reste.length === 0,
+      JSON.stringify(kp.reste) + " · " + kp.myografie.map(function (m) { return m.muskel; }).join(", "));
+    TB.enmg.bewerte(kp);
+    var kpB = B.beurteilung(kp, []), kpZ = B.zusammenfassung(kp);
+    fall("18.20: Keypoint-EMG in Zusammenfassung und Beurteilung (Denervation genannt)",
+      /Myografie:/.test(kpZ) && /• M\. Abd pollicis brevis rechts: .*pathologische Spontanaktivität/.test(kpZ) &&
+      /pathologische Spontanaktivität in M\. Abd pollicis brevis rechts/.test(kpB), kpB);
+    var kp2 = TB.enmgLeser.deute([["EMG Befunde"], ["Einstisch Spontan Aktivität Willkür. Aktivität"],
+      ["Muskel Interpretation Aktivität Fib PSW Fasz Amp IP Hinweise"],
+      ["Rechts Ext indicis Normal 0/10 0/10 0/10 3.5 mV Voll"],
+      ["Rechts Abd pollicis brevis subakute Denervation Erhöht 2/10 2/10 1/10 3.5 mV Voll"],
+      ["Rechts Abd dig min (man) subakute Denervation 3/10 3/10 1/10 3.5 mV Voll"]], []);
+    fall("18.21: Keypoint-EMG wie im Spital (Einstich-Spalte meist leer, „Normal“ = Interpretation)",
+      kp2.myografie.length === 3 && kp2.myografie[2].spont &&
+      kp2.myografie[2].muskel === "M. Abd dig min (man) rechts" &&
+      /^keine pathologische Spontanaktivität/.test(kp2.myografie[0].befund) &&
+      /^Einstichaktivität erhöht/.test(kp2.myografie[1].befund),
+      kp2.myografie.map(function (m) { return m.muskel + ": " + m.befund; }).join(" | "));
+    var mb = String(TB.speicher.merkeBenutzt);
+    fall("18.20: Benutzen schreibt den Baustein nie zurück (kein Hochladen, kein neuer Zeitstempel)",
+      mb.indexOf("merkeOffen") === -1 && mb.indexOf("aktualisiertAm") === -1);
   } catch (e) {
     fall("ENMG-18.18-Prüfungen liefen durch", false, String(e && e.stack || e));
   }

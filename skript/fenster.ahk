@@ -296,6 +296,13 @@ WahlFuellen(praefix) {
                     "text", "", "werk", "eeg"))
         }
     }
+    ; 18.20 (Naed 16.10., "ganz wichtig": jede Funktion ist ein Baustein
+    ; und erscheint in der Liste) - ;;enmg als Eintrag; ein ECHTER
+    ; Baustein mit diesem Kuerzel hat Vorrang.
+    if !karte.Has("enmg")
+        alleKandidaten.Push(Map("id", "werk-enmg", "titel", TX["werkEnmg"],
+            "kuerzel", "enmg", "kategorie", TX["werkKategorie"],
+            "text", "", "werk", "enmg"))
     for b in alleKandidaten {
         kuerzel := StrLower(String(b.Has("kuerzel") ? b["kuerzel"] : ""))
         titel := String(b.Has("titel") ? b["titel"] : "")
@@ -410,6 +417,8 @@ WahlNehmen() {
         PufferLeeren()
         if (b["werk"] = "eeg")
             EegOeffnen(wahlZiel, b["kuerzel"])
+        else if (b["werk"] = "enmg")
+            FensterStart("enmg", "", wahlZiel)
         else
             StatusOeffnen(wahlZiel, b["kuerzel"])
         return

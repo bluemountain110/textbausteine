@@ -223,6 +223,7 @@ TX["fensterFertigEnmg"] := "ENMG eingefuegt - Fragestellung, Befund und Beurteil
 TX["fensterFertigBlock"] := "Eingefuegt."
 TX["werkStatus"] := "Status"
 TX["werkEeg"] := "EEG-Befund"
+TX["werkEnmg"] := "ENMG-Befund (Export einlesen)"
 TX["werkKategorie"] := "Fenster am Arbeitsplatz"
 TX["fensterAbgelaufen"] := "Das Textbausteine-Fenster blieb ohne Uebergabe - Vorgang beendet. Einfach das Kuerzel erneut tippen."
 
