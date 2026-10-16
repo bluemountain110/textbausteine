@@ -9,6 +9,7 @@
 //        legt er unverändert in "reste" — lieber sichtbar
 //        unvollständig als unsichtbar falsch (Lehre I2).
 //        Gebaut gegen Näds echten Keypoint-Export vom 1.10.2026.
+//        18.18: Wiederholungen der Kurvenseiten werden ausgefiltert.
 //        GRUNDSATZ: Das Ergebnis ist ein Patientenbefund und wird NIE
 //        gespeichert, NIE abgeglichen, NIE protokolliert.
 
@@ -142,7 +143,38 @@ TB.enmgLeser = (function () {
     }
     // Leere Blöcke (Nerv-Titel ohne Zeilen) fliegen raus.
     bloecke = bloecke.filter(function (b) { return b.zeilen.length; });
-    return { patient: patient, bloecke: bloecke, reste: reste };
+    return { patient: patient, bloecke: bloecke, reste: ohneRauschen(reste, bloecke) };
+  }
+
+  // 18.18: Die Kurvenseiten des Keypoint wiederholen Segment- und
+  // Nervnamen, Skalen („2mV/D 2ms/D") und den Patientenkopf — das ist
+  // kein Verlust und gehört nicht unter „Nicht zugeordnete Zeilen".
+  // Was übrig bleibt, erscheint genau einmal.
+  function schluessel(t) {
+    return String(t || "").toLowerCase().replace(/\s*([-|:])\s*/g, "$1")
+      .replace(/\s+/g, " ").trim();
+  }
+  function ohneRauschen(reste, bloecke) {
+    var bekannt = {}, gesehen = {};
+    bloecke.forEach(function (b) {
+      bekannt[schluessel(b.nervText)] = true;
+      b.zeilen.forEach(function (z) {
+        bekannt[schluessel(z.segment)] = true;
+        bekannt[schluessel(String(z.segment || "").split("|")[0])] = true;
+      });
+    });
+    return reste.filter(function (r) {
+      var k = schluessel(r);
+      if (!k || bekannt[k] || gesehen[k]) return false;
+      if (/^([\d.,]+\s*(mv|µv|uv|ms|s)\s*\/\s*d\s*)+$/i.test(r.trim())) return false;
+      if (/^(seite|page)\s*\d+/i.test(r.trim())) return false;
+      if (/^(patientendaten|motorische kurven|sensible kurven|sensorische kurven)$/i.test(r.trim()))
+        return false;
+      if (/(name:|geburtsdatum|patienten\s*-?\s*id|datum der untersuchung)/i.test(r))
+        return false;
+      gesehen[k] = true;
+      return true;
+    });
   }
 
   function leseKopf(texte) {
@@ -206,5 +238,5 @@ TB.enmgLeser = (function () {
   }
 
   return { deute: deute, leseDatei: leseDatei, leseText: leseText, num: num,
-           bedeutungen: bedeutungen, leseKopf: leseKopf };
+           bedeutungen: bedeutungen, leseKopf: leseKopf, ohneRauschen: ohneRauschen };
 })();

@@ -952,3 +952,37 @@ dialog.anzeigen { width: min(720px, 94vw); max-height: 92vh; }
   padding: 10px 12px; background: var(--feld, #fff); }
 /* 18.17: grenzwertig = bis 5 % ausserhalb der Grenze (orange) */
 .enmg-grenzwertig { color: #b06f00; font-weight: 600; }
+
+/* 18.18: ENMG — eine Tabelle je Art mit grauer Nerv-Zeile (Keypoint-
+   Vorbild), Segment-Spalte breit genug, und der Balken je bewertetem
+   Wert (nur im Fenster, nie im Bericht): linke Hälfte = unter der
+   Grenze, rechte = darüber; bei unteren Grenzen ist links rot, bei
+   oberen rechts; der schmale orange Streifen an der Grenze = 5 %. */
+.enmg-tabelle-art { width: 100%; }
+.enmg-tabelle-art td.enmg-segment { width: 30%; }
+.enmg-nervzeile td { background: #d9d9d9; font-weight: 700; text-align: left; }
+.enmg-tabelle-art td.enmg-wert { vertical-align: top; }
+.enmg-balken { display: block; position: relative; width: 58px; height: 6px;
+  margin: 3px 0 1px auto; border-radius: 3px; }
+.enmg-balken-min { background: linear-gradient(to right,
+  #e7a3a3 0%, #e7a3a3 47.5%, #f2c98a 47.5%, #f2c98a 50%,
+  #a9d8a9 50%, #a9d8a9 100%); }
+.enmg-balken-max { background: linear-gradient(to right,
+  #a9d8a9 0%, #a9d8a9 50%, #f2c98a 50%, #f2c98a 52.5%,
+  #e7a3a3 52.5%, #e7a3a3 100%); }
+.enmg-balken-punkt { position: absolute; top: -2px; width: 8px; height: 8px;
+  margin-left: -4px; border-radius: 50%; border: 1px solid #fff;
+  box-shadow: 0 0 0 1px #555; background: #555; }
+.enmg-punkt-rot { background: #c00000; }
+.enmg-punkt-grenzwertig { background: #b06f00; }
+.enmg-punkt-gruen { background: #1a7a1a; }
+
+/* 18.18 NUR-DER-KASTEN (Näds Dauerregel 15.10.): Ein Fenster, das ein
+   Kürzel am Arbeitsplatz öffnet und nur einen Dialog zeigt, zeigt nur
+   diesen Kasten — die App-Liste dahinter bleibt unsichtbar. */
+body.nur-kasten main, body.nur-kasten header { display: none; }
+/* Die Abgleich-Leiste verschwindet erst, wenn der Kasten offen ist —
+   solange der Baustein noch nicht angekommen ist (z. B. nicht
+   angemeldet), bleibt sie als Erklärung sichtbar. */
+body.nur-kasten:has(dialog[open]) #abgleich-leiste { display: none; }
+body.nur-kasten { background: #f3f6f5; }

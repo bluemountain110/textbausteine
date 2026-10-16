@@ -14,6 +14,19 @@
 //        Normzeilen zu; passt kein Schlüssel, gilt die Reihenfolge
 //        distal → proximal ("reihe"). FACHREGEL: Diese Zahlen stammen
 //        von Näd, nie aus Claudes Gedächtnis.
+//        18.18 (Näds Entscheide F1–F4 vom 15.10.): Die AMPLITUDEN
+//        stammen aus Chen et al., Muscle Nerve 2016;54:371–377 (AANEM
+//        Normative Data Task Force; Zahlen gegen Tabellen 3–4 und die
+//        NDTF-Chart 2020 geprüft). Motorisch neu (bisher keine Grenze);
+//        sensibel ANTIDROM Spitze zu Spitze statt der orthodromen
+//        Werte, weil Näd antidrom misst. Chen gibt Altersgruppen statt
+//        einer Kurve: solche Reihen tragen "stufig": true — es gilt der
+//        Wert der Stützstelle am oder unter dem Alter, ohne
+//        Zwischenrechnung (19–39 → Stützstellen 20–35 usw.). F2: Tibialis
+//        ab 60 J. 4.4 mV (Chens Wert „alle Alter") statt 1.1. F4: bei
+//        Medianus/Ulnaris sensibel nach Alter immer die TIEFERE der
+//        beiden BMI-Zahlen. "ampAusser": Segmenttexte, bei denen die
+//        motorische Amplituden-Norm NICHT gilt (anderer Ableitmuskel).
 
 "use strict";
 window.TB = window.TB || {};
@@ -29,6 +42,14 @@ TB.normwerteGrundlage = (function () {
     return { id: id, name: name, einheit: einheit, richtung: richtung,
              fest: wert };
   }
+  // 18.18: Altersgruppen (Chen 2016) — gleiche Form wie z(), aber ohne
+  // Zwischenrechnung zwischen den Stützstellen.
+  function s(id, name, einheit, richtung, werte) {
+    var r = z(id, name, einheit, richtung, werte);
+    r.stufig = true;
+    return r;
+  }
+  var CHEN = " (Chen 2016)";
 
   var nerven = [
     {
@@ -36,14 +57,16 @@ TB.normwerteGrundlage = (function () {
       zeilen: [
         z("dml", "dist. motor. Latenz", "ms", "max",
           [3.85, 3.88, 3.9, 3.92, 3.94, 3.96, 3.98, 4.0, 4.02, 4.04, 4.06, 4.08, 4.1]),
+        s("mamp", "motor. AMP distal (APB)" + CHEN, "mV", "min",
+          [5.9, 5.9, 5.9, 5.9, 4.2, 4.2, 4.2, 4.2, 3.8, 3.8, 3.8, 3.8, 3.8]),
         z("va", "motor. Vorderarm (VA)", "m/s", "min",
           [53.2, 52.1, 50.9, 49.7, 48.6, 47.5, 46.3, 45.2, 44, 42.9, 41.7, 40.6, 39.4]),
         z("oa", "motor. Oberarm (OA)", "m/s", "min",
           [53.2, 52.1, 50.9, 49.8, 48.7, 47.5, 46.4, 45.3, 44.1, 43, 41.8, 40.7, 39.5]),
         z("sdistnlg", "sens. orthodr. dist. NLG", "m/s", "min",
           [47.2, 46.3, 45.4, 44.4, 43.5, 42.6, 41.7, 40.7, 39.8, 38.8, 38, 37, 36]),
-        z("sdistamp", "sens. orthodr. dist. AMP", "µV", "min",
-          [6.3, 6, 5.6, 5.3, 5, 4.7, 4.5, 4.2, 4, 3.8, 3.5, 3.3, 3.1]),
+        s("sdistamp", "sens. antidr. AMP Spitze-Spitze" + CHEN, "µV", "min",
+          [13, 13, 13, 13, 13, 13, 8, 8, 8, 8, 8, 8, 8]),
         z("santidist", "sens. antidr. distal", "m/s", "min",
           [56.3, 54.8, 53.3, 51.8, 50.3, 48.8, 47.3, 45.8, 44.3, 42.8, 41.3, 39.8, 38.3]),
         z("santiva", "sens. antidr. VA", "m/s", "min",
@@ -51,7 +74,7 @@ TB.normwerteGrundlage = (function () {
         f("fwhg", "F-W. Latenz Handgelenk", "ms", "max", 31),
         f("fwellb", "F-W. Latenz Ellbogen", "ms", "max", 27)
       ],
-      motor: { latenz: "dml", nlgReihe: ["va", "oa"],
+      motor: { latenz: "dml", amp: "mamp", nlgReihe: ["va", "oa"],
                schluessel: { va: ["vorderarm"], oa: ["axilla", "oberarm"] },
                f: ["fwhg", "fwellb"] },
       sens: { nlgReihe: ["sdistnlg"], amp: "sdistamp",
@@ -63,14 +86,15 @@ TB.normwerteGrundlage = (function () {
       zeilen: [
         z("dml", "dist. motor. Latenz", "ms", "max",
           [3.0, 3.05, 3.1, 3.15, 3.2, 3.25, 3.3, 3.35, 3.4, 3.45, 3.5, 3.55, 3.6]),
+        f("mamp", "motor. AMP distal (ADM)" + CHEN, "mV", "min", 7.9),
         z("va", "motor. VA", "m/s", "min",
           [45.4, 45.1, 44.8, 44.5, 44.2, 43.9, 43.6, 43.3, 43.0, 42.7, 42.4, 42.1, 41.8]),
         z("sulcus", "motor. Sulcus", "m/s", "min",
           [40.0, 39.85, 39.7, 39.55, 39.4, 39.25, 39.1, 38.95, 38.8, 38.65, 38.5, 38.35, 38.2]),
         z("oa", "motor. OA", "m/s", "min",
           [47.1, 46.6, 46.1, 45.6, 45.1, 44.6, 44.1, 43.6, 43.1, 42.6, 42.1, 41.6, 41.1]),
-        z("sdistamp", "sens. orthodr. dist. AMP", "µV", "min",
-          [5.3, 5.1, 4.9, 4.7, 4.5, 4.3, 4.1, 4.0, 3.8, 3.6, 3.5, 3.3, 3.2]),
+        s("sdistamp", "sens. antidr. AMP Spitze-Spitze" + CHEN, "µV", "min",
+          [8, 8, 8, 8, 8, 8, 4, 4, 4, 4, 4, 4, 4]),
         z("sdistnlg", "sens. distal NLG", "m/s", "min",
           [40.8, 40.75, 40.7, 40.65, 40.6, 40.55, 40.5, 40.45, 40.4, 40.35, 40.3, 40.25, 40.2]),
         z("sva", "sens. Vorderarm", "m/s", "min",
@@ -80,7 +104,8 @@ TB.normwerteGrundlage = (function () {
         f("fwhg", "F-W. Latenz Handgelenk", "ms", "max", 32),
         f("fwellb", "F-W. Latenz Ellbogen", "ms", "max", 27)
       ],
-      motor: { latenz: "dml", nlgReihe: ["va", "sulcus", "oa"],
+      motor: { latenz: "dml", amp: "mamp", ampAusser: ["fdi", "inteross"],
+               nlgReihe: ["va", "sulcus", "oa"],
                schluessel: { sulcus: ["sulcus"], oa: ["axilla", "oberarm"],
                              va: ["vorderarm"] },
                f: ["fwhg", "fwellb"] },
@@ -93,7 +118,7 @@ TB.normwerteGrundlage = (function () {
       zeilen: [
         f("sdistnlg", "sens. orthodr. dist. NLG (aus 56.3 ± 4.3, Bereich 47–64)",
           "m/s", "min", 47),
-        f("sdistamp", "sens. orthodr. dist. AMP (aus 12 ± 6)", "µV", "min", 6)
+        f("sdistamp", "sens. antidr. AMP Spitze-Spitze" + CHEN, "µV", "min", 11)
       ],
       motor: null,
       sens: { nlgReihe: ["sdistnlg"], amp: "sdistamp", schluessel: {} }
@@ -103,8 +128,7 @@ TB.normwerteGrundlage = (function () {
       zeilen: [
         z("snlg", "sens. orthodr. US NLG", "m/s", "min",
           [45.4, 45.1, 44.9, 44.6, 44.4, 44.1, 43.9, 43.6, 43.4, 43.1, 42.9, 42.6, 42.4]),
-        z("samp", "sens. orthodr. US AMP", "µV", "min",
-          [5.2, 4.9, 4.6, 4.4, 4.1, 3.9, 3.7, 3.5, 3.3, 3.1, 2.9, 2.7, 2.6])
+        f("samp", "sens. antidr. AMP Spitze-Spitze" + CHEN, "µV", "min", 4)
       ],
       motor: null,
       sens: { nlgReihe: ["snlg"], amp: "samp", schluessel: {} }
@@ -114,6 +138,8 @@ TB.normwerteGrundlage = (function () {
       zeilen: [
         z("dml", "dist. motor. Latenz", "ms", "max",
           [4.65, 4.66, 4.66, 4.67, 4.68, 4.68, 4.69, 4.7, 4.7, 4.71, 4.71, 4.72, 4.72]),
+        s("mamp", "motor. AMP distal (EDB)" + CHEN, "mV", "min",
+          [2.6, 2.6, 2.6, 2.6, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1]),
         z("mus", "motor. US", "m/s", "min",
           [44.3, 44.1, 44, 43.8, 43.6, 43.5, 43.3, 43.1, 42.9, 42.8, 42.6, 42.4, 42.2]),
         z("mknie", "motor. Kniekehle", "m/s", "min",
@@ -124,7 +150,9 @@ TB.normwerteGrundlage = (function () {
           [47.9, 47.6, 47.3, 47, 46.7, 46.4, 46.1, 45.8, 45.5, 45.2, 44.9, 44.6, 44.3]),
         f("fwkn", "F-W. Latenz Knöchel", "ms", "max", 56)
       ],
-      motor: { latenz: "dml", nlgReihe: ["mus", "mknie"],
+      motor: { latenz: "dml", amp: "mamp",
+               ampAusser: ["tib. ant", "tib ant", "tibialis ant"],
+               nlgReihe: ["mus", "mknie"],
                schluessel: { mknie: ["prox", "knie", "poplit"] },
                f: ["fwkn"] },
       sens: { nlgReihe: ["sus", "sknie"], amp: null,
@@ -135,6 +163,8 @@ TB.normwerteGrundlage = (function () {
       zeilen: [
         z("dml", "dist. motor. Latenz", "ms", "max",
           [5.51, 5.51, 5.51, 5.51, 5.52, 5.52, 5.52, 5.52, 5.52, 5.53, 5.53, 5.53, 5.53]),
+        s("mamp", "motor. AMP distal (AH)" + CHEN, "mV", "min",
+          [5.8, 5.8, 5.3, 5.3, 5.3, 5.3, 5.3, 5.3, 4.4, 4.4, 4.4, 4.4, 4.4]),
         z("mus", "motor. US", "m/s", "min",
           [43.3, 42.5, 41.7, 40.8, 40, 39.2, 38.3, 37.5, 36.7, 35.9, 35, 34.2, 33.4]),
         z("sdist", "sens. distal", "m/s", "min",
@@ -143,7 +173,7 @@ TB.normwerteGrundlage = (function () {
           [49.8, 49.5, 49.2, 48.9, 48.6, 48.3, 48, 47.7, 47.4, 47.1, 46.8, 46.5, 46.2]),
         f("fwkn", "F-W. Latenz Knöchel", "ms", "max", 58)
       ],
-      motor: { latenz: "dml", nlgReihe: ["mus"], schluessel: {},
+      motor: { latenz: "dml", amp: "mamp", nlgReihe: ["mus"], schluessel: {},
                f: ["fwkn"] },
       sens: { nlgReihe: ["sdist", "sus"], amp: null,
               schluessel: { sus: ["knie", "unterschenkel", "poplit", "crural"] } }
@@ -151,11 +181,15 @@ TB.normwerteGrundlage = (function () {
   ];
 
   return {
-    stand: "2026-10-08",
+    stand: "2026-10-15",
+    // 18.18: Diese Zeilen ersetzt die Nachführung (TB.enmg) auch in
+    // einer schon gespeicherten Normwert-Ablage — alles andere bleibt.
+    nachfuehrung1818: ["mamp", "sdistamp", "samp"],
     quelleVorgabe: "ENMG-Grenzwerttabellen (Quelle noch zu benennen)",
     bemerkung: "Geschwindigkeiten (m/s) und sensible Amplituden (µV) " +
       "werden auf ganze Zahlen gerundet; Latenzen (ms) und motorische " +
-      "Amplituden (mV) auf eine Stelle hinter dem Komma.",
+      "Amplituden (mV) auf eine Stelle hinter dem Komma. Amplituden: " +
+      "Chen et al., Muscle Nerve 2016 (antidrom, Altersgruppen).",
     alter: ALTER,
     nerven: nerven
   };

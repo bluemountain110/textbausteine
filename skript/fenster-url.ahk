@@ -95,9 +95,25 @@ FensterStart(art, kuerzel, ziel) {
     url := adresse "?fenster=" art
     if (kuerzel != "")
         url .= "&kuerzel=" kuerzel
+    ; 18.18: In Word (Praxis-Weg seit 14.10.) gibt es nur EIN Feld -
+    ; die App schickt dann alles als einen Block ("An Word uebergeben").
+    if FensterZielIstEinfeld(ziel)
+        url .= "&ziel=word"
     url .= "&nonce=" fzNonce
     BrowserOeffne(url)
     SetTimer FensterPolle, 150
+}
+
+; 18.18: Ziele mit nur EINEM Schreibfeld (Word u. a.) - dort keine
+; Strg+Tab-Spruenge, sondern alles als ein Block.
+FensterZielIstEinfeld(ziel) {
+    programm := ""
+    try programm := StrLower(WinGetProcessName(ziel))
+    for p in ["winword.exe", "wordpad.exe", "notepad.exe", "outlook.exe", "soffice.bin"] {
+        if (programm = p)
+            return true
+    }
+    return false
 }
 
 BrowserOeffne(url) {
@@ -175,7 +191,14 @@ FensterVerarbeite(w) {
         FensterSpringe(1)
         FensterFeld(felder, "rest")
         fertig := TX["fensterFertigStatus"]
+    } else if (felder.Has("block") and !felder.Has("befund")) {
+        ; 18.18: Word (ein Feld) - EEG oder ENMG als ein Block
+        FensterFeld(felder, "block")
+        fertig := TX["fensterFertigBlock"]
     } else {
+        ; EEG und seit 18.18 ENMG: dieselbe KISIM-Maske (Naed 15.10.) -
+        ; Indikation/Fragestellung, Anamnese (beim ENMG leer, wird
+        ; uebersprungen), Befund, Beurteilung; Spruenge 2-4-2.
         FensterFeld(felder, "indikation")
         FensterSpringe(2)
         FensterFeld(felder, "anamnese")
@@ -183,7 +206,7 @@ FensterVerarbeite(w) {
         FensterFeld(felder, "befund")
         FensterSpringe(2)
         FensterFeld(felder, "beurteilung")
-        fertig := TX["fensterFertigEeg"]
+        fertig := (artP = "enmg") ? TX["fensterFertigEnmg"] : TX["fensterFertigEeg"]
     }
     ; Patientenschutz: das Uebergabe-Paket nicht liegen lassen.
     A_Clipboard := ""

@@ -12,6 +12,8 @@
 //        Palmar- und Ringfinger-Zeilen sind Vergleichsmessungen OHNE
 //        Normzeile (schwarz); physikalisch unmögliche NLG (über 90 m/s)
 //        werden nie gefärbt, sondern als „Distanz prüfen" gemeldet.
+//        18.18: Technik-Sätze („Reizung …") fallen weg, Reste erscheinen
+//        nur einmal, das myopathische Muster wird erkannt.
 //        GRUNDSATZ: Ein Befund — wird NIE gespeichert oder abgeglichen.
 
 "use strict";
@@ -112,8 +114,9 @@ TB.enmgViking = (function () {
     var fasz = /faszikulation/.test(k) && !/kein(e)?\s+faszikulation/.test(k);
     var neurogen = /neurogen|erhöhte amplitud|riesenpotential/.test(k) ||
       (/gelichtet/.test(k) && !/schmerz|mitarbeit|minderinnervation/.test(k));
+    var myopath = /myopath/.test(k) && !/kein(e)?\s+(hinweis\w*\s+auf\s+(ein\w*\s+)?)?myopath/.test(k);
     return { muskel: muskel, seite: seite, befund: b.replace(/\.$/, ""),
-             spont: spont, fasz: fasz, neurogen: neurogen,
+             spont: spont, fasz: fasz, neurogen: neurogen, myopath: myopath,
              unspez: /polyphas/.test(k) ? ["Polyphasie"] : [], quelle: "text" };
   }
 
@@ -168,17 +171,37 @@ TB.enmgViking = (function () {
         teile.push(pt); unspez.push(pt);
       }
       var muster = w(S.muster).toLowerCase(), ansp = w(S.anspannung).toLowerCase();
-      if (/dicht|voll|interferenz/.test(muster) || muster === "") {
+      // 18.18: myopathisches Muster nur, wenn im SELBEN Muskel kurze
+      // Dauer, kleine Amplitude und frühe Rekrutierung zusammenkommen
+      // (Näd 15.10.: „kannst Du machen").
+      var myopath = /kurz|verkürz|vermindert|erniedrig/.test(dauer) &&
+        /klein|niedrig|vermindert|erniedrig|reduz/.test(amp) &&
+        /früh|frueh/.test(muster + " " + ansp);
+      if (myopath) {
+        teile.push("Interferenzmuster " + w(S.muster));
+      } else if (/dicht|voll|interferenz/.test(muster) || muster === "") {
         if (muster) teile.push("unauffälliges Interferenzmuster");
       } else {
         teile.push("Interferenzmuster " + w(S.muster) +
           (ansp && !/maxim/.test(ansp) ? " (Anspannung " + w(S.anspannung) + ")" : ""));
         if (/gelichtet|einzel|reduziert/.test(muster) && !/submax|schwach|gering/.test(ansp)) neurogen = true;
       }
+      if (myopath) teile.push("myopathisches Muster (kurze, kleine Potentiale, frühe Rekrutierung)");
       aus.push({ muskel: name, seite: seite, befund: teile.join(", "), spont: spont,
-                 fasz: fasz, neurogen: neurogen, unspez: unspez, quelle: "tabelle" });
+                 fasz: fasz, neurogen: neurogen && !myopath, myopath: myopath,
+                 unspez: unspez, quelle: "tabelle" });
     }
     return aus;
+  }
+
+  // 18.18: Die Technik-Sätze der Vorlage („Reizung …, Ableitung mit
+  // Oberflächen-/Nadelelektroden") unter den Tabellen braucht Näd im
+  // Bericht nicht (15.10.: „ich leite nur selten mit Nadelelektroden ab").
+  function istTechnikSatz(z) {
+    var t = String(z || "");
+    if (/^\s*(reizung|ableitung|stimulation)\b/i.test(t)) return true;
+    return /\b(reizung|ableitung)/i.test(t) &&
+           /(oberfläch|oberflaech|nadel|elektrod|surface)/i.test(t);
   }
 
   // ---- Der Deuter ---------------------------------------------------------
@@ -303,13 +326,20 @@ TB.enmgViking = (function () {
         if (!z) return;
         var m = myografieZeile(z);
         if (m) myo.push(m);
-        else if (!/^(myograph|myografie|elektromyogra|emg:?$)/i.test(z)) freitext.push(z);
+        else if (!/^(myograph|myografie|elektromyogra|emg:?$)/i.test(z) &&
+                 !istTechnikSatz(z)) freitext.push(z);
       });
     });
     // Bereits ausgefüllte Beurteilung (Vorlage der Kollegin) — nur Hinweis
     var vorhanden = sauber(String(f.conclusn || "").replace(/\x07/g, " "))
       .replace(/^Beurteilung:\s*/i, "");
 
+    var gesehen = {};
+    reste = reste.filter(function (r) {
+      var k = sauber(r).toLowerCase();
+      if (!k || gesehen[k]) return false;
+      gesehen[k] = true; return true;
+    });
     return { patient: patient, bloecke: bloecke, reste: reste,
              fragestellungText: frage, freitext: freitext, myografie: myo,
              vorhandeneBeurteilung: vorhanden, format: "viking" };
@@ -321,5 +351,5 @@ TB.enmgViking = (function () {
 
   return { lese: lese, deute: deute, tabelle: tabelle, nervTitel: nervTitel,
            abschnitte: abschnitte, myografieZeile: myografieZeile,
-           emgTabelle: emgTabelle };
+           emgTabelle: emgTabelle, istTechnikSatz: istTechnikSatz };
 })();

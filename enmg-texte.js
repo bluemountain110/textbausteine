@@ -40,7 +40,7 @@ TB.enmgTexte = {
   grenzwertigKurz: "grenzwertig (bis 5 % ausserhalb der Grenze) — zählt nicht als pathologisch",
   ohneZuordnung: "kein Normwert hinterlegt oder zugeordnet",
   legende: "Rot = ausserhalb Deiner Grenzwerte · Orange = grenzwertig (bis 5 % ausserhalb, zählt nicht als pathologisch) · Grün = innerhalb · Schwarz = kein Normwert hinterlegt oder zugeordnet. Die Grenze steht in der Norm-Spalte neben jedem bewerteten Wert.",
-  quelleZeile: "Normwerte: %s (alterskorrigiert, linear zwischen den 5-Jahres-Stützstellen)",
+  quelleZeile: "Normwerte: %s (alterskorrigiert); Amplituden nach Chen et al., Muscle Nerve 2016 (sensibel antidrom, nach Altersgruppen)",
   kopierenKnopf: "Nur Tabelle kopieren",
   kopiertMeldung: "Kopiert — am Zielort mit Strg+V (Mac: Cmd+V) einfügen.",
   kopiertNurText: "Kopiert — nur als reiner Text (ohne Farben).",

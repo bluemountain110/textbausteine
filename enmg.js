@@ -15,6 +15,12 @@
 //        Inline-Stilen, Lehre I1, und reiner Text); seit 18.17 steht
 //        die Grenze als eigene Norm-Spalte direkt neben jedem
 //        bewerteten Messwert (E1-Entscheid (a), 14.10.).
+//        18.18: Chen-Amplituden (motorisch neu, sensibel antidrom) mit
+//        Altersgruppen ("stufig") und einer einmaligen Nachführung einer
+//        schon gespeicherten Normwert-Ablage; Nerven alphabetisch, links
+//        vor rechts (Näd 15.10., wie Keypoint); der Bericht hat EINE
+//        Tabelle motorisch und EINE sensibel mit dem Nerv als grauer
+//        Zwischenzeile (Näds Keypoint-Vorbild 15.10.).
 //        GRUNDSATZ: Ein eingelesener Export ist ein
 //        Patientenbefund — er wird NIE gespeichert, NIE abgeglichen.
 
@@ -27,7 +33,45 @@ TB.enmg = (function () {
   // ---- Ablage der Normwerte (nie Patientendaten) ----------------------
   function normwerte() {
     var g = TB.speicher.einstellung("enmgNormwerte", null);
+    if (g && g.nerven && (g.stand || "") < TB.normwerteGrundlage.stand) {
+      // 18.18: Eine gespeicherte Ablage aus der Zeit vor Chen bekommt
+      // EINMAL die neuen Amplituden-Zeilen; Näds übrige Werte bleiben.
+      var neu = nachfuehren(g);
+      try { speichereNormwerte(neu); } catch (e) { /* still */ }
+      return neu;
+    }
     return g || TB.normwerteGrundlage;
+  }
+  // Reine Funktion (ohne Speichern) — auch für den Selbsttest.
+  function nachfuehren(alt) {
+    var G = TB.normwerteGrundlage, ids = G.nachfuehrung1818 || [];
+    var n = JSON.parse(JSON.stringify(alt));
+    function kopie(x) { return JSON.parse(JSON.stringify(x)); }
+    G.nerven.forEach(function (gn) {
+      var sn = null;
+      n.nerven.forEach(function (x) { if (x.id === gn.id) sn = x; });
+      if (!sn) { n.nerven.push(kopie(gn)); return; }
+      gn.zeilen.forEach(function (gz, gi) {
+        if (ids.indexOf(gz.id) === -1) return;
+        var idx = -1;
+        sn.zeilen.forEach(function (z, i) { if (z.id === gz.id) idx = i; });
+        if (idx !== -1) { sn.zeilen[idx] = kopie(gz); return; }
+        // Neue Zeile an dieselbe Stelle wie in der Grundausstattung
+        var vorId = gi > 0 ? gn.zeilen[gi - 1].id : null, pos = -1;
+        sn.zeilen.forEach(function (z, i) { if (z.id === vorId) pos = i; });
+        sn.zeilen.splice(pos + 1, 0, kopie(gz));
+      });
+      ["motor", "sens"].forEach(function (art) {
+        if (!gn[art]) return;
+        if (!sn[art]) { sn[art] = kopie(gn[art]); return; }
+        ["amp", "ampAusser"].forEach(function (k) {
+          if (gn[art][k] !== undefined) sn[art][k] = kopie(gn[art][k]);
+        });
+      });
+    });
+    n.stand = G.stand;
+    n.bemerkung = G.bemerkung;
+    return n;
   }
   function speichereNormwerte(n) {
     TB.speicher.setzeEinstellung("enmgNormwerte", n);
@@ -75,6 +119,12 @@ TB.enmg = (function () {
     if (alter === null || alter === undefined) return null;
     var A = normwerte().alter, W = zeile.werte;
     if (!A || !W || W.length !== A.length) return null;
+    if (zeile.stufig) {
+      // 18.18: Altersgruppe — Wert der Stützstelle am oder unter dem Alter
+      var st = W[0];
+      for (var j = 0; j < A.length; j++) if (alter >= A[j]) st = W[j];
+      return st;
+    }
     if (alter <= A[0]) return W[0];
     if (alter >= A[A.length - 1]) return W[W.length - 1];
     for (var i = 1; i < A.length; i++) {
@@ -152,11 +202,61 @@ TB.enmg = (function () {
              zeileName: zeile.name, zeileId: zeile.id };
   }
 
+  function ampAusgenommen(regeln, z, block) {
+    var t = ((z.segment || "") + " " + (z.segmentGeraet || "") + " " +
+             (block.nervText || "")).toLowerCase();
+    return (regeln.ampAusser || []).some(function (w) {
+      return t.indexOf(w) !== -1; });
+  }
+
+  // ---- 18.18: Nerv-Anzeige und Reihenfolge ------------------------------
+  // „Medianus Motorisch Rechts" (Keypoint) → „N. medianus" + „rechts";
+  // Viking liefert Name und Seite schon getrennt. Zusätze, die nicht
+  // Nerv/Art/Seite sind, bleiben in Klammern stehen (nichts geht verloren).
+  function nervAnzeige(block) {
+    var nerv = erkenneNerv(block.nervText);
+    var name = block.nervName || "";
+    if (!name) {
+      var rest = String(block.nervText || "").split(/\s+/).filter(function (w) {
+        var k = w.toLowerCase().replace(/[(),.:;]/g, "");
+        if (!k) return false;
+        if (/^(motorisch|sensorisch|sensibel|motor|sens|links|rechts|li|re|n)$/.test(k))
+          return false;
+        if (nerv && (nerv.erkennen || []).some(function (e) {
+              return k.indexOf(e) !== -1; })) return false;
+        return true;
+      }).join(" ");
+      if (nerv) name = nerv.name + (rest ? " (" + rest + ")" : "");
+      else name = rest || String(block.nervText || "");
+    }
+    return { name: name, seite: block.seite || "" };
+  }
+  function nervZeile(block) {
+    var a = nervAnzeige(block);
+    return a.name + (a.seite ? " " + a.seite : "");
+  }
+  // Alphabetisch nach Nerv, dann links vor rechts (Näd 15.10.); bei
+  // Gleichstand bleibt die Geräte-Reihenfolge (stabil).
+  function sortiere(bloecke) {
+    var RANG = { links: 0, rechts: 1 };
+    return bloecke.map(function (b, i) {
+      var a = nervAnzeige(b);
+      return { b: b, i: i, k: a.name.replace(/^n\.\s*/i, "").toLowerCase(),
+               s: RANG[a.seite] !== undefined ? RANG[a.seite] : 2 };
+    }).sort(function (x, y) {
+      var c = x.k.localeCompare(y.k, "de");
+      if (c) return c;
+      if (x.s !== y.s) return x.s - y.s;
+      return x.i - y.i;
+    }).map(function (x) { return x.b; });
+  }
+
   // ---- Ein ganzes Lese-Ergebnis bewerten --------------------------------
   function bewerte(ergebnis) {
     var alter = alterAusDaten(ergebnis.patient.geburtsdatum,
                               ergebnis.patient.untersuchungsdatum);
     ergebnis.alter = alter;
+    ergebnis.bloecke = sortiere(ergebnis.bloecke || []);
     (ergebnis.bloecke || []).forEach(function (block) {
       var nerv = erkenneNerv(block.nervText);
       block.nervId = nerv ? nerv.id : null;
@@ -172,6 +272,10 @@ TB.enmg = (function () {
         if (block.art === "motor") {
           if (i === 0 && regeln.latenz)
             z.bew.lat = bewertung(nerv, regeln.latenz, z.werte.lat, alter);
+          // 18.18: motorische Amplitude (Chen) an der distalen Reizung —
+          // nicht bei einem anderen Ableitmuskel (z. B. Tib. ant.).
+          if (i === 0 && regeln.amp && !ampAusgenommen(regeln, z, block))
+            z.bew.amp = bewertung(nerv, regeln.amp, z.werte.amp, alter);
           if (zuordnung[i])
             z.bew.nlg = bewertung(nerv, zuordnung[i], z.werte.nlg, alter);
           if (z.werte.fLat !== null && z.werte.fLat !== undefined &&
@@ -236,7 +340,7 @@ TB.enmg = (function () {
     var T = TB.enmgTexte;
     var alle = block.art === "motor"
       ? [["segment", T.spalteSegment, false], ["lat", T.spalteLat, true],
-         ["amp", T.spalteAmpM, false], ["dur", T.spalteDur, false],
+         ["amp", T.spalteAmpM, true], ["dur", T.spalteDur, false],
          ["areaDiff", T.spalteArea, false], ["abstand", T.spalteAbstand, false],
          ["nlg", T.spalteNlg, true], ["fLat", T.spalteFLat, true]]
       : [["segment", T.spalteSegment, false], ["abstand", T.spalteAbstand, false],
@@ -258,6 +362,54 @@ TB.enmg = (function () {
     });
     return aus;
   }
+  // 18.18: Spalten über ALLE Blöcke einer Art (eine gemeinsame Tabelle)
+  function spaltenFuerArt(bloecke, art) {
+    var alle = [];
+    bloecke.forEach(function (b) { alle = alle.concat(b.zeilen); });
+    return spalten({ art: art, zeilen: alle });
+  }
+  var TDN = '<td style="border:1px solid #808080;padding:2px 6px;' +
+            'font-family:Arial;font-size:10pt;background-color:#d9d9d9;' +
+            'text-align:left">';
+  function esc(t) {
+    return String(t === null || t === undefined ? "" : t)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  // 18.18 (Näd 15.10., Vorbild Keypoint): EINE Tabelle motorisch und EINE
+  // sensibel; der Nerv steht als graue Zwischenzeile über seinen Zeilen,
+  // die Segment-Spalte ist breit genug (30 %). Keine Sätze „Reizung …".
+  function artTabelle(bloecke, art) {
+    var T = TB.enmgTexte;
+    var sp = spaltenFuerArt(bloecke, art);
+    var html = '<p style="font-family:Arial;font-size:10pt;margin:8px 0 2px"><b>' +
+      (art === "motor" ? T.motorTitel : T.sensTitel) + "</b></p>";
+    var text = [art === "motor" ? T.motorTitel : T.sensTitel];
+    var h = '<table style="border-collapse:collapse;width:100%;margin-bottom:8px">' +
+      "<tr>" + sp.map(function (s, i) {
+        return (i === 0 ? TH.replace('style="', 'style="width:30%;') : TH) +
+          s.titel + "</td>"; }).join("") + "</tr>";
+    text.push(sp.map(function (s) { return s.titel; }).join("  |  "));
+    bloecke.forEach(function (block) {
+      h += '<tr>' + TDN.replace("<td ", '<td colspan="' + sp.length + '" ') +
+        "<b>" + esc(nervZeile(block)) + "</b></td></tr>";
+      text.push(nervZeile(block));
+      block.zeilen.forEach(function (z) {
+        var w = z.werte, b = z.bew || {};
+        h += "<tr>" + sp.map(function (s) {
+          if (s.feld === "segment") return TDL + esc(z.segment) + "</td>";
+          if (s.norm) return TD + normHtml(b[s.feld]) + "</td>";
+          return TD + (s.bewertet ? wertHtml(w[s.feld], b[s.feld]) : zahl(w[s.feld])) + "</td>";
+        }).join("") + "</tr>";
+        text.push(sp.map(function (s) {
+          if (s.feld === "segment") return z.segment;
+          if (s.norm) return normText(b[s.feld]);
+          return s.bewertet ? wertText(w[s.feld], b[s.feld]) : zahl(w[s.feld]);
+        }).join("  |  "));
+      });
+    });
+    h += "</table>";
+    return { html: html + h, text: text.join("\n") };
+  }
   function tabelleHtmlText(ergebnis) {
     var T = TB.enmgTexte, html = [], text = [];
     var p = ergebnis.patient || {};
@@ -269,39 +421,20 @@ TB.enmg = (function () {
     if (p.untersuchungsdatum) kopf.push("ENMG vom " + p.untersuchungsdatum);
     if (kopf.length) {
       html.push('<p style="font-family:Arial;font-size:10pt"><b>' +
-        kopf.join(" · ") + "</b></p>");
+        esc(kopf.join(" · ")) + "</b></p>");
       text.push(kopf.join(" · "));
       text.push("");
     }
-    (ergebnis.bloecke || []).forEach(function (block) {
-      html.push('<p style="font-family:Arial;font-size:10pt;margin-bottom:2px"><b><u>' +
-        block.nervText + "</u></b></p>");
-      text.push(block.nervText);
-      var sp = spalten(block);
-      var h = '<table style="border-collapse:collapse;margin-bottom:8px">' +
-        "<tr>" + sp.map(function (s) { return TH + s.titel + "</td>"; }).join("") +
-        "</tr>";
-      text.push(sp.map(function (s) { return s.titel; }).join("  |  "));
-      block.zeilen.forEach(function (z) {
-        var w = z.werte, b = z.bew || {};
-        h += "<tr>" + sp.map(function (s) {
-          if (s.feld === "segment") return TDL + z.segment + "</td>";
-          if (s.norm) return TD + normHtml(b[s.feld]) + "</td>";
-          return TD + (s.bewertet ? wertHtml(w[s.feld], b[s.feld]) : zahl(w[s.feld])) + "</td>";
-        }).join("") + "</tr>";
-        text.push(sp.map(function (s) {
-          if (s.feld === "segment") return z.segment;
-          if (s.norm) return normText(b[s.feld]);
-          return s.bewertet ? wertText(w[s.feld], b[s.feld]) : zahl(w[s.feld]);
-        }).join("  |  "));
-      });
-      h += "</table>";
-      html.push(h);
-      text.push("");
+    ["motor", "sens"].forEach(function (art) {
+      var bl = (ergebnis.bloecke || []).filter(function (b) {
+        return (b.art === "motor") === (art === "motor"); });
+      if (!bl.length) return;
+      var t = artTabelle(bl, art);
+      html.push(t.html); text.push(t.text, "");
     });
     var q = T.quelleZeile.replace("%s", quelle());
     html.push('<p style="font-family:Arial;font-size:8pt;color:#808080">' +
-      q + "</p>");
+      esc(q) + "</p>");
     text.push(q);
     return { html: html.join("\n"), text: text.join("\n") };
   }
@@ -314,6 +447,9 @@ TB.enmg = (function () {
     zeileVonNerv: zeileVonNerv, grenzeFuer: grenzeFuer,
     erkenneNerv: erkenneNerv, ordneNlg: ordneNlg,
     bewertung: bewertung, bewerte: bewerte,
-    tabelleHtmlText: tabelleHtmlText, spalten: spalten
+    tabelleHtmlText: tabelleHtmlText, spalten: spalten,
+    spaltenFuerArt: spaltenFuerArt, nervAnzeige: nervAnzeige,
+    nervZeile: nervZeile, sortiere: sortiere, nachfuehren: nachfuehren,
+    farbeFuer: farbeFuer
   };
 })();

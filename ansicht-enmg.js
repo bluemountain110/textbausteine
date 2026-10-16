@@ -13,6 +13,9 @@
 //        Beurteilung (beide frei änderbar). „Bericht kopieren" legt
 //        Fragestellung, Tabelle, Zusammenfassung und Beurteilung in die
 //        Zwischenablage; im URL-Fenster übergibt der grosse Knopf.
+//        18.18: eine Tabelle je Art mit grauen Nerv-Zeilen, Balken je
+//        bewertetem Wert (nur hier, nie im Bericht), Übergabe an KISIM in
+//        die vier Felder wie beim EEG bzw. als ein Block nach Word.
 //        GRUNDSATZ: Der Inhalt der Datei bleibt in diesem Fenster —
 //        nichts wird gespeichert, nichts abgeglichen.
 
@@ -123,34 +126,66 @@ TB.ansichtEnmg = (function () {
     td.appendChild(g);
   }
 
-  function zeichneBlock(wurzel, block) {
-    var kopf = el("div", "enmg-nerv", block.nervText);
-    if (!block.nervId)
-      kopf.appendChild(el("span", "marke enmg-marke-warn", T().unbekannterNerv));
-    wurzel.appendChild(kopf);
-    var sp = TB.enmg.spalten(block);
-    var tabelle = el("table", "enmg-tabelle");
+  // 18.18: Der Balken (nur hier im Fenster, nie im Bericht — Entscheid
+  // 9.10.): Messbereich 0 bis doppelte Grenze, die Grenze in der Mitte;
+  // grüner Teil = normal, oranger Streifen = grenzwertig (5 %), roter
+  // Teil = pathologisch; der Punkt ist Dein Messwert (am Rand geklemmt).
+  function balken(wert, bew) {
+    var g = bew.grenze;
+    if (!(g > 0) || typeof wert !== "number") return null;
+    var max = bew.richtung === "max";
+    var b = el("span", "enmg-balken" + (max ? " enmg-balken-max" : " enmg-balken-min"));
+    var pos = Math.max(3, Math.min(97, wert / (2 * g) * 100));
+    var punkt = el("span", "enmg-balken-punkt enmg-punkt-" + bew.farbe);
+    punkt.style.left = pos + "%";
+    b.appendChild(punkt);
+    b.title = (max ? "≤ " : "≥ ") + g + " · " + wert;
+    return b;
+  }
+
+  // 18.18: wie im Bericht EINE Tabelle je Art; der Nerv als graue
+  // Zwischenzeile (Keypoint-Vorbild), Reihenfolge alphabetisch, links
+  // vor rechts.
+  function zeichneArt(wurzel, art, bloecke) {
+    var sp = TB.enmg.spaltenFuerArt(bloecke, art);
+    var tabelle = el("table", "enmg-tabelle enmg-tabelle-art");
     var kopfzeile = el("tr");
     sp.forEach(function (s) { kopfzeile.appendChild(el("th", "", s.titel)); });
     tabelle.appendChild(kopfzeile);
-    block.zeilen.forEach(function (z) {
-      var tr = el("tr");
-      var segTd = el("td", "enmg-segment", z.segment);
-      if (z.unplausibel) {
-        segTd.appendChild(el("span", "marke enmg-marke-warn", T().unplausibel));
-      } else if (z.vergleich) {
-        segTd.title = T().vergleichOhneNorm;
-      }
-      tr.appendChild(segTd);
-      var w = z.werte, b = z.bew || {};
-      sp.forEach(function (s) {
-        if (s.feld === "segment") return;
-        var td = el("td", "enmg-wert");
-        if (s.norm) normZelle(td, b[s.feld]);
-        else wertZelle(td, w[s.feld], s.bewertet ? b[s.feld] : null);
-        tr.appendChild(td);
+    bloecke.forEach(function (block) {
+      var nz = el("tr", "enmg-nervzeile");
+      var nt = el("td", "", TB.enmg.nervZeile(block));
+      nt.colSpan = sp.length;
+      if (!block.nervId)
+        nt.appendChild(el("span", "marke enmg-marke-warn", T().unbekannterNerv));
+      nz.appendChild(nt);
+      tabelle.appendChild(nz);
+      block.zeilen.forEach(function (z) {
+        var tr = el("tr");
+        var segTd = el("td", "enmg-segment", z.segment);
+        if (z.unplausibel) {
+          segTd.appendChild(el("span", "marke enmg-marke-warn", T().unplausibel));
+        } else if (z.vergleich) {
+          segTd.title = T().vergleichOhneNorm;
+        }
+        tr.appendChild(segTd);
+        var w = z.werte, b = z.bew || {};
+        sp.forEach(function (s) {
+          if (s.feld === "segment") return;
+          var td = el("td", "enmg-wert");
+          if (s.norm) normZelle(td, b[s.feld]);
+          else {
+            wertZelle(td, w[s.feld], s.bewertet ? b[s.feld] : null);
+            var bw = s.bewertet ? b[s.feld] : null;
+            if (bw && bw.farbe && w[s.feld] !== null && w[s.feld] !== undefined) {
+              var ba = balken(w[s.feld], bw);
+              if (ba) td.appendChild(ba);
+            }
+          }
+          tr.appendChild(td);
+        });
+        tabelle.appendChild(tr);
       });
-      tabelle.appendChild(tr);
     });
     wurzel.appendChild(tabelle);
   }
@@ -224,14 +259,12 @@ TB.ansichtEnmg = (function () {
     if (ergebnis.alter === null || ergebnis.alter === undefined)
       wurzel.appendChild(el("div", "enmg-warnung", T().alterUnbekannt));
 
-    var letzteArt = "";
-    ergebnis.bloecke.forEach(function (block) {
-      if (block.art !== letzteArt) {
-        letzteArt = block.art;
-        wurzel.appendChild(el("h3", "",
-          block.art === "motor" ? T().motorTitel : T().sensTitel));
-      }
-      zeichneBlock(wurzel, block);
+    ["motor", "sens"].forEach(function (art) {
+      var bl = ergebnis.bloecke.filter(function (b) {
+        return (b.art === "motor") === (art === "motor"); });
+      if (!bl.length) return;
+      wurzel.appendChild(el("h3", "", art === "motor" ? T().motorTitel : T().sensTitel));
+      zeichneArt(wurzel, art, bl);
     });
     if (ergebnis.reste && ergebnis.reste.length) {
       var r = el("div", "enmg-reste");
@@ -315,6 +348,25 @@ TB.ansichtEnmg = (function () {
     var ht = zusammensetzen(true, true);
     return { text: ht.text, html: ht.html };
   }
+  // 18.18: Für KISIM die Felder einzeln — wie beim EEG (Näd 15.10.:
+  // alle Zusatzuntersuchungen haben dieselbe Maske): Fragestellung,
+  // Anamnese (bleibt leer, wird übersprungen), Befund = Tabellen +
+  // Zusammenfassung, Beurteilung.
+  function aktuelleFelder() {
+    if (!ergebnis || !ergebnis.bloecke.length) return null;
+    var B = TB.enmgBefund;
+    var P = '<p style="font-family:Arial;font-size:10pt;margin:8px 0 2px"><b>';
+    var tab = TB.enmg.tabelleHtmlText(ergebnis);
+    var fr = fragestellungZeile();
+    return {
+      indikation: fr ? { text: fr, html: B.alsHtml(fr) } : null,
+      befund: { text: tab.text + "\n\n" + T().zusammenfassungTitel + "\n" + zusText,
+                html: tab.html + "\n" + P + T().zusammenfassungTitel + "</b></p>" +
+                      B.alsHtml(zusText) },
+      beurteilung: { text: beuText, html: B.alsHtml(beuText) },
+      block: aktuellerText()
+    };
+  }
 
   function zeichne(wurzel) {
     wurzel.appendChild(el("h2", "", T().enmgTitel));
@@ -338,6 +390,7 @@ TB.ansichtEnmg = (function () {
   }
 
   return { zeichne: zeichne, setzeFensterModus: setzeFensterModus,
-           aktuellerText: aktuellerText, verarbeite: verarbeite,
+           aktuellerText: aktuellerText, aktuelleFelder: aktuelleFelder,
+           verarbeite: verarbeite,
            zusammensetzen: zusammensetzen };
 })();

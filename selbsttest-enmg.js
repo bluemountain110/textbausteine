@@ -173,8 +173,8 @@ TB.selbsttestEnmgBefund = function () {
     // 18.17: hinter jeder bewerteten Spalte steht die Norm-Spalte (E1 = (a))
     var sp = TB.enmg.spalten(mot[0]).map(function (s) {
       return s.norm ? s.feld + "Norm" : s.feld; }).join(",");
-    fall("Spalten Viking motorisch: mit Fläche Δ, Abstand und Norm-Spalten (18.17), ohne Dauer",
-      sp === "segment,lat,latNorm,amp,areaDiff,abstand,nlg,nlgNorm,fLat,fLatNorm", sp);
+    fall("Spalten Viking motorisch: mit Fläche Δ, Abstand und Norm-Spalten (18.17; Amplitude seit 18.18), ohne Dauer",
+      sp === "segment,lat,latNorm,amp,ampNorm,areaDiff,abstand,nlg,nlgNorm,fLat,fLatNorm", sp);
     var h = B.alsHtml("• Eins\n• Zwei");
     fall("Beurteilung als HTML: Aufzählung wird <ul> mit 2 Punkten",
       (h.match(/<li>/g) || []).length === 2 && /<ul/.test(h));
@@ -186,6 +186,177 @@ TB.selbsttestEnmgBefund = function () {
       !TB.enmgLeserDoc.istDoc(new Uint8Array([0x25, 0x50, 0x44, 0x46])));
   } catch (e) {
     fall("ENMG-Befund-Prüfungen liefen durch", false, String(e && e.message || e));
+  }
+  return f;
+};
+
+// ---- 18.18: Chen-Amplituden, Tabellen je Art, Sortierung, AAN-Schwellen,
+//      Rauschfilter, myopathisches Muster, Fenster-Ziele. Alle Daten
+//      ERFUNDEN (Muster Hans). Gruppe „ENMG 18.18".
+TB.selbsttestEnmg1818 = function () {
+  var f = [];
+  function fall(name, ok, detail) { f.push({ name: name, ok: !!ok, detail: detail || "" }); }
+  function zeile(zellen, n) {
+    var z = zellen.slice();
+    while (z.length < n) z.push("");
+    return z.join("\x07") + "\x07\x07";
+  }
+  function feld(name, inhalt) {
+    return "\x13FILLIN VikingSubReport:" + name + ".nic\x14" + inhalt + "\x15\r";
+  }
+  function viking(motorZeilen, sensZeilen) {
+    var mk = ["Nerv, Stimulation", "Latenz", "Amplitude", "Segment", "Area Diff.\r", "Distanz", "NLG"];
+    var sk = ["Nerve, Stimulation", "Latenz\rAbgang", "Peak\rLatenz", "Amplitude\rµV",
+              "Segment", "Lat. - Diff", "Distanz", "NLG"];
+    return feld("pat_b", "Elektrodiagnostische Untersuchung vom 10.10.2026 09:00\r\rName:\x07Muster, Hans, 01/01/1960\r\x07Patient ID:\x0799999\r\x07\x07") +
+      feld("history", "\rIndikation/Fragestellung: Polyneuropathie? \r\r") +
+      feld("mnc_b", "Motorische Neurografie:\r" + zeile(mk, 7) + zeile([], 7) +
+        motorZeilen.map(function (z) { return zeile(z, 7); }).join("") + "\r") +
+      feld("snc_b", "Sensible Neurographie:\r" + zeile(sk, 8) + zeile([], 8) +
+        sensZeilen.map(function (z) { return zeile(z, 8); }).join("") + "\r");
+  }
+  function lies(m, s) { var e = TB.enmgViking.deute(viking(m, s)); TB.enmg.bewerte(e); return e; }
+  try {
+    var E = TB.enmg, B = TB.enmgBefund, G = TB.normwerteGrundlage;
+    function nerv(id) { return G.nerven.filter(function (n) { return n.id === id; })[0]; }
+    var med = nerv("medianus");
+    // F1: motorische Amplituden nach Chen
+    var b1 = E.bewertung(med, "mamp", 4.5, 45), b2 = E.bewertung(med, "mamp", 4.0, 45),
+        b3 = E.bewertung(med, "mamp", 3.9, 45);
+    fall("F1 Chen: Medianus MSAP 45 J. (Grenze 4.2) — 4.5 grün, 4.0 grenzwertig, 3.9 rot",
+      b1.farbe === "gruen" && b2.farbe === "grenzwertig" && b3.farbe === "rot",
+      [b1.farbe, b2.farbe, b3.farbe, b1.grenze].join(" "));
+    var z = E.zeileVonNerv(med, "mamp");
+    fall("Chen-Altersgruppen ohne Zwischenrechnung: 39 J. 5.9 · 40 J. 4.2 · 59 J. 4.2 · 60 J. 3.8",
+      E.grenzeFuer(z, 39) === 5.9 && E.grenzeFuer(z, 40) === 4.2 &&
+      E.grenzeFuer(z, 59) === 4.2 && E.grenzeFuer(z, 60) === 3.8,
+      [39, 40, 59, 60].map(function (a) { return E.grenzeFuer(z, a); }).join(" "));
+    var tz = E.zeileVonNerv(nerv("tibialis"), "mamp");
+    fall("F2: Tibialis MSAP ab 60 J. 4.4 mV (nicht 1.1); 25 J. 5.8; 45 J. 5.3",
+      E.grenzeFuer(tz, 65) === 4.4 && E.grenzeFuer(tz, 25) === 5.8 && E.grenzeFuer(tz, 45) === 5.3);
+    fall("Ulnaris MSAP fest 7.9 mV, Peroneus EDB 2.6 (bis 39 J.) / 1.1 (ab 40 J.)",
+      E.grenzeFuer(E.zeileVonNerv(nerv("ulnaris"), "mamp"), 70) === 7.9 &&
+      E.grenzeFuer(E.zeileVonNerv(nerv("peronaeus"), "mamp"), 30) === 2.6 &&
+      E.grenzeFuer(E.zeileVonNerv(nerv("peronaeus"), "mamp"), 50) === 1.1);
+    // F3/F4: sensibel antidrom, tiefere BMI-Zahl
+    fall("F3/F4: sensibel antidrom — Medianus 13 µV (< 50 J.) / 8 µV (ab 50), Ulnaris 8 / 4, Suralis 4, Radialis 11",
+      E.grenzeFuer(E.zeileVonNerv(med, "sdistamp"), 45) === 13 &&
+      E.grenzeFuer(E.zeileVonNerv(med, "sdistamp"), 65) === 8 &&
+      E.grenzeFuer(E.zeileVonNerv(nerv("ulnaris"), "sdistamp"), 30) === 8 &&
+      E.grenzeFuer(E.zeileVonNerv(nerv("ulnaris"), "sdistamp"), 70) === 4 &&
+      E.grenzeFuer(E.zeileVonNerv(nerv("suralis"), "samp"), 70) === 4 &&
+      E.grenzeFuer(E.zeileVonNerv(nerv("radialis"), "sdistamp"), 70) === 11);
+    // Nachführung einer gespeicherten Ablage von vor 18.18
+    var alt = JSON.parse(JSON.stringify(G));
+    alt.stand = "2026-10-08";
+    alt.nerven.forEach(function (n) {
+      n.zeilen = n.zeilen.filter(function (x) { return x.id !== "mamp"; });
+      if (n.motor) { delete n.motor.amp; delete n.motor.ampAusser; }
+      n.zeilen.forEach(function (x) {
+        if (x.id === "sdistamp" || x.id === "samp") { delete x.stufig; x.fest = 5; delete x.werte; }
+      });
+    });
+    var altMed = alt.nerven.filter(function (n) { return n.id === "medianus"; })[0];
+    E.zeileVonNerv(altMed, "dml").werte[0] = 3.7;   // Näds eigene Änderung
+    var neu = E.nachfuehren(alt);
+    var nMed = neu.nerven.filter(function (n) { return n.id === "medianus"; })[0];
+    fall("Nachführung: gespeicherte Ablage bekommt die Chen-Zeilen, Näds eigene Werte bleiben",
+      neu.stand === G.stand && !!E.zeileVonNerv(nMed, "mamp") &&
+      nMed.motor.amp === "mamp" && E.zeileVonNerv(nMed, "sdistamp").stufig === true &&
+      E.zeileVonNerv(nMed, "dml").werte[0] === 3.7 &&
+      nMed.zeilen[1].id === "mamp" && nMed.zeilen.length === med.zeilen.length,
+      nMed.zeilen.map(function (x) { return x.id; }).join(","));
+    // Sortierung + Nerv-Zeilen
+    var bl = [{ art: "motor", nervText: "Ulnaris Motorisch Rechts", seite: "rechts", zeilen: [] },
+              { art: "motor", nervText: "Medianus Motorisch Rechts", seite: "rechts", zeilen: [] },
+              { art: "sens", nervText: "Suralis Sensorisch Links", seite: "links", zeilen: [] },
+              { art: "motor", nervText: "Medianus Motorisch Links", seite: "links", zeilen: [] }];
+    var so = E.sortiere(bl).map(function (b) { return E.nervZeile(b); }).join(" · ");
+    fall("Sortierung alphabetisch, links vor rechts (wie Keypoint)",
+      so === "N. medianus links · N. medianus rechts · N. suralis links · N. ulnaris rechts", so);
+    // Tabellen: eine motorisch, eine sensibel, graue Nerv-Zeile
+    var a = lies(
+      [["N. ulnaris.R"], ["Handgel.", "3.0 ms", "9.0 mV", "", "", "70 mm", " m/s"],
+       ["N. medianus.L"], ["Carpus", "3.5 ms", "6.0 mV", "", "", "70 mm", " m/s"],
+       ["Cubitus", "7.5 ms", "5.8 mV", "Carpus-Cubitus", "1.0", "220 mm", "55 m/s"]],
+      [["N. suralis.R"], ["Crus", "2.5 ms", "3.0 ms", "9 µV", "Tarsus-Crus", "2.5 ms", "120 mm", "50 m/s"]]);
+    var ht = E.tabelleHtmlText(a);
+    fall("Bericht: genau EINE Tabelle motorisch und EINE sensibel",
+      (ht.html.match(/<table/g) || []).length === 2 &&
+      ht.html.indexOf(TB.enmgTexte.motorTitel) < ht.html.indexOf(TB.enmgTexte.sensTitel));
+    fall("Bericht: Nerv als graue Zwischenzeile (über alle Spalten), Medianus vor Ulnaris",
+      /<td colspan="\d+" style="[^"]*background-color:#d9d9d9[^"]*"><b>N\. medianus links<\/b>/.test(ht.html) &&
+      ht.html.indexOf("N. medianus links") < ht.html.indexOf("N. ulnaris rechts"));
+    fall("Bericht: Segment-Spalte breit (30 %), motorische Amplitude mit Norm-Spalte",
+      /style="width:30%;/.test(ht.html) &&
+      E.spaltenFuerArt(a.bloecke.filter(function (b) { return b.art === "motor"; }), "motor")
+        .some(function (s) { return s.norm && s.feld === "amp"; }));
+    var rtf = TB.speicher.rtfHtml(ht.html) || "";
+    fall("Bericht als RTF (KISIM/Word): echte Tabellenzeilen, graue Nerv-Zeile schattiert",
+      rtf.indexOf("\\trowd") !== -1 && rtf.indexOf("\\clcbpat") !== -1, rtf.length + " Zeichen");
+    // Abweichender Ableitmuskel: keine Amplituden-Norm
+    var tibAnt = lies([["N. peroneus communis.L"], ["Fib. Köpfchen", "3.0 ms", "4.0 mV", "M. tibialis anterior-Fib. Köpfchen", "", "80 mm", " m/s"]], []);
+    fall("Peroneus mit Ableitung Tib. ant.: keine EDB-Amplitudengrenze (bleibt schwarz)",
+      !tibAnt.bloecke[0].zeilen[0].bew.amp, JSON.stringify(tibAnt.bloecke[0].zeilen[0].bew.amp || null));
+    // AAN-Schwellen je Nerv (Alter 66: Peroneus-DML-Grenze 4.71, Amplitude 1.1)
+    function peron(dml, amp) {
+      var e = lies([["N. peroneus communis.L"], ["Tarsus", dml + " ms", amp + " mV",
+        "M. extensor digitorum brevis-Tarsus", "", "80 mm", " m/s"]], []);
+      return B.zusammenfassung(e);
+    }
+    var p1 = peron("5.06", "3.0"), p2 = peron("6.0", "3.0"), p3 = peron("6.0", "0.5");
+    fall("AAN: Peroneus-DML 5.06 (107 %) ist verlängert, aber NICHT demyelinisierend (Näds Beispiel)",
+      /verlängerte distale motorische Latenz/.test(p1) && !/demyelinisierend/.test(p1), p1);
+    fall("AAN: DML 6.0 (127 %) bei normaler Amplitude → „im demyelinisierenden Bereich“",
+      /Latenz \(im demyelinisierenden Bereich\)/.test(p2), p2);
+    fall("AAN: DML 6.0 bei verminderter Amplitude (0.5 mV) → strengere 150 %-Schwelle, nicht demyelinisierend; Amplitude reduziert",
+      !/demyelinisierend/.test(p3) && /reduzierte motorische Amplitude/.test(p3), p3);
+    // PNP: demyelinisierend erst ab zwei Nerven
+    var zwei = lies(
+      [["N. peroneus communis.L"], ["Tarsus", "6.0 ms", "3.0 mV", "M. extensor digitorum brevis-Tarsus", "", "80 mm", " m/s"],
+       ["N. tibialis.L"], ["Malleolus", "7.2 ms", "6.0 mV", "M. abductor hallucis-Malleolus", "", "80 mm", " m/s"]],
+      [["N. suralis.L"], ["Crus", "2.5 ms", "3.0 ms", "9 µV", "Tarsus-Crus", "2.5 ms", "120 mm", "50 m/s"]]);
+    var bz = B.beurteilung(zwei, ["pnp"]);
+    fall("PNP: zwei Nerven im demyelinisierenden Bereich → „überwiegend demyelinisierenden“",
+      /überwiegend demyelinisierenden Polyneuropathie/.test(bz), bz);
+    var eins = lies(
+      [["N. peroneus communis.L"], ["Tarsus", "6.0 ms", "3.0 mV", "M. extensor digitorum brevis-Tarsus", "", "80 mm", " m/s"]],
+      [["N. suralis.L"], ["Crus", "2.5 ms", "3.0 ms", "2 µV", "Tarsus-Crus", "2.5 ms", "120 mm", "50 m/s"]]);
+    var be = B.beurteilung(eins, ["pnp"]);
+    fall("PNP: nur EIN Nerv demyelinisierend → nicht „demyelinisierende PNP“, Hinweis „nur im N. …“",
+      /am ehesten axonalen/.test(be) && /Demyelinisierungskriterien nur im N\. peroneus communis links/.test(be), be);
+    // Rauschfilter (Keypoint-Kurvenseiten)
+    var ker = TB.enmgLeser.deute([
+      ["Nerve", "Lat", "Amp"], ["", "ms", "mV"], ["Medianus Motorisch Rechts"],
+      ["Handgelenk - APB", "3.2", "8.0"],
+      ["Motorische Kurven"], ["Medianus Motorisch Rechts"], ["Handgelenk - APB"],
+      ["2mV/D 2ms/D"], ["Bemerkung Probe"], ["Bemerkung Probe"]], []);
+    fall("Rauschfilter: Kurvenseiten-Wiederholungen weg, Echtes genau einmal",
+      ker.reste.length === 1 && ker.reste[0] === "Bemerkung Probe", JSON.stringify(ker.reste));
+    fall("Technik-Sätze („Reizung … Nadelelektroden“) fallen weg, Myografie-Zeilen nicht",
+      TB.enmgViking.istTechnikSatz("Reizung mit Oberflächenelektroden, Ableitung mit Oberflächen- oder Nadelelektroden.") &&
+      !TB.enmgViking.istTechnikSatz("M. tibialis anterior links: keine pathologische Spontanaktivität"));
+    // Myopathisches Muster
+    var emg = "\x07Muscle\x07Einstich\x07Fib.\x07PSW\x07Fasz.\x07Dauer\x07Amplitude\x07Polyphasie\x07Muster\x07Anspannung\x07\x07\x07\x07\x07" +
+      "M. deltoideus.R\x07normal\x07keine\x07keine\x07keine\x07verkürzt\x07vermindert\x07vermehrt\x07früh dicht\x07maximal\x07\x07\x07\x07\x07" +
+      "M. vastus lateralis.R\x07normal\x07keine\x07keine\x07keine\x07verkürzt\x07\x07keine\x07dicht\x07maximal\x07\x07\x07\x07\x07";
+    var et = TB.enmgViking.emgTabelle(emg);
+    fall("Myopathisch nur, wenn kurz + klein + früh im selben Muskel zusammenkommen",
+      et.length === 2 && et[0].myopath && !et[0].neurogen && !et[1].myopath &&
+      /myopathisches Muster/.test(et[0].befund), et.map(function (m) { return m.befund; }).join(" | "));
+    var bm = B.beurteilung({ bloecke: [], myografie: et }, ["myo"]);
+    fall("Frage Myopathie → „myopathisches Muster in M. deltoideus rechts“",
+      /myopathisches Muster in M\. deltoideus rechts/.test(bm), bm);
+    // Fenster-Ziele
+    TB.fensterModus._setzeZiel("word");
+    var kw = TB.fensterModus.knopfText();
+    TB.fensterModus._setzeZiel("kisim");
+    fall("Fenster: Ziel Word heisst „An Word übergeben“, KISIM bleibt „An KISIM übergeben“",
+      kw === TB.statusTexte.fensterKnopfWord && TB.fensterModus.knopfText() === TB.statusTexte.fensterKnopf, kw);
+    fall(";;enmg: Ansicht liefert die KISIM-Felder einzeln (Fragestellung/Befund/Beurteilung)",
+      typeof TB.ansichtEnmg.aktuelleFelder === "function");
+  } catch (e) {
+    fall("ENMG-18.18-Prüfungen liefen durch", false, String(e && e.stack || e));
   }
   return f;
 };

@@ -116,6 +116,7 @@ TB.statusTexte = {
   fensterHinweis: "Ausfüllen wie gewohnt — der Knopf übergibt alles ans Skript, das Fenster schliesst sich.",
   fensterKnopf: "An KISIM übergeben",
   fensterKnopfAxenita: "An Axenita übergeben",
+  fensterKnopfWord: "An Word übergeben",
   fensterErwFehlt: "Die Bausteine-Erweiterung ist in diesem Fenster nicht aktiv — bitte das Fenster schliessen und das Kürzel in Axenita nochmals tippen.",
   fensterErwFehler: "Axenita hat nicht geantwortet — der Text ist NICHT eingefügt. Bitte noch einmal auf den Knopf drücken.",
   tardocPfeil: "Einzelheiten ein-/ausblenden",

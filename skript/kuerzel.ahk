@@ -205,6 +205,16 @@ KuerzelArbeit(t, getippt, kuerzel, laenge, ziel) {
         Send "{Backspace " laenge "}"
         EegOeffnen(ziel, kuerzel)
         return
+    }
+    ; 18.18: ;;enmg oeffnet das ENMG-Werk der App im schlanken Fenster
+    ; (Datei hineinziehen, Vorschlag pruefen, "An KISIM uebergeben").
+    ; KISIM bekommt die Felder wie beim EEG (Naed 15.10.: alle
+    ; Zusatzuntersuchungen haben dieselbe Maske), Word einen Block.
+    ; Ein ECHTER Baustein mit dem Kuerzel enmg hat Vorrang.
+    if (kuerzel = "enmg" and !karte.Has("enmg")) {
+        Send "{Backspace " laenge "}"
+        FensterStart("enmg", "", ziel)
+        return
     }    ; Das Status-Fenster (Etappe 11): das Kuerzel eines Status aus der
     ; Status-Pflege (;;statuscts, ;;statusc7, ...) oeffnet das App-Fenster
     ; im Browser mit genau diesem Status (URL-Weg). Ein ECHTER Baustein hat Vorrang.

@@ -1,6 +1,8 @@
 // Datei: fenster-modus.js
 // Projekt: Textbausteine \u2014 Teil: App (Browser), nur App
-// Zweck: Der URL-Fenster-Weg, Fassung 2 (17.2). Oeffnet das Skript
+// Zweck: Der URL-Fenster-Weg, Fassung 2 (17.2). 18.18: nur der Kasten
+//        bei Dialog-Fenstern; ;;enmg in die vier KISIM-Felder bzw. als
+//        ein Block nach Word (ziel=word). Oeffnet das Skript
 //        die App mit ?fenster=eeg oder ?fenster=status&kuerzel=...,
 //        dann: (1) SOFORT die Fenster-Klasse und der schlanke Modus
 //        beider Werke \u2014 noch VOR dem ersten Zeichnen, damit keine
@@ -26,9 +28,13 @@ TB.fensterModus = (function () {
   // Zwischenablage) oder "axenita" (Praxis, die Erweiterung nimmt ihn
   // ueber ihre Bruecke in diesem Fenster entgegen). Fuer Naed sieht
   // beides gleich aus — nur der Knopf nennt das Zielprogramm.
+  // 18.18: "word" (Praxis: das Skript setzt in Word EIN Feld ein — Näds
+  // Weg seit 14.10.); technisch wie "kisim" über die Zwischenablage,
+  // aber als ein Block statt der vier KISIM-Felder.
   var ziel = "kisim";
   function knopfText() {
-    return ziel === "axenita" ? T().fensterKnopfAxenita : T().fensterKnopf;
+    return ziel === "axenita" ? T().fensterKnopfAxenita
+         : ziel === "word" ? T().fensterKnopfWord : T().fensterKnopf;
   }
 
   function merkeAdresse() {
@@ -189,12 +195,22 @@ TB.fensterModus = (function () {
       felder = { indikation: feld(f.indikation), anamnese: feld(f.anamnese),
                  befund: feld(f.befund), beurteilung: feld(f.beurteilung) };
       if (ziel === "axenita") felder.block = eegBlockFuerAxenita(f);
+      if (ziel === "word") felder = { block: feld(eegBlockFuerAxenita(f)) };
     } else if (art === "enmg") {
+      // 18.18: KISIM bekommt die Felder wie beim EEG (Fragestellung ·
+      // Anamnese leer · Befund · Beurteilung, Näd 15.10.); Word und
+      // Axenita bekommen alles als einen Block.
       var e = TB.ansichtEnmg.aktuellerText();
       if (!e || !e.text) {
         TB.ui.melde(TB.enmgTexte.fensterLeer, true); return;
       }
-      felder = { block: feld(e) };
+      if (ziel === "kisim") {
+        var ef = TB.ansichtEnmg.aktuelleFelder();
+        felder = { befund: feld(ef.befund), beurteilung: feld(ef.beurteilung) };
+        if (ef.indikation) felder.indikation = feld(ef.indikation);
+      } else {
+        felder = { block: feld(e) };
+      }
     } else {
       var s = TB.ansichtStatus.aktuellerText();
       if (!s || !s.text) { TB.ui.melde(T().fensterLeer, true); return; }
@@ -265,11 +281,16 @@ TB.fensterModus = (function () {
         art !== "anon" && art !== "anzeigen") return;
     kuerzel = p.get("kuerzel") || "";
     nonce = p.get("nonce") || "";
-    ziel = (p.get("ziel") === "axenita") ? "axenita" : "kisim";
+    ziel = (p.get("ziel") === "axenita") ? "axenita"
+         : (p.get("ziel") === "word") ? "word" : "kisim";
     document.title = "Textbausteine-Fenster " + nonce;
     // VOR dem ersten Zeichnen: Fenster-Klasse und schlanker Modus,
     // damit Masse (Kopfhoehe) und Inhalt von Anfang an stimmen.
     document.body.classList.add("nur-fenster");
+    // 18.18 NUR-DER-KASTEN (Dauerregel 15.10.): Fenster, die nur einen
+    // Dialog zeigen, zeigen nur diesen — nie die Bausteinliste dahinter.
+    if (["baustein", "anzeigen", "kisbest", "anon"].indexOf(art) !== -1)
+      document.body.classList.add("nur-kasten");
     TB.ansichtEeg.setzeFensterModus(true);
     TB.ansichtStatus.setzeFensterModus(true);
     TB.ansichtEnmg.setzeFensterModus(true);
@@ -289,6 +310,9 @@ TB.fensterModus = (function () {
   else
     start();
 
+  // Für den Selbsttest: Ziel setzen, ohne die Adresse zu ändern.
+  function _setzeZiel(z) { ziel = z; }
   return { start: start, pruefeNeu: pruefeNeu, uebergeben: uebergeben,
-           uebergebenBaustein: uebergebenBaustein, knopfText: knopfText };
+           uebergebenBaustein: uebergebenBaustein, knopfText: knopfText,
+           _setzeZiel: _setzeZiel };
 })();

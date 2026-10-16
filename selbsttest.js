@@ -1036,8 +1036,8 @@ TB.selbsttest = (function () {
     }
     try {
       var n = TB.enmg.normwerte();
-      var soll = { medianus: 9, ulnaris: 10, radialis: 2, suralis: 2,
-                   peronaeus: 6, tibialis: 5 };
+      var soll = { medianus: 10, ulnaris: 11, radialis: 2, suralis: 2,
+                   peronaeus: 7, tibialis: 6 };
       var zaehlOk = true, detail = [];
       Object.keys(soll).forEach(function (id) {
         var nerv = null;
@@ -1120,7 +1120,7 @@ TB.selbsttest = (function () {
       var ht = TB.enmg.tabelleHtmlText(erg);
       fall("Ausgabe trägt ihr Aussehen selbst (Inline-Stile, keine Klassen)",
         ht.html.indexOf('style="') !== -1 && ht.html.indexOf("class=") === -1 &&
-        ht.text.indexOf("Suralis") !== -1, "");
+        ht.text.indexOf("N. suralis") !== -1, "");
       // ---- 18.17: Norm-Spalte (E1 = (a)) und „grenzwertig" ------------
       fall("18.17: Norm-Spalte neben dem Wert, keine graue Klammer mehr",
         (ht.html.indexOf('font-size:8pt">&le; ') !== -1 ||
@@ -1673,7 +1673,10 @@ TB.selbsttest = (function () {
       pruefeAnzeigen().map(function (f) { f.gruppe = "Sammelrunde 18.17"; return f; }),
       (TB.selbsttestEnmgBefund ? TB.selbsttestEnmgBefund()
         : [{ name: "ENMG-Befund-Prüfungen geladen (selbsttest-enmg.js)", ok: false, detail: "" }])
-        .map(function (f) { f.gruppe = "ENMG-Befund"; return f; })
+        .map(function (f) { f.gruppe = "ENMG-Befund"; return f; }),
+      (TB.selbsttestEnmg1818 ? TB.selbsttestEnmg1818()
+        : [{ name: "ENMG-18.18-Prüfungen geladen (selbsttest-enmg.js)", ok: false, detail: "" }])
+        .map(function (f) { f.gruppe = "ENMG 18.18"; return f; })
     ));
   }
 

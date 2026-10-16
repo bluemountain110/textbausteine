@@ -10,6 +10,13 @@
 //        Normwert besteht, wird nichts behauptet. Das CTS wird nach
 //        Bland eingestuft (Näds Gewohnheit). Alles ist ein Vorschlag:
 //        Näd liest, ändert im Fenster und kopiert selbst.
+//        18.18: motorische Amplitude (Chen) zählt mit; „demyelinisierend"
+//        nach den AAN-Forschungskriterien 1991 (Neurology 41:617–618) JE
+//        NERV: Amplitude normal (≥ 80 % der Untergrenze) → NLG < 80 %
+//        der Untergrenze, DML > 125 %, F-Welle > 120 % der Obergrenze;
+//        Amplitude vermindert oder ohne Norm → < 70 % / > 150 % / > 150 %.
+//        Die BEURTEILUNG nennt eine demyelinisierende Polyneuropathie erst
+//        ab ZWEI Nerven (Näd 15.10.). Myopathisches Muster im Nadel-EMG.
 //        GRUNDSATZ: Rechnet nur im Fenster — nichts wird gespeichert.
 
 "use strict";
@@ -79,14 +86,37 @@ TB.enmgBefund = (function () {
 
   function analysiere(g) {
     var a = { dmlRot: false, dml: null, msap: null, mnlgRot: [], mnlgOk: [],
+              mampRot: false, demyel: [], demyelOrt: {},
               fRot: false, sampRot: false, snlgRot: false, sensDa: false,
               sensAmpDa: false, gefaerbt: false, unplausibel: [],
               grenzwertig: [],
               ring: { median: null, ulnar: null } };
     g.motor.forEach(function (b) {
+      // AAN 1991: Ist die distale Amplitude normal (≥ 80 % der Grenze)?
+      // Ohne Amplitude oder ohne Norm gilt die strengere Schwelle.
+      var z0 = b.zeilen[0] || { werte: {}, bew: {} };
+      var ab = (z0.bew || {}).amp, aw = (z0.werte || {}).amp;
+      var ampNormal = !!(ab && ab.grenze > 0 && typeof aw === "number" &&
+                         aw >= 0.8 * ab.grenze);
+      function demyelPruef(bew, wert, art, ort) {
+        if (!bew || !(bew.grenze > 0) || typeof wert !== "number") return;
+        var ja;
+        if (art === "nlg") ja = wert < (ampNormal ? 0.8 : 0.7) * bew.grenze;
+        else if (art === "dml") ja = wert > (ampNormal ? 1.25 : 1.5) * bew.grenze;
+        else ja = wert > (ampNormal ? 1.2 : 1.5) * bew.grenze;
+        if (ja) { a.demyel.push(art + (ort ? ":" + ort : "")); a.demyelOrt[art + (ort || "")] = true; }
+      }
       b.zeilen.forEach(function (z, i) {
         var be = z.bew || {}, w = z.werte;
         if (i === 0) { a.dml = w.lat; a.msap = w.amp; }
+        if (i === 0) {
+          if (gefaerbt(be.amp)) a.gefaerbt = true;
+          if (rot(be.amp)) a.mampRot = true;
+          if (gw(be.amp)) a.grenzwertig.push("motorische Amplitude");
+          if (rot(be.lat)) demyelPruef(be.lat, w.lat, "dml", "");
+        }
+        if (rot(be.nlg)) demyelPruef(be.nlg, w.nlg, "nlg", zielVon(be.nlg));
+        if (rot(be.fLat)) demyelPruef(be.fLat, w.fLat, "f", "");
         if (gefaerbt(be.lat) || gefaerbt(be.nlg) || gefaerbt(be.fLat)) a.gefaerbt = true;
         if (rot(be.lat)) a.dmlRot = true;
         if (gw(be.lat)) a.grenzwertig.push("distale motorische Latenz");
@@ -127,7 +157,7 @@ TB.enmgBefund = (function () {
     g.a = a;
     g.muster = muster(g);
     g.rot = a.dmlRot || a.mnlgRot.length > 0 || a.fRot || a.sampRot ||
-            a.snlgRot || (a.sensDa && !a.sensAmpDa);
+            a.mampRot || a.snlgRot || (a.sensDa && !a.sensAmpDa);
   }
   function zielVon(bew) { return String(bew.zeileId || ""); }
 
@@ -162,14 +192,19 @@ TB.enmgBefund = (function () {
     if (m.art === "sus") return "Neuropathie über dem Sulcus nervi ulnaris (Ellbogen)";
     return "Leitungsverzögerung über dem Fibulaköpfchen";
   }
+  var DEMYEL = " (im demyelinisierenden Bereich)";
   function einzelheiten(g, ohneMuster) {
     var a = g.a, t = [];
-    if (a.dmlRot && !(ohneMuster && g.muster)) t.push("verlängerte distale motorische Latenz");
+    if (a.dmlRot && !(ohneMuster && g.muster))
+      t.push("verlängerte distale motorische Latenz" + (a.demyelOrt.dml ? DEMYEL : ""));
+    if (a.mampRot && !(ohneMuster && g.muster && g.muster.art === "cts"))
+      t.push("reduzierte motorische Amplitude");
     a.mnlgRot.forEach(function (o) {
       if (ohneMuster && g.muster && (o === "sulcus" || o === "mknie")) return;
-      t.push("verlangsamte motorische NLG" + (ORT[o] ? " " + ORT[o] : ""));
+      t.push("verlangsamte motorische NLG" + (ORT[o] ? " " + ORT[o] : "") +
+        (a.demyelOrt["nlg" + o] ? DEMYEL : ""));
     });
-    if (a.fRot) t.push("verlängerte F-Wellen-Latenz");
+    if (a.fRot) t.push("verlängerte F-Wellen-Latenz" + (a.demyelOrt.f ? DEMYEL : ""));
     if (a.sensDa && !a.sensAmpDa) {
       if (!(ohneMuster && g.muster)) t.push("kein sensibles Potential ableitbar");
     } else {
@@ -263,20 +298,31 @@ TB.enmgBefund = (function () {
       if (nichtFokal.length >= 2 && beine.length >= 1) {
         var nurSens = nichtFokal.every(function (g) {
           var a = g.a;
-          return !a.dmlRot && !a.mnlgRot.length && !a.fRot; });
-        var amp = 0, leitung = 0;
+          return !a.dmlRot && !a.mnlgRot.length && !a.fRot && !a.mampRot; });
+        // 18.18: „demyelinisierend" nur nach AAN-Schwellen, und für die
+        // Polyneuropathie erst ab ZWEI Nerven (Näd 15.10.). Leichte
+        // Leitungsverzögerungen allein machen keine Demyelinisierung.
+        var amp = 0, leitung = 0, demyelNerven = [];
         nichtFokal.forEach(function (g) {
           var a = g.a;
-          if (a.sampRot || (a.sensDa && !a.sensAmpDa)) amp++;
+          if (a.sampRot || a.mampRot || (a.sensDa && !a.sensAmpDa)) amp++;
           if (a.snlgRot || a.dmlRot || a.mnlgRot.length || a.fRot) leitung++;
+          if (a.demyel.length) demyelNerven.push(g);
         });
-        var typ = (amp && leitung) ? "gemischt axonal-demyelinisierenden"
-          : (amp ? "am ehesten axonalen" : "überwiegend demyelinisierenden");
+        var demyel = demyelNerven.length >= 2;
+        var typ = (demyel && amp) ? "gemischt axonal-demyelinisierenden"
+          : demyel ? "überwiegend demyelinisierenden"
+          : amp ? "am ehesten axonalen" : "";
         var eig = [nurSens ? "sensiblen" : "sensomotorischen"];
         if (beine.length >= arme) eig.push("distal betonten");
-        eig.push(typ);
+        if (typ) eig.push(typ);
         saetze.push("Befundkonstellation passend zu einer " + eig.join(", ") +
-          " Polyneuropathie.");
+          " Polyneuropathie" + (!typ && leitung
+            ? " (Leitungsverzögerungen ohne Erreichen der Demyelinisierungskriterien)" : "") + ".");
+        if (demyelNerven.length === 1)
+          saetze.push("Demyelinisierungskriterien nur im " + demyelNerven[0].name +
+            seiteText(demyelNerven[0].seite) +
+            " erfüllt – für eine demyelinisierende Polyneuropathie nicht ausreichend.");
         nichtFokal.forEach(function (g) { erklaert[g.id + g.seite] = true; });
       } else if (nichtFokal.length === 1 && beine.length === 1) {
         var g1 = beine[0];
@@ -334,6 +380,10 @@ TB.enmgBefund = (function () {
     var spont = myo.filter(function (m) { return m.spont; });
     var neuro = myo.filter(function (m) { return m.neurogen; });
     var fasz = myo.filter(function (m) { return m.fasz; });
+    var myopath = myo.filter(function (m) { return m.myopath; });
+    function zusatzMyopath(t) {
+      return myopath.length ? t + (t ? "; " : "") + "myopathisches Muster in " + namen(myopath) : t;
+    }
     ["radik", "plexus", "mnd", "myo", "nmt"].forEach(function (id) {
       if (fragen.indexOf(id) === -1) return;
       var f = FRAGEN.filter(function (x) { return x.id === id; })[0];
@@ -362,20 +412,20 @@ TB.enmgBefund = (function () {
         }
         return;
       }
-      if (!spont.length && !neuro.length)
-        saetze.push(frage + "Myografie ohne pathologische Spontanaktivität und ohne neurogene " +
-          "Veränderungen in den untersuchten Muskeln.");
+      if (!spont.length && !neuro.length && !myopath.length)
+        saetze.push(frage + "Myografie ohne pathologische Spontanaktivität, ohne neurogene " +
+          "und ohne myopathische Veränderungen in den untersuchten Muskeln.");
       else
-        saetze.push(frage + (spont.length ? "pathologische Spontanaktivität in " + namen(spont) : "") +
+        saetze.push(frage + zusatzMyopath((spont.length ? "pathologische Spontanaktivität in " + namen(spont) : "") +
           (spont.length && neuro.length ? "; " : "") +
-          (neuro.length ? "neurogene Veränderungen in " + namen(neuro) : "") +
+          (neuro.length ? "neurogene Veränderungen in " + namen(neuro) : "")) +
           " – Verteilung bitte beurteilen.");
     });
-    if (!myoErklaert && (spont.length || neuro.length))
+    if (!myoErklaert && (spont.length || neuro.length || myopath.length))
       saetze.push("Zusätzlich in der Myografie: " +
-        (spont.length ? "pathologische Spontanaktivität in " + namen(spont) : "") +
+        zusatzMyopath((spont.length ? "pathologische Spontanaktivität in " + namen(spont) : "") +
         (spont.length && neuro.length ? "; " : "") +
-        (neuro.length ? "neurogene Veränderungen in " + namen(neuro) : "") + ".");
+        (neuro.length ? "neurogene Veränderungen in " + namen(neuro) : "")) + ".");
     if (fragen.indexOf("verlauf") !== -1)
       saetze.push("Vergleich mit der Voruntersuchung: bitte ergänzen.");
 

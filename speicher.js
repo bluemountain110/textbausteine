@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "18.17 · Sammelrunde: Norm-Spalte, grenzwertig, Nur-anzeigen, anon-Funde · 15.10.2026";
+TB.FASSUNG = "18.18 · ENMG: Tabellen je Art, Chen-Amplituden, AAN-Demyelinisierung, ;;enmg am Arbeitsplatz · 15.10.2026";
 
 TB.speicher = (function () {
 
