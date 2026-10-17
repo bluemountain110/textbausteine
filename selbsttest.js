@@ -1014,9 +1014,16 @@ TB.selbsttest = (function () {
       detail: blk.html });
     var hilfeKapitel = TB.hilfe.inhalt().map(function (k) { return k[0]; });
     var chronikErst = TB.chronik.eintraege()[0][1];
+    // 18.25: allgemein statt „Etappe 13“ fest — der erste Eintrag endet am
+    // spätesten Datum aller Einträge (neueste zuoberst).
+    function endDatum(z) {
+      var m = /(\d{1,2})\.(\d{1,2})\.(\d{4})\s*$/.exec(String(z));
+      return m ? +m[3] * 10000 + +m[2] * 100 + +m[1] : 0;
+    }
+    var chronikNeu = TB.chronik.eintraege().every(function (e) {
+      return endDatum(e[0]) <= endDatum(TB.chronik.eintraege()[0][0]); });
     f.push({ name: "17.9: Anleitung erklärt den Datenfluss, Chronik beginnt mit der neusten Etappe",
-      ok: hilfeKapitel.indexOf("Welche Daten fliessen wohin") !== -1 &&
-          chronikErst.indexOf("Etappe 13") === 0,
+      ok: hilfeKapitel.indexOf("Welche Daten fliessen wohin") !== -1 && chronikNeu,
       detail: chronikErst });
     f.push({ name: "17.6: Fenster-Knopf nennt das Zielprogramm",
       ok: typeof TB.fensterModus.knopfText === "function" &&

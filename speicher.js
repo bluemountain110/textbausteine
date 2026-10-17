@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "18.24 · ENMG: Zusammenfassung mit „Neurografie(n):“ / „Myografie(n):“, fehlende F-Welle schwarz · 17.10.2026";
+TB.FASSUNG = "18.25 · Abschluss Chat 14: Hilfe und Chronik nachgeführt · 17.10.2026";
 
 TB.speicher = (function () {
 
