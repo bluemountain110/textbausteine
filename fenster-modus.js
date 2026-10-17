@@ -208,6 +208,12 @@ TB.fensterModus = (function () {
         var ef = TB.ansichtEnmg.aktuelleFelder();
         felder = { befund: feld(ef.befund), beurteilung: feld(ef.beurteilung) };
         if (ef.indikation) felder.indikation = feld(ef.indikation);
+        // 18.23 (Näd 16.10.: nach Zusammenfassung und Beurteilung je eine
+        // Leerzeile zu viel): Endet ein Feld mit einer Aufzählung, löscht
+        // das Skript nach dem Einsetzen die leere Schlusszeile.
+        ["befund", "beurteilung"].forEach(function (k) {
+          if (/<\/ul>\s*$/.test(felder[k].html || "")) felder[k].listeEnde = "1";
+        });
       } else {
         felder = { block: feld(e) };
       }

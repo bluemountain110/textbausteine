@@ -28,7 +28,8 @@
 window.TB = window.TB || {};
 
 TB.enmg = (function () {
-  var ROT = "#c00000", GRUEN = "#1a7a1a", ORANGE = "#b06f00";
+  var ROT = "#c00000", GRUEN = "#1a7a1a", ORANGE = "#e67e00";
+  var LEER = '<p style="font-family:Arial;font-size:10pt;margin:0"><br></p>';
 
   // ---- Ablage der Normwerte (nie Patientendaten) ----------------------
   function normwerte() {
@@ -202,6 +203,14 @@ TB.enmg = (function () {
              zeileName: zeile.name, zeileId: zeile.id };
   }
 
+  // 18.23: Zeile ohne Antwort — das Gerät schreibt „--“ (Keypoint) bzw.
+  // nur die Distanz (Viking). Zählt als pathologisch, nie als „fehlt“.
+  function keinPotential(z) {
+    var na = z && z.na, w = (z && z.werte) || {};
+    if (!na) return false;
+    return !!(na.amp || (na.lat && (w.amp === null || w.amp === undefined)));
+  }
+  function istNa(z, feld) { return !!(z && z.na && z.na[feld]); }
   function ampAusgenommen(regeln, z, block) {
     var t = ((z.segment || "") + " " + (z.segmentGeraet || "") + " " +
              (block.nervText || "")).toLowerCase();
@@ -270,9 +279,18 @@ TB.enmg = (function () {
   // 18.22: die Myografie-Tabelle unter den Normwerten — Spalten wie im
   // Bericht des Geräts; leere Spalten (z. B. „Hinweise“) fallen weg.
   // Die Interpretation steht wie am Gerät grün (normal) bzw. rot.
-  function myoTabelle(ergebnis) {
+  function myoTabelle(ergebnis, wahl) {
     var myo = (ergebnis.myografie || []).filter(function (m) { return m.tabelle; });
-    if (!myo.length) return { html: "", text: "" };
+    if (!myo.length) return { html: "", text: "", hatAmp: false };
+    // 18.23 (Näd 16.10.): Die Keypoint-Spalte „Amp“ zeigt immer denselben
+    // Standardwert — sie ist darum ausgeblendet und nur auf Wunsch da
+    // (Häkchen im Fenster, Einstellung enmgMyoAmp, synct).
+    var ampZeigen = (wahl && typeof wahl.amp === "boolean") ? wahl.amp
+      : !!TB.speicher.einstellung("enmgMyoAmp", false), hatAmp = false;
+    // Spaltenbreiten in Prozent, damit „subakute Denervation“ auf EINER
+    // Zeile bleibt und die Zahlen-Spalten schmal sind.
+    var BREITE = { muskel: 26, interpretation: 25, einstich: 9, fib: 6, psw: 6,
+                   fasz: 6, amp: 8, ip: 7, hinweise: 14 };
     var gruppen = [], index = {};
     myo.forEach(function (m) {
       var k = m.tabelle.kopf.join("|");
@@ -282,13 +300,19 @@ TB.enmg = (function () {
     var html = [], text = [];
     gruppen.forEach(function (g) {
       var spalten = g.kopf.map(function (t, i) { return i; }).filter(function (i) {
+        if (/^amp$/i.test(g.kopf[i])) { hatAmp = true; if (!ampZeigen) return false; }
         return i < 2 || g.zeilen.some(function (z) { return String(z[i] || "").trim() !== ""; });
       });
+      var roh = spalten.map(function (i) {
+        var k = String(g.kopf[i]).toLowerCase().replace(/[^a-zäöü]/g, "");
+        return BREITE[k] || 8; });
+      var summe = roh.reduce(function (a, b) { return a + b; }, 0);
+      var pz = roh.map(function (x) { return Math.round(x / summe * 1000) / 10; });
       var h = '<p style="font-family:Arial;font-size:10pt;margin:8px 0 2px"><b>' +
         TB.enmgTexte.myoTitel + "</b></p>" +
         '<table style="border-collapse:collapse;width:100%;margin-bottom:8px"><tr>' +
         spalten.map(function (i, n) {
-          return (n === 0 ? TH.replace('style="', 'style="width:30%;') : TH) + esc(g.kopf[i]) + "</td>";
+          return TH.replace('style="', 'style="width:' + pz[n] + '%;') + esc(g.kopf[i]) + "</td>";
         }).join("") + "</tr>";
       text.push(TB.enmgTexte.myoTitel);
       text.push(spalten.map(function (i) { return g.kopf[i]; }).join("  |  "));
@@ -306,7 +330,7 @@ TB.enmg = (function () {
       html.push(h + "</table>");
       text.push("");
     });
-    return { html: html.join("\n"), text: text.join("\n") };
+    return { html: html.join("\n"), text: text.join("\n"), hatAmp: hatAmp };
   }
 
   // ---- Ein ganzes Lese-Ergebnis bewerten --------------------------------
@@ -333,8 +357,15 @@ TB.enmg = (function () {
             z.bew.lat = bewertung(nerv, regeln.latenz, z.werte.lat, alter);
           // 18.18: motorische Amplitude (Chen) an der distalen Reizung —
           // nicht bei einem anderen Ableitmuskel (z. B. Tib. ant.).
-          if (i === 0 && regeln.amp && !ampAusgenommen(regeln, z, block))
+          if (i === 0 && regeln.amp && !ampAusgenommen(regeln, z, block)) {
             z.bew.amp = bewertung(nerv, regeln.amp, z.werte.amp, alter);
+            // 18.23: kein Potential ableitbar → die Amplitude ist rot (mit
+            // ihrer Grenze in der Norm-Spalte), aber nicht „wegklickbar“.
+            if (!z.bew.amp && keinPotential(z)) {
+              z.bew.amp = bewertung(nerv, regeln.amp, 0, alter);
+              if (z.bew.amp) { z.bew.amp.farbe = "rot"; z.bew.amp.fehlt = true; }
+            }
+          }
           if (zuordnung[i])
             z.bew.nlg = bewertung(nerv, zuordnung[i], z.werte.nlg, alter);
           if (z.werte.fLat !== null && z.werte.fLat !== undefined &&
@@ -367,7 +398,10 @@ TB.enmg = (function () {
   // tatsächliche Seite — er liegt ausserhalb der Grenze, also rot (nicht
   // fett). Hat Näd ihn im Fenster als normwertig gewertet („normal“),
   // steht er schwarz.
-  function wertHtml(w, bew) {
+  var NA = "n. a.";
+  function wertHtml(w, bew, na) {
+    if (na && (w === null || w === undefined))
+      return '<span style="color:' + ROT + ';font-weight:bold">' + NA + "</span>";
     if (w === null || w === undefined) return "";
     if (!bew || !bew.farbe || bew.farbe === "normal") return zahl(w);
     if (bew.farbe === "grenzwertig")
@@ -377,7 +411,8 @@ TB.enmg = (function () {
     return '<span style="color:' + farbe + ';font-weight:' +
       (bew.farbe === "rot" ? "bold" : "normal") + '">' + zahl(w) + '</span>';
   }
-  function wertText(w, bew) {
+  function wertText(w, bew, na) {
+    if (na && (w === null || w === undefined)) return NA + " (!)";
     if (w === null || w === undefined) return "";
     if (!bew || !bew.farbe) return zahl(w);
     return zahl(w) + (bew.farbe === "rot" || bew.farbe === "grenzwertig" ? " (!)" : "");
@@ -416,7 +451,7 @@ TB.enmg = (function () {
     alle.filter(function (a) {
       if (a[0] === "segment") return true;
       return block.zeilen.some(function (z) {
-        return z.werte[a[0]] !== null && z.werte[a[0]] !== undefined; });
+        return (z.werte[a[0]] !== null && z.werte[a[0]] !== undefined) || istNa(z, a[0]); });
     }).forEach(function (a) {
       aus.push({ feld: a[0], titel: a[1], bewertet: a[2] });
       // 18.17 (E1 = (a)): hinter jedem bewerteten Messwert eine eigene
@@ -467,12 +502,16 @@ TB.enmg = (function () {
         h += "<tr>" + sp.map(function (s) {
           if (s.feld === "segment") return TDL + esc(z.segment) + "</td>";
           if (s.norm) return TD + normHtml(b[s.feld]) + "</td>";
-          return TD + (s.bewertet ? wertHtml(w[s.feld], b[s.feld]) : zahl(w[s.feld])) + "</td>";
+          var na = istNa(z, s.feld) && (w[s.feld] === null || w[s.feld] === undefined);
+          if (na && !s.bewertet) return TD + NA + "</td>";
+          return TD + (s.bewertet ? wertHtml(w[s.feld], b[s.feld], na) : zahl(w[s.feld])) + "</td>";
         }).join("") + "</tr>";
         text.push(sp.map(function (s) {
           if (s.feld === "segment") return z.segment;
           if (s.norm) return normText(b[s.feld]);
-          return s.bewertet ? wertText(w[s.feld], b[s.feld]) : zahl(w[s.feld]);
+          var na = istNa(z, s.feld) && (w[s.feld] === null || w[s.feld] === undefined);
+          if (na && !s.bewertet) return NA;
+          return s.bewertet ? wertText(w[s.feld], b[s.feld], na) : zahl(w[s.feld]);
         }).join("  |  "));
       });
     });
@@ -491,14 +530,20 @@ TB.enmg = (function () {
       html.push(t.html); text.push(t.text, "");
     });
     var q = T.quelleZeile.replace("%s", quelle());
+    // 18.23: Abkürzung erklären, sobald ein Potential fehlt
+    if ((ergebnis.bloecke || []).some(function (b) {
+          return b.zeilen.some(function (z) { return !!z.na; }); }))
+      q += T.naErklaerung;
     // 18.19: Normwert-Quelle kursiv (Näd 16.10.)
     html.push('<p style="font-family:Arial;font-size:8pt;color:#808080"><i>' +
       esc(q) + "</i></p>");
     text.push(q);
     // 18.22 (Näd 16.10.): unterhalb der Normwerte die Myografie-Tabelle
+    // 18.23: eine Leerzeile zwischen Normwert-Zeile und Myografie; nach
+    // einer Tabelle setzt KISIM/Word die Leerzeile selbst (endetMitTabelle).
     var mt = myoTabelle(ergebnis);
-    if (mt.html) { html.push(mt.html); text.push("", mt.text); }
-    return { html: html.join("\n"), text: text.join("\n") };
+    if (mt.html) { html.push(LEER + mt.html); text.push("", mt.text); }
+    return { html: html.join("\n"), text: text.join("\n"), endetMitTabelle: !!mt.html };
   }
 
   return {
@@ -512,6 +557,7 @@ TB.enmg = (function () {
     tabelleHtmlText: tabelleHtmlText, spalten: spalten,
     spaltenFuerArt: spaltenFuerArt, nervAnzeige: nervAnzeige,
     nervZeile: nervZeile, sortiere: sortiere, nachfuehren: nachfuehren,
-    farbeFuer: farbeFuer, myoTabelle: myoTabelle, sortiereMuskeln: sortiereMuskeln
+    farbeFuer: farbeFuer, myoTabelle: myoTabelle, sortiereMuskeln: sortiereMuskeln,
+    keinPotential: keinPotential, NA: NA
   };
 })();

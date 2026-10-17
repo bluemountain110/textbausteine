@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "18.22 · ENMG: Myografie-Tabelle und Kurzbefund, geeichte Balken, Anpassungs-Hinweis; KISIM-Tippen · 16.10.2026";
+TB.FASSUNG = "18.23 · ENMG: „--“ = nicht ableitbar, Orange heller, Amplituden-Balken, schlanke Anpassung, Myografie-Spalten, KISIM-Abstände · 16.10.2026";
 
 TB.speicher = (function () {
 

@@ -28,6 +28,14 @@ TB.enmgLeser = (function () {
   function istNormText(t) {
     return /^[<>]\s*-?\d/.test(String(t || "").trim());
   }
+  // 18.23 (Näd 16.10.: „Untersuchungen ohne Wert ignorierst Du einfach,
+  // obwohl sie hochpathologisch sind“): „--“ in einer Messzelle heisst
+  // beim Gerät „kein Potential ableitbar“ — die Zeile zählt, als
+  // pathologischer Befund.
+  function istStrich(t) {
+    var s = String(t === null || t === undefined ? "" : t).trim();
+    return /^(?:(?:-{1,3}|–|—|nr|n\.?\s?a\.?|k\.?\s?a\.?)\s*)+$/i.test(s);
+  }
 
   // ---- Spalten-Bedeutungen aus Kopf- und Einheiten-Zeile ------------------
   var KOPFWOERTER = {
@@ -127,7 +135,7 @@ TB.enmgLeser = (function () {
       var segment = String(z[0] || "").trim();
       var werteZellen = z.slice(1);
       var hatZahl = werteZellen.some(function (c) {
-        return num(c) !== null || istNormText(c); });
+        return num(c) !== null || istNormText(c) || istStrich(c); });
       if (!segment || !hatZahl) {
         var rest = z.join(" ").trim();
         // Wiederholte Tabellentitel, Fussnoten, Kurvenbeschriftungen
@@ -142,21 +150,23 @@ TB.enmgLeser = (function () {
                   zeilen: [] };
         bloecke.push(block);
       }
-      var werte = {}, geraetNorm = {};
+      var werte = {}, geraetNorm = {}, na = null;
       for (var k = 0; k < meinungen.length; k++) {
         var m = meinungen[k], zelle = werteZellen[k];
         if (!m || !m.feld) continue;
         if (m.norm) {
           var n = String(zelle || "").trim();
-          if (n) geraetNorm[m.feld] = n;
+          if (n && !istStrich(n)) geraetNorm[m.feld] = n;
         } else {
           var w = num(zelle);
           if (w !== null) werte[m.feld] = w;
           else if (werte[m.feld] === undefined) werte[m.feld] = null;
+          if (w === null && istStrich(zelle)) { na = na || {}; na[m.feld] = true; }
         }
       }
-      block.zeilen.push({ segment: segment, werte: werte,
-                          geraetNorm: geraetNorm });
+      var dz = { segment: segment, werte: werte, geraetNorm: geraetNorm };
+      if (na) dz.na = na;
+      block.zeilen.push(dz);
     }
     // Leere Blöcke (Nerv-Titel ohne Zeilen) fliegen raus.
     bloecke = bloecke.filter(function (b) { return b.zeilen.length; });
@@ -176,7 +186,7 @@ TB.enmgLeser = (function () {
   // Einstich werden dann von hinten aus dem Text davor gelöst.
   var EMG_RE = new RegExp("^(rechts|links|re\\.?|li\\.?)\\s+(.+?)\\s+" +
     GRAD + "\\s+" + GRAD + "\\s+" + GRAD + "\\s*(.*)$", "i");
-  var KP_KOPF = ["Muskel", "Interpretation", "Einstich-Aktivität", "Fib", "PSW",
+  var KP_KOPF = ["Muskel", "Interpretation", "Einstich", "Fib", "PSW",
                  "Fasz", "Amp", "IP", "Hinweise"];
   var AKT_RE = /\s+(erhöht|erhoeht|vermindert|reduziert|fehlend|gesteigert|normal)$/i;
   var INTERP_RE = /\s+((?:(?:akute|subakute|chronische?|floride|frische|alte)\s+)?(?:denervation|denervierung)|chronisch[- ]neurogen\w*|neurogen\w*|myopath\w*|reinnervation\w*|normal|unauffällig|pathologisch)$/i;

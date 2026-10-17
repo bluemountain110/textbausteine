@@ -457,6 +457,59 @@ TB.selbsttestEnmg1818 = function () {
     fall("18.22: Balken geeicht — NLG 51.3 bei Grenze 43.2 steht klar im Normalen, 43.5 knapp, DML 3.0 bei 4.0 links im Grünen",
       bl.links > 75 && bl2.links < 55 && bl2.links > 50 && bl3.links < 25,
       [bl.links, bl2.links, bl3.links].map(function (x) { return Math.round(x); }).join(" / "));
+    // ---- 18.23: Näds Funde vom 16.10. nachts ---------------------------------
+    var mtA = E.myoTabelle(kp3, { amp: false }), mtB = E.myoTabelle(kp3, { amp: true });
+    fall("18.23: Myografie-Spalte „Amp“ (Keypoint-Standardwert) nur auf Wunsch",
+      mtA.hatAmp && !/>Amp</.test(mtA.html) && />Amp</.test(mtB.html));
+    fall("18.23: Myografie-Spalten mit festen Breiten (Interpretation breit, Zahlen schmal), Kopf „Einstich“",
+      /width:[0-9.]+%;[^"]*">Interpretation/.test(mtA.html) && kp3.myografie[0].tabelle.kopf[2] === "Einstich");
+    var ht3 = E.tabelleHtmlText(kp3);
+    fall("18.23: Leerzeile zwischen Normwert-Zeile und Myografie; Bericht endet mit Tabelle",
+      /<\/i><\/p>\n<p[^>]*><br><\/p><p[^>]*><b>Myografie/.test(ht3.html) && ht3.endetMitTabelle === true);
+    var blA = TB.ansichtEnmg._balkenLage(2.7, { grenze: 3.8, richtung: "min" }, "amp");
+    var blB = TB.ansichtEnmg._balkenLage(5.2, { grenze: 7.9, richtung: "min" }, "amp");
+    fall("18.23: Amplituden-Balken — 2.7 bei 3.8 und 5.2 bei 7.9 stehen deutlich im Roten",
+      blA.links < 30 && blB.links < 25, Math.round(blA.links) + " / " + Math.round(blB.links));
+    fall("18.23: Feld, das mit einer Aufzählung endet, wird für KISIM markiert (Skript löscht die Schlusszeile)",
+      String(TB.fensterModus.uebergeben).indexOf("listeEnde") !== -1);
+    // 18.23 (Näd 16.10. nachts): „--“ = nicht ableitbar, nie still weglassen
+    // (erfundene Werte nach dem Muster seines Peroneus-Bildes)
+    var naK = TB.enmgLeser.deute([["Nerve", "Lat", "Amp", "Dur", "NLG"],
+      ["", "ms", "Norm", "mV", "ms", "m/s", "Norm"],
+      ["Peroneus profundus Motorisch Links"],
+      ["OSG - EDB", "--", "", "--", "--", "", ""],
+      ["Dist. CF-OSG", "--", "", "--", "--", "--", ""],
+      ["Peroneus profundus Motorisch Rechts"],
+      ["OSG - EDB", "4.1", "", "4.0", "5.9", "", ""],
+      ["Dist. CF-OSG", "11.2", "", "3.8", "6.5", "46.0", ""],
+      ["Nerve", "Lat", "Amp", "NLG"], ["", "ms", "µV", "m/s", "Norm"],
+      ["Suralis Sensorisch Links"],
+      ["Wade - Knöchel", "--", "--", "--", ""]], []);
+    naK.patient.geburtsdatum = "01.01.1956"; naK.patient.untersuchungsdatum = "10.10.2026";
+    TB.enmg.bewerte(naK);
+    var naL = naK.bloecke.filter(function (b) { return b.art === "motor" && b.seite === "links"; })[0];
+    fall("18.23: Nerv nur mit „--“ bleibt in der Tabelle (Peroneus links, 2 Zeilen, Suralis links)",
+      naL && naL.zeilen.length === 2 && naL.zeilen[0].na && naL.zeilen[0].na.amp &&
+      naK.bloecke.some(function (b) { return b.art === "sens" && b.seite === "links"; }),
+      naK.bloecke.map(function (b) { return b.nervText + ":" + b.zeilen.length; }).join(" | "));
+    var naHt = E.tabelleHtmlText(naK);
+    fall("18.23: Bericht zeigt „n. a.“ rot und fett, mit Erklärung unter der Tabelle",
+      /color:#c00000;font-weight:bold">n\. a\.<\/span>/.test(naHt.html) && /n\. a\. = nicht ableitbar/.test(naHt.html),
+      naHt.text.split("\n").slice(0, 6).join(" / "));
+    var naZ = B.zusammenfassung(naK), naB = B.beurteilung(naK, []);
+    fall("18.23: Zusammenfassung „kein motorisches Potential ableitbar“ bzw. „kein sensibles Potential“",
+      /N\. peronaeus (\(profundus\) )?links: kein motorisches Potential ableitbar\./.test(naZ) &&
+      /N\. suralis links: kein sensibles Potential ableitbar\./.test(naZ), naZ);
+    fall("18.23: Beurteilung nennt den fehlenden Nerv als auffällig",
+      /N\. peronaeus (\(profundus\) )?links – kein motorisches Potential ableitbar/.test(naB), naB);
+    var naP = B.beurteilung(naK, ["pnp", "peron"]);
+    fall("18.23: mit Fragestellung PNP: axonal; Peroneusläsion links „Läsionsort nicht bestimmbar“",
+      /am ehesten axonalen/.test(naP) && /Peroneusläsion am Fibulaköpfchen links: kein motorisches Potential ableitbar – Läsionsort/.test(naP), naP);
+    var naV = lies([["N. peroneus communis.L"], ["Tarsus", " ms", " mV", "M. extensor digitorum brevis-Tarsus", "", "80 mm", " m/s"]],
+      [["N. suralis.R"], ["Crus", "2.5 ms", "3.0 ms", "12 µV", "Tarsus-Crus", "2.5 ms", "120 mm", "50 m/s"]]);
+    fall("18.23: Viking-Reizung ohne Antwort (nur Distanz) → „kein motorisches Potential ableitbar“",
+      /N\. peroneus communis links: kein motorisches Potential ableitbar/.test(B.zusammenfassung(naV)),
+      B.zusammenfassung(naV));
     var mb = String(TB.speicher.merkeBenutzt);
     fall("18.20: Benutzen schreibt den Baustein nie zurück (kein Hochladen, kein neuer Zeitstempel)",
       mb.indexOf("merkeOffen") === -1 && mb.indexOf("aktualisiertAm") === -1);

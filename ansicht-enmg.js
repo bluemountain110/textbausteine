@@ -100,7 +100,13 @@ TB.ansichtEnmg = (function () {
     wurzel.appendChild(zone);
   }
 
-  function wertZelle(td, wert, bew) {
+  function wertZelle(td, wert, bew, na) {
+    if ((wert === null || wert === undefined) && na) {
+      // 18.23: kein Potential ableitbar — immer rot, nie „wegklickbar“
+      var n = el("span", na === "rot" ? "enmg-rot" : "", TB.enmg.NA);
+      n.title = T().naTitel;
+      td.appendChild(n); return;
+    }
     if (wert === null || wert === undefined) { td.textContent = ""; return; }
     if (!bew || !bew.farbe) {
       var s = el("span", "", String(wert));
@@ -153,7 +159,10 @@ TB.ansichtEnmg = (function () {
   // klar normal ist (NLG/Latenz: 30 % besser als die Grenze, Amplitude:
   // das Dreifache), die pathologische bis 50 % schlechter (Amplitude:
   // ein Viertel). Der orange Streifen ist genau die 5 %-Zone.
-  var SPANNE = { nlg: [1.3, 1.5], lat: [1.3, 1.5], fLat: [1.3, 1.5], amp: [3, 4] };
+  // 18.23 (Näd 16.10.: 2.7 bei 3.8 und 5.2 bei 7.9 sind deutlich
+  // pathologisch, sahen aber knapp aus): Bei Amplituden ist die rote
+  // Hälfte schon bei der halben Grenze voll.
+  var SPANNE = { nlg: [1.3, 1.5], lat: [1.3, 1.5], fLat: [1.3, 1.5], amp: [3, 2] };
   function balkenLage(wert, bew, feld) {
     var sp = SPANNE[feld] || [1.3, 1.5];
     var r = Math.max(wert, 1e-6) / bew.grenze;
@@ -171,7 +180,7 @@ TB.ansichtEnmg = (function () {
     var max = bew.richtung === "max";
     var b = el("span", "enmg-balken");
     var l = balkenLage(wert, bew, feld);
-    var R = "#e7a3a3", O = "#f2c98a", G = "#a9d8a9";
+    var R = "#e7a3a3", O = "#ffc24d", G = "#a9d8a9";
     b.style.background = max
       ? "linear-gradient(to right," + G + " 0%," + G + " 50%," + O + " 50%," + O + " " +
         (50 + l.band) + "%," + R + " " + (50 + l.band) + "%," + R + " 100%)"
@@ -233,7 +242,8 @@ TB.ansichtEnmg = (function () {
           var td = el("td", "enmg-wert");
           if (s.norm) normZelle(td, b[s.feld]);
           else {
-            wertZelle(td, w[s.feld], s.bewertet ? b[s.feld] : null);
+            wertZelle(td, w[s.feld], s.bewertet ? b[s.feld] : null,
+              z.na && z.na[s.feld] ? (s.bewertet ? "rot" : "ja") : false);
             var bw = s.bewertet ? b[s.feld] : null;
             if (bw && bw.farbe && w[s.feld] !== null && w[s.feld] !== undefined) {
               var ba = balken(w[s.feld], bw, s.feld);
@@ -248,7 +258,8 @@ TB.ansichtEnmg = (function () {
           liste.forEach(function (a) {
             var zeile = el("div", "", T().anpassungText
               .replace("%s", a.titel.replace(/\s*\(.*\)$/, "")).replace("%s", String(a.wert)));
-            var zurueck = el("button", "leise enmg-rueckgaengig", T().rueckgaengig);
+            var zurueck = el("button", "leise enmg-rueckgaengig", "↺");
+            zurueck.title = T().rueckgaengig;
             zurueck.addEventListener("click", function () {
               a.bew.farbe = a.bew.farbeVorher || "rot"; delete a.bew.farbeVorher;
               if (zusGeaendert || beuGeaendert) melde(T().normalVonHand, true);
@@ -364,6 +375,19 @@ TB.ansichtEnmg = (function () {
     if (mt.html) {
       var mk = el("div", "enmg-myo");
       mk.innerHTML = mt.html;
+      if (mt.hatAmp) {
+        var lab = el("label", "enmg-myo-amp");
+        var cb = el("input"); cb.type = "checkbox";
+        cb.checked = !!TB.speicher.einstellung("enmgMyoAmp", false);
+        cb.addEventListener("change", function () {
+          TB.speicher.setzeEinstellung("enmgMyoAmp", cb.checked);
+          if (TB.abgleich) TB.abgleich.anstossen();
+          neuZeichnen();
+        });
+        lab.appendChild(cb);
+        lab.appendChild(document.createTextNode(" " + T().myoAmpZeigen));
+        mk.appendChild(lab);
+      }
       wurzel.appendChild(mk);
     }
 
@@ -412,14 +436,17 @@ TB.ansichtEnmg = (function () {
       text.push(T().fragestellungTitel + " " + fr, "");
       if (mitTabelle) html.push(LEER);   // 18.19: Leerzeile vor den Tabellen
     }
+    var nachTabelle = false;
     if (mitTabelle) {
       var ht = TB.enmg.tabelleHtmlText(ergebnis);
       html.push(ht.html); text.push(ht.text, "");
+      nachTabelle = !!ht.endetMitTabelle;
     }
     if (mitText) {
       // 18.19 (Näd 16.10.): eine echte Leerzeile vor Zusammenfassung und
       // Beurteilung — Abstände (margin) gehen in KISIM/Word verloren.
-      html.push(LEER + P + T().zusammenfassungTitel + "</b></p>" + B.alsHtml(zusText));
+      // 18.23: nach der Myografie-Tabelle setzt KISIM sie selbst.
+      html.push((nachTabelle ? "" : LEER) + P + T().zusammenfassungTitel + "</b></p>" + B.alsHtml(zusText));
       text.push(T().zusammenfassungTitel, zusText, "");
       html.push(LEER + P + T().beurteilungTitel + "</b></p>" + B.alsHtml(beuText));
       text.push(T().beurteilungTitel, beuText);
@@ -455,7 +482,7 @@ TB.ansichtEnmg = (function () {
     return {
       indikation: fr ? { text: fr, html: B.alsHtml(fr) } : null,
       befund: { text: tab.text + "\n\n" + T().zusammenfassungTitel + "\n" + zusText,
-                html: tab.html + "\n" + LEER + P + T().zusammenfassungTitel + "</b></p>" +
+                html: tab.html + "\n" + (tab.endetMitTabelle ? "" : LEER) + P + T().zusammenfassungTitel + "</b></p>" +
                       B.alsHtml(zusText) },
       beurteilung: { text: beuText, html: B.alsHtml(beuText) },
       block: aktuellerText()

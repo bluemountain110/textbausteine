@@ -285,6 +285,10 @@ TB.enmgViking = (function () {
     function einordnen(zeile, art) {
       var stim = zeile.stimulation || "", seg = zeile.segmentGeraet || "", w = zeile.werte;
       zeile.segment = stim && seg && seg.indexOf("-") > 0 ? stim + " (" + seg + ")" : (stim || seg);
+      // 18.23: gemessen (Distanz), aber keine Antwort → nicht ableitbar
+      var leer = function (k) { return w[k] === null || w[k] === undefined; };
+      if (leer("lat") && leer("amp") && leer("peak") && leer("nlg")) zeile.na = { lat: true, amp: true };
+      else delete zeile.na;
       zeile.ohneNorm = false; zeile.vergleich = ""; zeile.unplausibel = false;
       var segKlein = (seg + " " + stim).toLowerCase();
       // Palmar = Reizort Hohlhand (Vergleichsmessung, kurze Strecke). Die

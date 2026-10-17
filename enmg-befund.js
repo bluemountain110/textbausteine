@@ -89,7 +89,7 @@ TB.enmgBefund = (function () {
               mampRot: false, demyel: [], demyelOrt: {},
               fRot: false, sampRot: false, snlgRot: false, sensDa: false,
               sensAmpDa: false, gefaerbt: false, unplausibel: [],
-              grenzwertig: [],
+              grenzwertig: [], motorAbs: false, proxAbs: [],
               ring: { median: null, ulnar: null } };
     g.motor.forEach(function (b) {
       // AAN 1991: Ist die distale Amplitude normal (≥ 80 % der Grenze)?
@@ -106,12 +106,19 @@ TB.enmgBefund = (function () {
         else ja = wert > (ampNormal ? 1.2 : 1.5) * bew.grenze;
         if (ja) { a.demyel.push(art + (ort ? ":" + ort : "")); a.demyelOrt[art + (ort || "")] = true; }
       }
+      // 18.23 (Näd 16.10.): „--“ = kein Potential ableitbar — der
+      // schwerste Befund, nie still übergehen.
+      var distalAbs = TB.enmg.keinPotential(z0);
+      if (distalAbs) { a.motorAbs = true; a.gefaerbt = true; }
       b.zeilen.forEach(function (z, i) {
         var be = z.bew || {}, w = z.werte;
-        if (i === 0) { a.dml = w.lat; a.msap = w.amp; }
+        if (i > 0 && !distalAbs && TB.enmg.keinPotential(z)) {
+          a.proxAbs.push(z.segment); a.gefaerbt = true;
+        }
+        if (i === 0) { a.dml = w.lat; a.msap = distalAbs ? 0 : w.amp; }
         if (i === 0) {
           if (gefaerbt(be.amp)) a.gefaerbt = true;
-          if (rot(be.amp)) a.mampRot = true;
+          if (rot(be.amp) && !distalAbs) a.mampRot = true;
           if (gw(be.amp)) a.grenzwertig.push("motorische Amplitude");
           if (rot(be.lat)) demyelPruef(be.lat, w.lat, "dml", "");
         }
@@ -157,7 +164,8 @@ TB.enmgBefund = (function () {
     g.a = a;
     g.muster = muster(g);
     g.rot = a.dmlRot || a.mnlgRot.length > 0 || a.fRot || a.sampRot ||
-            a.mampRot || a.snlgRot || (a.sensDa && !a.sensAmpDa);
+            a.mampRot || a.snlgRot || (a.sensDa && !a.sensAmpDa) ||
+            a.motorAbs || a.proxAbs.length > 0;
   }
   function zielVon(bew) { return String(bew.zeileId || ""); }
 
@@ -170,7 +178,7 @@ TB.enmgBefund = (function () {
       if ((a.dmlRot || a.snlgRot || sensAbs) && !vaRot) {
         var grad;
         if (sensAbs && a.msap !== null && a.msap < 0.2) grad = 6;
-        else if (a.dml !== null && a.dml > 6.5) grad = 5;
+        else if (a.motorAbs || (a.dml !== null && a.dml > 6.5)) grad = 5;
         else if (sensAbs) grad = 4;
         else if (a.dmlRot) grad = 3;
         else grad = 2;
@@ -195,6 +203,12 @@ TB.enmgBefund = (function () {
   var DEMYEL = " (im demyelinisierenden Bereich)";
   function einzelheiten(g, ohneMuster) {
     var a = g.a, t = [];
+    // 18.23: kein motorisches Potential — gehört bei CTS Grad 5/6 zum Muster
+    if (a.motorAbs && !(ohneMuster && g.muster && g.muster.art === "cts" && g.muster.grad >= 5))
+      t.push("kein motorisches Potential ableitbar");
+    if (a.proxAbs.length)
+      t.push("kein motorisches Potential bei Reizung " + a.proxAbs.join(", ") +
+        " ableitbar (Leitungsblock? technisch?)");
     if (a.dmlRot && !(ohneMuster && g.muster))
       t.push("verlängerte distale motorische Latenz" + (a.demyelOrt.dml ? DEMYEL : ""));
     if (a.mampRot && !(ohneMuster && g.muster && g.muster.art === "cts"))
@@ -325,14 +339,15 @@ TB.enmgBefund = (function () {
       if (nichtFokal.length >= 2 && beine.length >= 1) {
         var nurSens = nichtFokal.every(function (g) {
           var a = g.a;
-          return !a.dmlRot && !a.mnlgRot.length && !a.fRot && !a.mampRot; });
+          return !a.dmlRot && !a.mnlgRot.length && !a.fRot && !a.mampRot &&
+            !a.motorAbs && !a.proxAbs.length; });
         // 18.18: „demyelinisierend" nur nach AAN-Schwellen, und für die
         // Polyneuropathie erst ab ZWEI Nerven (Näd 15.10.). Leichte
         // Leitungsverzögerungen allein machen keine Demyelinisierung.
         var amp = 0, leitung = 0, demyelNerven = [];
         nichtFokal.forEach(function (g) {
           var a = g.a;
-          if (a.sampRot || a.mampRot || (a.sensDa && !a.sensAmpDa)) amp++;
+          if (a.sampRot || a.mampRot || a.motorAbs || (a.sensDa && !a.sensAmpDa)) amp++;
           if (a.snlgRot || a.dmlRot || a.mnlgRot.length || a.fRot) leitung++;
           if (a.demyel.length) demyelNerven.push(g);
         });
@@ -376,6 +391,7 @@ TB.enmgBefund = (function () {
 
     // Welches Segment muss gemessen sein, damit „kein Hinweis" stimmt?
     var PFLICHT = { sus: "sulcus", peron: "mknie" };
+    var THEMA = { sus: "Sulcus-ulnaris-Syndrom", peron: "Peroneusläsion am Fibulaköpfchen" };
     function gemessen(g, art) {
       if (!g.motor.length && !g.a.sensDa) return false;   // nur Vergleichszeilen
       var seg = PFLICHT[art];
@@ -390,6 +406,12 @@ TB.enmgBefund = (function () {
         if (g.muster && g.muster.art === art) {
           erklaert[g.id + g.seite] = true;
           return ja(g, seite);
+        }
+        // 18.23: ohne Potential lässt sich der Läsionsort nicht bestimmen
+        if (g.a.motorAbs && art !== "cts") {
+          erklaert[g.id + g.seite] = true;
+          return THEMA[art] + seite + ": kein motorisches Potential ableitbar – " +
+            "Läsionsort neurographisch nicht bestimmbar (Myografie?).";
         }
         if (!gemessen(g, art)) return segmentFehlt.replace("%s", seite) ;
         return nein + seite + ".";

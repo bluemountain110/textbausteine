@@ -227,6 +227,13 @@ FensterFeld(felder, name) {
     rtf := f.Has("rtf") ? f["rtf"] : ""
     FuegeEin(text, rtf, fzZiel, 0)
     Sleep 70
+    ; 18.23 (Naed 16.10.): Endet das Feld mit einer Aufzaehlung, bleibt
+    ; in KISIM eine leere Schlusszeile stehen - sie wird geloescht.
+    if (f.Has("listeEnde") and String(f["listeEnde"]) = "1") {
+        Sleep 60
+        SendEvent "{Backspace}"
+        Sleep 40
+    }
 }
 
 FensterSpringe(n) {

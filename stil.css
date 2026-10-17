@@ -951,7 +951,7 @@ dialog.anzeigen { width: min(720px, 94vw); max-height: 92vh; }
   border: 1px solid var(--linie, #d5d5d5); border-radius: 8px;
   padding: 10px 12px; background: var(--feld, #fff); }
 /* 18.17: grenzwertig = bis 5 % ausserhalb der Grenze (orange) */
-.enmg-grenzwertig { color: #b06f00; font-weight: 600; }
+.enmg-grenzwertig { color: #e67e00; font-weight: 700; }
 
 /* 18.18: ENMG — eine Tabelle je Art mit grauer Nerv-Zeile (Keypoint-
    Vorbild), Segment-Spalte breit genug, und der Balken je bewertetem
@@ -962,7 +962,7 @@ dialog.anzeigen { width: min(720px, 94vw); max-height: 92vh; }
 .enmg-tabelle-art td.enmg-segment { width: 30%; }
 .enmg-nervzeile td { background: #d9d9d9; font-weight: 700; text-align: left; }
 .enmg-tabelle-art td.enmg-wert { vertical-align: top; }
-.enmg-balken { display: block; position: relative; width: 58px; height: 6px;
+.enmg-balken { display: block; position: relative; width: 84px; height: 6px;
   margin: 3px 0 1px auto; border-radius: 3px; }
 .enmg-balken-min { background: linear-gradient(to right,
   #e7a3a3 0%, #e7a3a3 47.5%, #f2c98a 47.5%, #f2c98a 50%,
@@ -974,7 +974,7 @@ dialog.anzeigen { width: min(720px, 94vw); max-height: 92vh; }
   margin-left: -4px; border-radius: 50%; border: 1px solid #fff;
   box-shadow: 0 0 0 1px #555; background: #555; }
 .enmg-punkt-rot { background: #c00000; }
-.enmg-punkt-grenzwertig { background: #b06f00; }
+.enmg-punkt-grenzwertig { background: #f39200; }
 .enmg-punkt-gruen { background: #1a7a1a; }
 
 /* 18.18 NUR-DER-KASTEN (Näds Dauerregel 15.10.): Ein Fenster, das ein
@@ -1002,6 +1002,7 @@ body.nur-kasten .anzeigen-text { max-height: calc(100vh - 190px); }
 .enmg-punkt-normal { background: #555; }
 
 /* 18.22: Anpassungs-Hinweis rechts der Zeile, Myografie-Tabelle im Fenster */
-.enmg-anpassung { font-size: 0.82em; color: #5a4a00; background: #fff8e0; white-space: nowrap; }
-.enmg-anpassung .enmg-rueckgaengig { margin-left: 6px; padding: 1px 6px; font-size: 0.95em; }
+.enmg-anpassung { font-size: 0.74em; color: #5a4a00; background: #fffbea; white-space: normal; line-height: 1.25; }
+.enmg-anpassung .enmg-rueckgaengig { margin-left: 4px; padding: 0 5px; font-size: 1em; }
 .enmg-myo { margin-top: 10px; }
+.enmg-myo-amp { display: block; font-size: 0.85em; color: #555; margin: -4px 0 8px; }
