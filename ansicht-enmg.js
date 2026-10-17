@@ -243,7 +243,7 @@ TB.ansichtEnmg = (function () {
           if (s.norm) normZelle(td, b[s.feld]);
           else {
             wertZelle(td, w[s.feld], s.bewertet ? b[s.feld] : null,
-              z.na && z.na[s.feld] ? (s.bewertet ? "rot" : "ja") : false);
+              z.na && z.na[s.feld] ? (s.bewertet && s.feld !== "fLat" ? "rot" : "ja") : false);
             var bw = s.bewertet ? b[s.feld] : null;
             if (bw && bw.farbe && w[s.feld] !== null && w[s.feld] !== undefined) {
               var ba = balken(w[s.feld], bw, s.feld);

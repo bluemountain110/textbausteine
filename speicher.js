@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "18.23 · ENMG: „--“ = nicht ableitbar, Orange heller, Amplituden-Balken, schlanke Anpassung, Myografie-Spalten, KISIM-Abstände · 16.10.2026";
+TB.FASSUNG = "18.24 · ENMG: Zusammenfassung mit „Neurografie(n):“ / „Myografie(n):“, fehlende F-Welle schwarz · 17.10.2026";
 
 TB.speicher = (function () {
 

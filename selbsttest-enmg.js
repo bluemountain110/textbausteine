@@ -361,7 +361,7 @@ TB.selbsttestEnmg1818 = function () {
       ht.html.indexOf("ENMG vom") === -1);
     fall("18.19: Normwert-Quelle kursiv",
       /<i>Normwerte: [^<]*<\/i>/.test(ht.html));
-    var zs = B.zusammenfassung(a).split("\n");
+    var zs = B.zusammenfassung(a).split("\n").slice(1);   // 18.24: ohne „Neurografien:“
     fall("18.19: Zusammenfassung — jeder Nerv ein Aufzählungspunkt (wird <ul>/<li>)",
       zs.length >= 3 && zs.every(function (l) { return /^• N\. /.test(l); }) &&
       (B.alsHtml(zs.join("\n")).match(/<li>/g) || []).length === zs.length, zs.join(" | "));
@@ -409,7 +409,7 @@ TB.selbsttestEnmg1818 = function () {
     TB.enmg.bewerte(kp);
     var kpB = B.beurteilung(kp, []), kpZ = B.zusammenfassung(kp);
     fall("18.20: Keypoint-EMG in Zusammenfassung und Beurteilung (Denervation genannt)",
-      /Myografie:/.test(kpZ) && /• M\. Abd pollicis brevis rechts: subakute Denervation/.test(kpZ) &&
+      /Myografien?:/.test(kpZ) && /• M\. Abd pollicis brevis rechts: subakute Denervation/.test(kpZ) &&
       /pathologische Spontanaktivität in M\. Abd pollicis brevis rechts/.test(kpB), kpB);
     var kp2 = TB.enmgLeser.deute([["EMG Befunde"], ["Einstisch Spontan Aktivität Willkür. Aktivität"],
       ["Muskel Interpretation Aktivität Fib PSW Fasz Amp IP Hinweise"],
@@ -510,6 +510,14 @@ TB.selbsttestEnmg1818 = function () {
     fall("18.23: Viking-Reizung ohne Antwort (nur Distanz) → „kein motorisches Potential ableitbar“",
       /N\. peroneus communis links: kein motorisches Potential ableitbar/.test(B.zusammenfassung(naV)),
       B.zusammenfassung(naV));
+    // 18.24 (Näd 17.10.): Überschriften „Neurografie(n):“ / „Myografie(n):“
+    var zsU = B.zusammenfassung(kp3), zsN = B.zusammenfassung(naK);
+    fall("18.24: Zusammenfassung beginnt mit „Neurografien:“ (mehrere Nerven), Myografie im Plural bei mehreren Muskeln",
+      zsN.split("\n")[0] === "Neurografien:" && /(^|\n)Myografien:\n/.test(zsU) && !/Neurografie/.test(zsU), zsN.split("\n")[0]);
+    var ein = { patient: {}, bloecke: [naK.bloecke[1]], myografie: [kp3.myografie[0]] };
+    var zsE = B.zusammenfassung(ein);
+    fall("18.24: Einzahl bei einem Nerv und einem Muskel („Neurografie:“, „Myografie:“)",
+      zsE.split("\n")[0] === "Neurografie:" && /\nMyografie:\n/.test(zsE), zsE);
     var mb = String(TB.speicher.merkeBenutzt);
     fall("18.20: Benutzen schreibt den Baustein nie zurück (kein Hochladen, kein neuer Zeitstempel)",
       mb.indexOf("merkeOffen") === -1 && mb.indexOf("aktualisiertAm") === -1);

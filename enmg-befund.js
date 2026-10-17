@@ -272,9 +272,12 @@ TB.enmgBefund = (function () {
     // 18.14: Myografie (aus dem Freitext des Viking-Berichts) in Näds Wortlaut
     // 18.22 (Näd 16.10.): je Muskel eine KURZE Zusammenfassung; die
     // Einzelwerte stehen in der Myografie-Tabelle unter den Normwerten.
+    // 18.24 (Näd 17.10.): zuerst „Neurografie(n):“, dann „Myografie(n):“ —
+    // Einzahl, wenn nur ein Nerv bzw. ein Muskel untersucht wurde.
+    if (zeilen.length) zeilen.unshift(zeilen.length === 1 ? "Neurografie:" : "Neurografien:");
     var myo = erg.myografie || [];
     if (myo.length) {
-      zeilen.push("Myografie:");
+      zeilen.push(myo.length === 1 ? "Myografie:" : "Myografien:");
       myo.forEach(function (m) {
         zeilen.push("• " + m.muskel + ": " + (m.tabelle ? kurz(m) : m.befund) + ".");
       });

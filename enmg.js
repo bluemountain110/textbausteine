@@ -503,14 +503,15 @@ TB.enmg = (function () {
           if (s.feld === "segment") return TDL + esc(z.segment) + "</td>";
           if (s.norm) return TD + normHtml(b[s.feld]) + "</td>";
           var na = istNa(z, s.feld) && (w[s.feld] === null || w[s.feld] === undefined);
-          if (na && !s.bewertet) return TD + NA + "</td>";
+          // 18.24: fehlende F-Welle steht als „n. a.“, aber schwarz
+          if (na && (!s.bewertet || s.feld === "fLat")) return TD + NA + "</td>";
           return TD + (s.bewertet ? wertHtml(w[s.feld], b[s.feld], na) : zahl(w[s.feld])) + "</td>";
         }).join("") + "</tr>";
         text.push(sp.map(function (s) {
           if (s.feld === "segment") return z.segment;
           if (s.norm) return normText(b[s.feld]);
           var na = istNa(z, s.feld) && (w[s.feld] === null || w[s.feld] === undefined);
-          if (na && !s.bewertet) return NA;
+          if (na && (!s.bewertet || s.feld === "fLat")) return NA;
           return s.bewertet ? wertText(w[s.feld], b[s.feld], na) : zahl(w[s.feld]);
         }).join("  |  "));
       });
