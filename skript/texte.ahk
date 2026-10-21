@@ -91,6 +91,10 @@ TX["rtfFangLeer"] := "Die Zwischenablage enthaelt kein RTF - zuerst in KISIM kop
 ; ---- Standort und Browser-Weiche (Etappe 5) ---------------------------
 TX["standortFrage"] := "Wo laeuft dieses Skript? In der Praxis haelt es sich aus Browserfenstern heraus - dort arbeitet die Chrome-Erweiterung."
 TX["standortSpital"] := "Spital Limmattal"
+
+; ---- Patienten-Kette (18.26, Erweiterungs-Abloesung) -------------------
+TX["patFertig"] := "In der Zwischenablage: %s - in der Patientenliste mit Strg+V einsetzen."
+TX["patNichtErkannt"] := "Keine Patientenangaben erkannt. Zuerst in Axenita die Patienteninformation markieren und mit Strg+C kopieren, dann das pat-Kuerzel nochmals tippen."
 TX["standortPraxis"] := "Praxis Neuromed"
 TX["standortGesetzt"] := "Standort gemerkt: "
 TX["anmeldungMerken"] := "Anmeldung merken - das Skript meldet sich selbst neu an (Passwort Windows-verschluesselt in diesem Ordner)"

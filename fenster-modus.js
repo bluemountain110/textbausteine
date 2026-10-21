@@ -81,6 +81,13 @@ TB.fensterModus = (function () {
         }
         uebergebenBaustein(b, ergebnis);
       });
+    } else if (art === "mri") {
+      // 18.26: MRI-Anmeldung (Erweiterungs-Ablösung) — hängt wie ;;anon
+      // an keinem Baustein, darum sofort offen; „Schliessen" schliesst
+      // das ganze Fenster.
+      TB.oberflaeche.geheZu("bausteine");
+      if (!document.querySelector("dialog.mri"))
+        TB.ansichtMri.oeffne(true);
     } else if (art === "anzeigen") {
       // 18.17: Nachschlage-Fenster (;;txirr): nur zeigen, Kopieren auf
       // Knopfdruck; Schliessen schliesst das ganze Fenster. Ist der
@@ -113,7 +120,7 @@ TB.fensterModus = (function () {
   function fingerabdruck() {
     // ENMG hängt nicht am Abgleich: konstanter Abdruck, damit ein
     // Datenabgleich die eingelesene Datei nie aus der Ansicht wirft.
-    if (art === "enmg" || art === "anon") return art;
+    if (art === "enmg" || art === "anon" || art === "mri") return art;
     if (art === "kisew" || art === "kisbest") {
       // Erst „da", wenn der Baustein angekommen ist (s. zeigeWerk).
       return art + "|" + (TB.speicher.holenPerKuerzel(art) ? "1" : "0");
@@ -284,7 +291,7 @@ TB.fensterModus = (function () {
     art = p.get("fenster") || "";
     if (art !== "eeg" && art !== "status" && art !== "enmg" &&
         art !== "baustein" && art !== "kisew" && art !== "kisbest" &&
-        art !== "anon" && art !== "anzeigen") return;
+        art !== "anon" && art !== "anzeigen" && art !== "mri") return;
     kuerzel = p.get("kuerzel") || "";
     nonce = p.get("nonce") || "";
     ziel = (p.get("ziel") === "axenita") ? "axenita"
@@ -295,7 +302,7 @@ TB.fensterModus = (function () {
     document.body.classList.add("nur-fenster");
     // 18.18 NUR-DER-KASTEN (Dauerregel 15.10.): Fenster, die nur einen
     // Dialog zeigen, zeigen nur diesen — nie die Bausteinliste dahinter.
-    if (["baustein", "anzeigen", "kisbest", "anon"].indexOf(art) !== -1)
+    if (["baustein", "anzeigen", "kisbest", "anon", "mri"].indexOf(art) !== -1)
       document.body.classList.add("nur-kasten");
     TB.ansichtEeg.setzeFensterModus(true);
     TB.ansichtStatus.setzeFensterModus(true);

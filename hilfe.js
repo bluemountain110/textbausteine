@@ -103,7 +103,17 @@ TB.hilfe = (function () {
         ["Die Sicherung bleibt wichtig",
          "Der Abgleich verteilt Deine Bausteine, er bewahrt sie nicht auf. Zieh ab und zu eine Export-Datei, besonders vor grösseren Änderungen."]
       ]],
-      ["Kürzel im Browser — die Chrome-Erweiterung", [
+      ["MRI-Anmeldung und Patienten-Kette (;;mri, ;;pat)", [
+        ["MRI-Anmeldung (;;mri)",
+         "In Axenita das ausgefüllte Anmelde-Formular markieren (Strg+A) und kopieren (Strg+C), dann ;;mri tippen — es öffnet sich das App-Fenster (am Arbeitsplatz im Browser, am Mac direkt). Die Kopie wird aus der Zwischenablage gelesen; klappt das nicht, fügst Du sie mit Strg+V ins grosse Feld ein. Erkannt werden Medizinisch Radiologisches Institut (☒ entscheidet den Standort), RNR, Hirslanden (☒ im Kopf) und RIMED (Vorgabe Altstetten); das Menü zeigt nur die Adressen des erkannten Formulars. Herr oder Frau wählst Du IMMER selbst — ohne Wahl lässt sich keine Mail öffnen; sagt das Formular etwas anderes, warnt eine rote Zeile. Der Knopf öffnet die fertig adressierte Outlook-Mail mit Betreff, Text und Signatur; das PDF (aus Axenita → E-Mail Versand) ziehst Du hinein, gesendet wird von Hand. Nichts wird gespeichert."],
+        ["Patienten-Kette (;;pat)",
+         "In Axenita die Patienteninformation markieren und kopieren (Strg+C), dann irgendwo ;;pat benutzen: Die Zeile „Name, Geburtsdatum, Strasse, PLZ Ort“ liegt danach in der Zwischenablage — ins offene Feld wird nichts geschrieben. In der Excel-Patientenliste mit Strg+V einsetzen. Am Arbeitsplatz macht das das Windows-Skript, in der App derselbe Handgriff per Klick auf den Baustein."],
+        ["Woher sie kommen",
+         "Beide lebten bis 18.25 in der Chrome-Erweiterung. Seit 18.26 sind sie in App und Skript — die Erweiterung ist ausgeschaltet (nächstes Kapitel)."]
+      ]],
+      ["Die frühere Chrome-Erweiterung — seit 21.10. ausgeschaltet", [
+        ["Stand",
+         "Seit SKRIPT-ZUERST (15.10.) läuft alles über das Windows-Skript; seit dem 21.10. ist die Erweiterung in Chrome ausgeschaltet, damit nicht beide gleichzeitig tippen. Sie bleibt als kalte Reserve installiert (Fassung 18.12) und wird nur wieder eingeschaltet, wenn etwas AUSDRÜCKLICH direkt in Axenita gebraucht wird — dann im Skript-Menü auch „Browserfenster der Erweiterung überlassen“ wieder anwählen. Die Abschnitte darunter beschreiben die ausgeschaltete Erweiterung und bleiben als Nachschlagewerk stehen."],
         ["Was sie ist",
          "Ein kleines Zusatzprogramm, das im Chrome wohnt. Auf Seiten, die Du freischaltest (z. B. Axenita), tippst Du ;;kürzel und die Leertaste — und der Baustein steht formatiert an der Schreibmarke, ohne Fensterwechsel. Tab löst absichtlich nie aus (es wechselt Felder), die Eingabetaste auch nicht (sie kann Web-Formulare abschicken). Sie holt Deine fertigen Bausteine selbst aus der Datenablage, jede Minute; Entwürfe kennt sie nicht."],
         ["Installieren",
@@ -126,10 +136,8 @@ TB.hilfe = (function () {
          "Nur in Chrome: Im Outlook-Programm, in Word oder KISIM kann sie nicht tippen — dort gilt am Spital das Windows-Hilfsprogramm, in der Praxis das App-Fenster mit Strg+V (das Hilfsprogramm lässt der dortige Windows-Schutz „Smart App Control“ nicht zu). Kommt ein Baustein in einem exotischen Feld nicht an, legt sie ihn in die Zwischenablage und sagt es: dann Strg+V. Bearbeitet werden Bausteine nur in der App; die Erweiterung schreibt nie in Deine Bausteine, sie zählt nur die Statistik."],
         ["Zwei Fassungen",
          "Seit dem 3.10. wird nur noch die normale Fassung (blaugrünes Symbol) gebaut und benutzt. Die DEV-Fassung (rotes Symbol, Testwelt) ist kalte Reserve für riskante Proben. Sind beide auf derselben Seite aktiv, schweigt die DEV-Fassung."],
-        ["MRI-Anmeldung (nur Praxis)",
-         "Das ausgefüllte Anmeldeformular in Axenita markieren (Strg+A) und kopieren (Strg+C), dann ;;mri in einem Feld tippen oder im Symbol-Fenster der Erweiterung „MRI-Anmeldung“ klicken. Erkannt werden Medizinisch Radiologisches Institut, RNR, Hirslanden und RIMED; das Menü zeigt nur die Adressen des erkannten Formulars, das passende ist vorgewählt (RIMED: Altstetten). Herr oder Frau wählst Du immer selbst. Der Knopf öffnet die fertige Mail im klassischen Outlook mit Signatur; das PDF ziehst Du hinein, gesendet wird von Hand."],
-        ["Patienten-Kette für die Excel-Liste (nur Praxis)",
-         "In Axenita die Patienteninformation markieren und kopieren, dann in irgendein Feld ;;pat tippen: Die Zeile „Name, Geburtsdatum, Strasse, PLZ Ort“ liegt danach in der Zwischenablage — ins Feld wird nichts geschrieben. In der Patientenliste mit Strg+V einsetzen."],
+        ["MRI-Anmeldung und Patienten-Kette",
+         "Lebten bis 18.25 hier — seit 18.26 in App und Skript (eigenes Kapitel „MRI-Anmeldung und Patienten-Kette“ weiter oben)."],
         ["Nach einem Update der Erweiterung",
          "Nach dem Aktualisieren-Pfeil in chrome://extensions die offenen Axenita-Reiter mit F5 neu laden — sonst arbeitet dort noch die alte Fassung."]
       ]],

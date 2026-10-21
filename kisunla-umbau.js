@@ -8,6 +8,8 @@
 //        11.10.). Das Kürzel wird IMMER umgehängt, der Text aber NUR
 //        gehoben, wenn er wörtlich EINER Lieferfassung (Liste alte)
 //        entspricht — Näds eigene Änderungen bleiben.
+//        18.26: die Träger-Bausteine ;;mri und ;;pat (Erweiterungs-
+//        Ablösung — die Funktionen leben jetzt in App und Skript).
 //        Der Umbau selbst läuft in kisunla.js.
 
 "use strict";
@@ -91,6 +93,34 @@ TB.kisunlaUmbau = {
    "zuletztBenutztAm": null,
    "erstelltAm": "2026-10-13T12:00:00.000Z",
    "aktualisiertAm": "2026-10-13T12:00:00.000Z"
+  },
+  {
+   "id": "e1300011-13a0-4c13-8011-c15a00000011",
+   "titel": "MRI-Anmeldung (Praxis) — fertige Outlook-Mail",
+   "kuerzel": "mri",
+   "kategorie": "Werkzeuge",
+   "text": "<p>Öffnet die MRI-Anmeldung: das in Axenita kopierte Anmelde-Formular wird erkannt (Medizinisch Radiologisches Institut, RNR, Hirslanden, RIMED), und ein Knopf öffnet die fertig adressierte Outlook-Mail mit Betreff, Text und Signatur — das PDF ziehst Du hinein, gesendet wird von Hand. (Dieser Baustein ist nur der Träger des Kürzels — der Text hier wird nicht eingefügt.)</p>",
+   "notiz": "— KI-ANLEITUNG (Lieferstand 18.26, 21.10.2026) —\nZweck: Träger-Baustein der MRI-Anmeldung (mri-anmeldung.js = Logik, ansicht-mri.js = Fenster) — seit 18.26 in der App; vorher lebte sie in der Chrome-Erweiterung (dort an allen vier Formularen bewiesen), die seit SKRIPT-ZUERST ausgeschaltet ist.\nAufbau: Das Kürzel wird in App (kisunla.js sonderStart) und Windows-Skript (FensterNurOeffnen → ?fenster=mri) abgefangen; der Bausteintext dient nur der Auffindbarkeit (Übersicht, Vorschlagsliste). Herr/Frau ist NIE vorgewählt (Näds Wunsch 30.9., gegen Verwechslungen); das Empfänger-Menü zeigt nur die Adressen des erkannten Formulars.\nÄnderungen gegenüber dem Lieferstand erkennt eine spätere KI am Vergleich mit diesem Block.",
+   "art": "text",
+   "ausgabeart": "fenster",
+   "entwurf": false,
+   "zuletztBenutztAm": null,
+   "erstelltAm": "2026-10-21T10:00:00.000Z",
+   "aktualisiertAm": "2026-10-21T10:00:00.000Z"
+  },
+  {
+   "id": "e1300012-13a0-4c13-8012-c15a00000012",
+   "titel": "Patienten-Kette für die Excel-Liste (Praxis)",
+   "kuerzel": "pat",
+   "kategorie": "Werkzeuge",
+   "text": "<p>Baut aus der in Axenita kopierten Patienteninformation EINE Zeile für die Excel-Patientenliste — Name, Geburtsdatum, Strasse, PLZ Ort, mit Komma getrennt — und legt sie in die Zwischenablage; in Excel setzt Strg+V ein. Es wird nichts ins offene Feld geschrieben. (Dieser Baustein ist nur der Träger des Kürzels — der Text hier wird nicht eingefügt.)</p>",
+   "notiz": "— KI-ANLEITUNG (Lieferstand 18.26, 21.10.2026) —\nZweck: Träger-Baustein der Patienten-Kette ;;pat — seit 18.26 im Windows-Skript (pat.ahk) und in der App (pat-kette.js); vorher lebte sie in der Chrome-Erweiterung, die seit SKRIPT-ZUERST ausgeschaltet ist.\nAufbau: Am Arbeitsplatz fängt das Skript das Kürzel ab (BausteinStarten → PatKette: Zwischenablage lesen, Zeile bauen, Zwischenablage, Toast); in der App macht pat-kette.js dasselbe (kisunla.js sonderStart). Erkennung: Namenszeile mit Geschlecht dahinter, Datumszeile (auch mit „(30 J)“), zwei Zeilen unter „Adresse“ ohne Kantonsklammer und Land. GRUNDSATZ: nichts wird gespeichert, die Angaben wandern nur von Zwischenablage zu Zwischenablage.\nÄnderungen gegenüber dem Lieferstand erkennt eine spätere KI am Vergleich mit diesem Block.",
+   "art": "text",
+   "ausgabeart": "fenster",
+   "entwurf": false,
+   "zuletztBenutztAm": null,
+   "erstelltAm": "2026-10-21T10:00:00.000Z",
+   "aktualisiertAm": "2026-10-21T10:00:00.000Z"
   }
  ]
 };

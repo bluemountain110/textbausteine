@@ -110,11 +110,13 @@ FensterStart(art, kuerzel, ziel) {
 }
 
 ; 18.18: Ziele mit nur EINEM Schreibfeld (Word u. a.) - dort keine
-; Strg+Tab-Spruenge, sondern alles als ein Block.
+; Strg+Tab-Spruenge, sondern alles als ein Block. 18.26: auch Browser
+; (Axenita hat EIN Feld; die KISIM-Spruenge waeren dort Murks - und
+; seit der Erweiterungs-Abloesung tippt das Skript auch in Chrome).
 FensterZielIstEinfeld(ziel) {
     programm := ""
     try programm := StrLower(WinGetProcessName(ziel))
-    for p in ["winword.exe", "wordpad.exe", "notepad.exe", "outlook.exe", "soffice.bin"] {
+    for p in ["winword.exe", "wordpad.exe", "notepad.exe", "outlook.exe", "soffice.bin", "chrome.exe", "msedge.exe"] {
         if (programm = p)
             return true
     }

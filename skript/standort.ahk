@@ -20,7 +20,11 @@ StandortDatei() {
 }
 
 WeicheVorbelegung(standort) {
-    return (standort = TX["standortPraxis"]) ? "an" : "aus"
+    ; 18.26 (Erweiterungs-Abloesung): Die Erweiterung ist ausgeschaltet,
+    ; das Skript arbeitet ueberall - auch in Browserfenstern. Die Weiche
+    ; bleibt im Menue umstellbar, falls die Erweiterung je wieder laeuft;
+    ; eine gespeicherte Wahl in der Standort-Datei gilt weiter.
+    return "aus"
 }
 
 StandortLaden() {

@@ -1678,6 +1678,9 @@ TB.selbsttest = (function () {
       pruefeBerichtMc().map(function (f) { f.gruppe = "Bericht Memory Clinic"; return f; }),
       pruefeBerichtAnonym().map(function (f) { f.gruppe = "Bericht anonymisieren"; return f; }),
       pruefeAnzeigen().map(function (f) { f.gruppe = "Sammelrunde 18.17"; return f; }),
+      (TB.selbsttestAbloesung ? TB.selbsttestAbloesung()
+        : [{ name: "Ablösungs-Prüfungen geladen (selbsttest-abloesung.js)", ok: false, detail: "" }])
+        .map(function (f) { f.gruppe = "Ablösung 18.26"; return f; }),
       (TB.selbsttestEnmgBefund ? TB.selbsttestEnmgBefund()
         : [{ name: "ENMG-Befund-Prüfungen geladen (selbsttest-enmg.js)", ok: false, detail: "" }])
         .map(function (f) { f.gruppe = "ENMG-Befund"; return f; }),

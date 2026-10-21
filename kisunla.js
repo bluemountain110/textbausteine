@@ -233,6 +233,10 @@ TB.kisunla = (function () {
     if (k === "kisbest") { TB.ansichtKisunla.oeffneBestellung(); return true; }
     // 18.10: ;;anon öffnet den Bericht-Anonymisierer
     if (k === "anon") { TB.ansichtBerichtAnonym.oeffne(); return true; }
+    // 18.26 (Erweiterungs-Ablösung): ;;mri öffnet die MRI-Anmeldung,
+    // ;;pat baut die Excel-Zeile aus der Zwischenablage.
+    if (k === "mri") { TB.ansichtMri.oeffne(false); return true; }
+    if (k === "pat") { TB.patKette.starten(); return true; }
     return false;
   }
 

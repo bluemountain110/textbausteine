@@ -289,7 +289,16 @@ BausteinStarten(b, ziel, loeschen) {
         FensterNurOeffnen("anzeigen", kjk)
         return
     }
-    if (kjk = "kisew" or kjk = "kisbest" or kjk = "anon") {
+    ; 18.26 (Erweiterungs-Abloesung): Die Patienten-Kette baut aus der
+    ; Zwischenablage die Excel-Zeile (pat.ahk) - kein Fenster, nichts
+    ; wird eingefuegt. Die MRI-Anmeldung oeffnet wie anon die App-Seite.
+    if (kjk = "pat") {
+        if (loeschen > 0)
+            Send "{Backspace " loeschen "}"
+        PatKette()
+        return
+    }
+    if (kjk = "kisew" or kjk = "kisbest" or kjk = "anon" or kjk = "mri") {
         if (loeschen > 0)
             Send "{Backspace " loeschen "}"
         FensterNurOeffnen(kjk)

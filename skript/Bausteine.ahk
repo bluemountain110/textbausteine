@@ -33,6 +33,7 @@ Persistent
 #Include fenster-url.ahk
 #Include fenster-pruefstand.ahk
 #Include kuerzel.ahk
+#Include pat.ahk
 #Include autostart.ahk
 #Include update.ahk
 
