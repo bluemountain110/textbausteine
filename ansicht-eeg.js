@@ -224,6 +224,12 @@ TB.ansichtEeg = (function () {
 
   function zeichneLeer(wurzel) {
     wurzel.appendChild(el("h2", "", TE().eegTitel));
+    // 18.27 (Näd 22.10.): Ohne Anmeldung kein Grundausstattungs-Knopf —
+    // Begründung wie im Status-Werk (ansicht-status.js, zeichneLeer).
+    if (!(TB.wolke && TB.wolke.angemeldet && TB.wolke.angemeldet())) {
+      wurzel.appendChild(el("p", "hinweis-warn", TE().eegLeerAbgemeldet));
+      return;
+    }
     wurzel.appendChild(el("p", "hinweis-warn", TE().eegLeer));
     var k = el("button", "", TE().grundKnopf);
     k.addEventListener("click", function () {

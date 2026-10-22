@@ -162,6 +162,14 @@ TB.ansichtStatus = (function () {
 
   function zeichneLeer(wurzel) {
     wurzel.appendChild(el("h2", "", TS().statusTitel));
+    // 18.27 (Näd 22.10.): Ohne Anmeldung gibt es den Grundausstattungs-
+    // Knopf NICHT — sonst wird auf einem frischen Gerät die Lieferfassung
+    // angelegt und überschreibt nach dem Anmelden den überarbeiteten
+    // Gesamtstatus des Kontos. Stattdessen nur der Anmelde-Hinweis.
+    if (!(TB.wolke && TB.wolke.angemeldet && TB.wolke.angemeldet())) {
+      wurzel.appendChild(el("p", "hinweis-warn", TS().statusLeerAbgemeldet));
+      return;
+    }
     wurzel.appendChild(el("p", "hinweis-warn", TS().statusLeer));
     var k = el("button", "", TS().grundausstattungKnopf);
     k.addEventListener("click", function () {

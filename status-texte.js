@@ -14,6 +14,7 @@ TB.statusTexte = {
   bereichUebersicht: "Übersicht",
   statusTitel: "Status-Werk",
   statusLeer: "Noch kein Gesamtstatus auf diesem Konto. Mit dem Knopf unten holst Du die mitgelieferte Grundausstattung — sie synct danach auf alle Geräte.",
+  statusLeerAbgemeldet: "Nicht angemeldet. Melde Dich unten rechts an — Dein Gesamtstatus kommt dann mit dem Abgleich von selbst.",
   grundausstattungKnopf: "Grundausstattung übernehmen",
   grundausstattungNeuKnopf: "Grundausstattung neu laden",
   grundausstattungWarnung: "Das ersetzt Deinen bearbeiteten Gesamtstatus durch die Lieferfassung. Deine eigenen Status-Muster (Teilmengen) bleiben erhalten. Fortfahren?",

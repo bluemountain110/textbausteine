@@ -1654,6 +1654,16 @@ TB.selbsttest = (function () {
       fall("Bearbeiten kennt die dritte Ausgabeart (Beschriftungen vorhanden)",
         !!(TB.anzeigenTexte && TB.anzeigenTexte.artAnzeigen &&
            TB.anzeigenTexte.artAnzeigenText), "");
+      // 18.27 (Wächter nach dem Rückfall vom 22.10.): ;;txirr muss im
+      // Bestand „Nur anzeigen" tragen. Rot heisst hier DATENBESTAND,
+      // nicht Programm — beheben: Baustein bearbeiten, Ausgabeart
+      // „Nur anzeigen" wählen (oder den nächsten App-Start den
+      // Nachzieher machen lassen).
+      var txb = TB.speicher.holenPerKuerzel("txirr");
+      fall(txb ? ";;txirr steht im Bestand auf „Nur anzeigen“ (Dauerregel 13.10.)"
+               : ";;txirr noch nicht angelegt — entsteht beim nächsten angemeldeten App-Start",
+        !txb || txb.ausgabeart === "anzeigen",
+        txb ? String(txb.ausgabeart || "") : "");
     } catch (e) {
       f.push({ name: "Anzeigen-Prüfungen liefen durch", ok: false,
         detail: String(e && e.message || e) });

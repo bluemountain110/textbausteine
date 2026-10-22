@@ -92,6 +92,11 @@ TX["rtfFangLeer"] := "Die Zwischenablage enthaelt kein RTF - zuerst in KISIM kop
 TX["standortFrage"] := "Wo laeuft dieses Skript? In der Praxis haelt es sich aus Browserfenstern heraus - dort arbeitet die Chrome-Erweiterung."
 TX["standortSpital"] := "Spital Limmattal"
 
+; ---- Update-Unterschrift und Fenster-Browser (18.27) -------------------
+TX["updSigAbgelehnt"] := "Update abgelehnt: Die Unterschrift der neuen Fassung fehlt oder ist falsch. Es wurde NICHTS eingespielt - bitte Claude melden."
+TX["updSchutzFehlt"] := " - Update-Schutz: nicht eingerichtet (update-schluessel.txt fehlt in Textbausteine-Daten)"
+TX["fensterEdge"] := "Hinweis: Chrome war nicht erreichbar - das Fenster laeuft in Edge. Wirkt es leer oder abgemeldet, dort einmal anmelden."
+
 ; ---- Patienten-Kette (18.26, Erweiterungs-Abloesung) -------------------
 TX["patFertig"] := "In der Zwischenablage: %s - in der Patientenliste mit Strg+V einsetzen."
 TX["patNichtErkannt"] := "Keine Patientenangaben erkannt. Zuerst in Axenita die Patienteninformation markieren und mit Strg+C kopieren, dann das pat-Kuerzel nochmals tippen."

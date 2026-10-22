@@ -354,9 +354,19 @@ UpdPruefenKern(manuell) {
             Toast(Format(TX["updAbbruch"], jetzt) TX["updVerzeichnisKaputt"], true, 10000)
         return false
     }
+    ; 18.27: Die Unterschrift (signatur.ahk). Ist der Schluessel
+    ; eingerichtet, wird NICHTS eingespielt, dessen Unterschrift fehlt
+    ; oder falsch ist - sichtbar gemeldet, nie still.
+    sig := SigPruefeText(text)
+    if (sig = "fehlt" or sig = "falsch") {
+        UpdZustandSetzen(TX["updFehlerKurz"] TX["updSigAbgelehnt"])
+        Toast(TX["updSigAbgelehnt"], true, 12000)
+        return false
+    }
+    schutz := (sig = "kein-schluessel") ? TX["updSchutzFehlt"] : ""
     neu := UpdNummer(v["fassung"])
     if (UpdVergleich(neu, jetzt) <= 0) {
-        UpdZustandSetzen(TX["updOk"] TX["updAufGithub"] neu)
+        UpdZustandSetzen(TX["updOk"] TX["updAufGithub"] neu schutz)
         if manuell
             Toast(TX["updAktuell"] jetzt, false)
         return false
@@ -364,7 +374,7 @@ UpdPruefenKern(manuell) {
     if !manuell {
         ausl := UpdAuslassen()
         if (ausl != "" and UpdVergleich(neu, ausl) <= 0) {
-            UpdZustandSetzen(TX["updOk"] TX["updAufGithub"] neu TX["updAusgelassen"])
+            UpdZustandSetzen(TX["updOk"] TX["updAufGithub"] neu TX["updAusgelassen"] schutz)
             return false
         }
     }

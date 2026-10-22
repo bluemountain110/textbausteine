@@ -35,6 +35,7 @@ Persistent
 #Include kuerzel.ahk
 #Include pat.ahk
 #Include autostart.ahk
+#Include signatur.ahk
 #Include update.ahk
 
 ; ---- Symbol-Menue unten rechts ------------------------------------------

@@ -137,6 +137,10 @@ BrowserOeffne(url, wunschBreite := 1360, wunschHoehe := 1000) {
     }
     try {
         Run('msedge.exe --app="' url '"' lage)
+        ; 18.27: Edge hat einen EIGENEN Speicher - dort ist man oft
+        ; nicht angemeldet, und das Fenster wirkt leer. Das wird
+        ; angesagt statt still hingenommen (Naeds Fund 22.10.).
+        Toast(TX["fensterEdge"], false, 8000)
         return
     }
     try Run(url)

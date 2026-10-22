@@ -183,16 +183,39 @@ TB.kisunla = (function () {
       S.speichern({ id: b.id, text: paar.neu });
       getan += 1;
     });
-    if (!S.holenPerKuerzel("kisbest")) {
+    // 18.27: Anlage von Liefer-Bausteinen nur angemeldet (Begründung
+    // beim neu-Block unten).
+    var darfAnlegen = !!(TB.wolke && TB.wolke.angemeldet && TB.wolke.angemeldet());
+    if (darfAnlegen && !S.holenPerKuerzel("kisbest")) {
       var v = TB.kisunlaUmbau.kisbest;
       if (!S.holen(v.id)) { S.speichern(v); getan += 1; }
     }
     // 18.7: weitere neue Lieferbausteine (z. B. ;;txirr) — nur anlegen,
     // wenn weder Kürzel noch Kennung schon da sind (auch nicht im
     // Papierkorb: was Näd gelöscht hat, bleibt gelöscht).
+    // 18.27: und NUR auf einem angemeldeten Gerät. Vorher legte jedes
+    // frische, nie angemeldete Fenster-Profil die Lieferfassung neu an;
+    // nach einer späteren Anmeldung gewann deren junger Zeitstempel und
+    // überschrieb Näds Fassung auf dem Konto (so verlor ;;txirr am
+    // 22.10. sein „Nur anzeigen“). Angemeldet kommt der Konto-Bestand
+    // mit dem Abgleich — fehlt ein Träger dann wirklich, legt ihn der
+    // nächste Start an.
     (TB.kisunlaUmbau.neu || []).forEach(function (nb) {
+      if (!darfAnlegen) return;
       if (S.holenPerKuerzel(nb.kuerzel) || S.holen(nb.id)) return;
       S.speichern(nb); getan += 1;
+    });
+    // 18.27: ;;txirr ist seit 18.17 ein Nachschlage-Baustein (Näds
+    // Dauerregel). Steht er — bei unverändertem Liefertext — wieder auf
+    // einer anderen Ausgabeart (der Rückfall vom 22.10.), hebt ihn
+    // dieser Nachzieher zurück auf „Nur anzeigen“. Näds eigene
+    // Text-Fassungen bleiben unberührt.
+    (TB.kisunlaUmbau.neu || []).forEach(function (nb) {
+      if (String(nb.kuerzel) !== "txirr") return;
+      var tx = S.holenPerKuerzel("txirr");
+      if (!tx || tx.ausgabeart === "anzeigen") return;
+      if (tx.text !== nb.text) return;
+      S.speichern({ id: tx.id, ausgabeart: "anzeigen" }); getan += 1;
     });
     liefertexte.push(TB.kisunlaUmbau.kisbest.text);
     var d = TB.kisunlaUmbau.dxad;

@@ -26,6 +26,7 @@ TB.eegTexte = {
   bereichEeg: "EEG",
   eegTitel: "EEG-Werk",
   eegLeer: "Noch kein EEG-Katalog auf diesem Konto. Mit dem Knopf unten holst Du die mitgelieferte Grundausstattung — sie synct danach auf alle Geräte.",
+  eegLeerAbgemeldet: "Nicht angemeldet. Melde Dich unten rechts an — Dein EEG-Katalog kommt dann mit dem Abgleich von selbst.",
   grundKnopf: "Grundausstattung übernehmen",
   vorlagenTitel: "Vorlage wählen:",
   suchePlatzhalter: "Punkt suchen …",

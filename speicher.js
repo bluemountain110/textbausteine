@@ -13,7 +13,7 @@
 "use strict";
 window.TB = window.TB || {};
 
-TB.FASSUNG = "18.26 · Erweiterungs-Ablösung: ;;mri und ;;pat in App und Skript · 21.10.2026";
+TB.FASSUNG = "18.27 · Update-Unterschrift, Grundausstattungs-Schutz, ;;txirr-Wächter · 22.10.2026";
 
 TB.speicher = (function () {
 

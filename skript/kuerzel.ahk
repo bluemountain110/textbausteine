@@ -223,6 +223,20 @@ KuerzelArbeit(t, getippt, kuerzel, laenge, ziel) {
         Send "{Backspace " laenge "}"
         FensterStart("enmg", "", ziel)
         return
+    }
+    ; 18.27: ;;pat und ;;mri sind fest verdrahtet - sie funktionieren
+    ; damit auch, bevor der erste Abgleich die Traeger-Bausteine
+    ; gebracht hat (das "Kein Baustein"-Zeitfenster vom 21.10.).
+    ; Ein ECHTER Baustein mit dem Kuerzel hat wie immer Vorrang.
+    if (kuerzel = "pat" and !karte.Has("pat")) {
+        Send "{Backspace " laenge "}"
+        PatKette()
+        return
+    }
+    if (kuerzel = "mri" and !karte.Has("mri")) {
+        Send "{Backspace " laenge "}"
+        FensterNurOeffnen("mri")
+        return
     }    ; Das Status-Fenster (Etappe 11): das Kuerzel eines Status aus der
     ; Status-Pflege (;;statuscts, ;;statusc7, ...) oeffnet das App-Fenster
     ; im Browser mit genau diesem Status (URL-Weg). Ein ECHTER Baustein hat Vorrang.
